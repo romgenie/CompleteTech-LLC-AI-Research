@@ -94,16 +94,24 @@ For more advanced use cases, you can directly use the individual components:
 ```python
 from research_orchestrator.research_understanding.paper_processing import PaperProcessor
 from research_orchestrator.research_understanding.algorithm_extraction import AlgorithmExtractor
+from research_orchestrator.research_understanding.implementation_details import ImplementationDetailCollector
 
 # Initialize components
 paper_processor = PaperProcessor(cache_dir='/path/to/cache/papers')
 algorithm_extractor = AlgorithmExtractor(cache_dir='/path/to/cache/algorithms')
+detail_collector = ImplementationDetailCollector(cache_dir='/path/to/cache/details')
 
 # Process a paper
 paper = paper_processor.process_paper(paper_path='/path/to/paper.pdf')
 
 # Extract algorithms
 algorithms = algorithm_extractor.extract_algorithms(paper=paper)
+
+# Collect implementation details
+implementation_details = detail_collector.collect_details(paper=paper, algorithms=algorithms)
+
+# Enhance an algorithm with implementation details
+enhanced_algorithm = detail_collector.enhance_algorithm(algorithm=algorithms[0], paper=paper)
 ```
 
 ## Example Scripts
@@ -111,4 +119,5 @@ algorithms = algorithm_extractor.extract_algorithms(paper=paper)
 The `examples/research_understanding` directory contains example scripts that demonstrate the usage of the Research Understanding Engine:
 
 - `paper_processing_example.py`: Demonstrates paper processing and algorithm extraction
+- `detail_collector_example.py`: Demonstrates implementation detail collection
 - `engine_example.py`: Demonstrates the high-level Research Understanding Engine
