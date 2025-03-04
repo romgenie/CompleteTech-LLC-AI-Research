@@ -167,6 +167,30 @@ The application uses WebSockets for real-time updates:
 - Auto-reconnection with exponential backoff for connection stability
 - Authentication integration with JWT tokens
 
+```javascript
+// Example WebSocket connection setup
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const host = process.env.REACT_APP_WEBSOCKET_HOST || window.location.host;
+const wsUrl = `${protocol}//${host}/ws`;
+
+// WebSocket wrapper hook with auto-reconnect
+const { isConnected, sendMessage } = useWebSocket(wsUrl, {
+  onMessage: handleWebSocketMessage,
+  reconnectInterval: 2000,
+  maxReconnectAttempts: 5
+});
+
+// Subscribe to paper status updates
+const subscribeToPaper = (paperId) => {
+  if (isConnected) {
+    sendMessage({ 
+      type: 'subscribe', 
+      channel: `paper_status_${paperId}` 
+    });
+  }
+};
+```
+
 ### Mock Data and Error Handling
 
 When backend services are unavailable, the application falls back to mock data defined in `/src/utils/mockData.js`. This includes:
@@ -175,6 +199,34 @@ When backend services are unavailable, the application falls back to mock data d
 - Research query results
 - Paper implementation code
 - Paper processing status
+
+```javascript
+// Example API call with mock data fallback
+const fetchEntityData = async (entityId) => {
+  try {
+    // Try to fetch from API
+    const response = await knowledgeGraphService.getEntityDetails(entityId);
+    return response;
+  } catch (err) {
+    console.error('Error fetching from API, using mock data');
+    
+    // Fallback to mock data
+    const mockGraph = knowledgeGraphService.getMockGraph();
+    const entity = mockGraph.nodes.find(node => node.id === entityId);
+    
+    if (entity) {
+      return {
+        ...entity,
+        description: `Mock description for ${entity.name}`,
+        properties: {
+          // Mock properties...
+        }
+      };
+    }
+    throw new Error('Entity not found in mock data');
+  }
+};
+```
 
 The application implements comprehensive error handling:
 
