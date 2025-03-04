@@ -147,17 +147,28 @@ The project follows a modular architecture with well-defined interfaces between 
 ### Installation & Running
 
 1. Clone the repository
-2. Start the full stack using Docker Compose:
+2. Start the backend services using Docker Compose:
    ```bash
    docker-compose up -d
    ```
-3. Access the API at http://localhost:8000
-4. View the API documentation at http://localhost:8000/docs
+3. Start the frontend development server:
+   ```bash
+   cd src/ui/frontend
+   npm install
+   npm start
+   ```
+4. Access the web UI at http://localhost:3001
+5. Access the API at http://localhost:8000
+6. View the API documentation at http://localhost:8000/docs
 
 ### Services
 - Neo4j (Knowledge Graph): http://localhost:7474 (Browser interface)
 - MongoDB (Document Storage): mongodb://localhost:27017
 - FastAPI (API Server): http://localhost:8000
+- React Frontend: http://localhost:3001
+
+### Authentication
+- Test credentials: username: admin, password: password
 
 ### Development Setup
 1. Explore the documentation in CLAUDE.md and the plan/ directory
