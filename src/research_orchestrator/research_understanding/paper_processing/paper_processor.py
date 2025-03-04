@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Union, Any
 from enum import Enum
 from dataclasses import dataclass
 import os
+import re
 import json
 from pathlib import Path
 
@@ -620,7 +621,7 @@ class PaperProcessor:
             # Look for named algorithms
             algo_matches = re.finditer(algo_pattern, section.content, re.IGNORECASE)
             
-            for match in matches:
+            for match in algo_matches:
                 algo_num = match.group(1)
                 algo_name = match.group(2).strip()
                 
