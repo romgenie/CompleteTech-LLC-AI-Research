@@ -22,7 +22,9 @@ researchApi.interceptors.request.use(
 /**
  * Research service for interacting with the research orchestration API.
  */
-// Add methods needed by ResearchPage
+// Research service connected to the Paper Processing Pipeline
+// Note: Paper Processing Pipeline integration enables advanced research functionality
+// Current implementation uses the foundation infrastructure (Phase 3.5)
 const researchService = {
   /**
    * Conduct a research query
