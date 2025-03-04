@@ -137,7 +137,7 @@ The AI Research Integration frontend provides a UI for interacting with our know
 - Support structured and natural language queries
 - Format results with proper citations
 
-## Implemented Features
+## Implemented Features (Phases 1 & 2)
 
 1. **Enhanced Error Handling**
    - ErrorBoundary component for critical UI sections
@@ -169,7 +169,7 @@ The AI Research Integration frontend provides a UI for interacting with our know
    - Upload progress visualization
    - Status tracking and error handling
 
-## Next Steps
+## Current Development Priorities
 
 1. **TypeScript Migration** (Priority: High)
    - Create JSDoc type definitions as preparation (✅ Completed with typeDefs.js)
