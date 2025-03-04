@@ -74,53 +74,174 @@ The AI Research Integration frontend provides a user interface for interacting w
   - [✅] Add TypeScript configuration with tsconfig.json
   - [🔄] Convert core contexts (AuthContext, WebSocketContext) - Week 1
      ```typescript
-     // AuthContext typing sample
+     // AuthContext typing with comprehensive interfaces
      interface User {
        id: string;
        username: string;
        roles: string[];
+       email?: string;
+       displayName?: string;
+       preferences?: UserPreferences;
+     }
+
+     interface UserPreferences {
+       theme?: 'light' | 'dark' | 'system';
+       visualizationSettings?: {
+         nodeSize: number;
+         forceStrength: number;
+         showLabels: boolean;
+       };
      }
 
      interface AuthContextType {
        currentUser: User | null;
        token: string | null;
        isAuthenticated: boolean;
+       loading: boolean;
+       error: Error | null;
        login: (username: string, password: string) => Promise<User>;
        logout: () => void;
+       refreshToken: () => Promise<boolean>;
+       updateUserPreferences: (preferences: Partial<UserPreferences>) => Promise<void>;
      }
      
-     // WebSocketContext typing sample  
-     interface NotificationMessage {
+     // WebSocketContext with typed message handling
+     interface WebSocketMessage {
+       type: string;
+       [key: string]: any;
+     }
+     
+     interface NotificationMessage extends WebSocketMessage {
        type: 'notification';
        id: string;
-       category: 'info' | 'success' | 'warning' | 'error' | 'paper_status';
        title: string;
        message: string;
+       category: 'info' | 'success' | 'warning' | 'error' | 'paper_status' | 'system';
        timestamp: string;
+       entityId?: string;
+       paperId?: string;
+       isRead?: boolean;
+     }
+     
+     interface WebSocketContextType {
+       isConnected: boolean;
+       connect: () => void;
+       disconnect: () => void;
+       reconnect: () => void;
+       sendMessage: <T extends WebSocketMessage>(data: T) => boolean;
+       lastMessage: WebSocketMessage | null;
+       error: Event | null;
+       notifications: NotificationMessage[];
+       clearNotifications: () => void;
+       markNotificationAsRead: (id: string) => void;
+       subscribeToPaperUpdates: (paperId: string) => boolean;
+       paperStatusMap: Record<string, PaperStatus>;
      }
      ```
   - [🔄] Convert essential hooks (useD3, useFetch, useWebSocket) - Week 2
      ```typescript
-     // useD3 typing with generics
+     // useD3 hook with comprehensive typing
      function useD3<GElement extends d3.BaseType>(
        renderFn: (selection: d3.Selection<GElement, unknown, null, undefined>) => void, 
        dependencies: React.DependencyList = []
-     ): React.RefObject<GElement>
+     ): React.RefObject<GElement> {
+       const ref = useRef<GElement>(null);
+       
+       useEffect(() => {
+         if (ref.current) {
+           renderFn(d3.select(ref.current) as d3.Selection<GElement, unknown, null, undefined>);
+         }
+         
+         return () => {
+           if (ref.current) {
+             d3.select(ref.current).selectAll('*').interrupt();
+           }
+         };
+       }, dependencies);
+       
+       return ref;
+     }
      
-     // useFetch with generic request/response
-     function useFetch<TData = any, TError = Error>(
+     // Specialized versions for common element types
+     export function useSvgD3(
+       renderFn: (selection: d3.Selection<SVGSVGElement, unknown, null, undefined>) => void,
+       dependencies: React.DependencyList = []
+     ): React.RefObject<SVGSVGElement> {
+       return useD3<SVGSVGElement>(renderFn, dependencies);
+     }
+     
+     // useFetch with comprehensive options and error handling
+     interface UseFetchOptions<TRequestData = any> {
+       method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+       headers?: Record<string, string>;
+       data?: TRequestData;
+       timeout?: number;
+       retries?: number;
+       retryDelay?: number;
+       useCache?: boolean;
+       cacheTime?: number;
+     }
+     
+     function useFetch<TData = any, TError = ApiError, TRequestData = any>(
        url: string,
-       options?: RequestInit,
-       immediate?: boolean
+       options: UseFetchOptions<TRequestData> = {},
+       immediate: boolean = true,
+       mockDataFn?: () => TData
      ): {
        data: TData | null;
        loading: boolean;
        error: TError | null;
-       refetch: () => Promise<void>;
+       timestamp: number | null;
+       refetch: (options?: Partial<UseFetchOptions>) => Promise<TData>;
+       cancel: () => void;
      }
      ```
-  - [ ] Add interfaces for API models (Future)
-  - [ ] Convert components incrementally (Future)
+  - [✅] Add shared type definitions in central file
+     ```typescript
+     // Common types for the entire application
+     
+     // Entity types used in Knowledge Graph
+     export type EntityType = 
+       | 'MODEL' 
+       | 'DATASET' 
+       | 'ALGORITHM'
+       | 'PAPER' 
+       | 'AUTHOR' 
+       | 'CODE'
+       | 'FRAMEWORK'
+       | 'METRIC'
+       | 'METHOD'
+       | 'TASK';
+     
+     // Relationship types between entities
+     export type RelationshipType =
+       | 'IS_A'
+       | 'PART_OF'
+       | 'BUILDS_ON'
+       | 'OUTPERFORMS'
+       | 'TRAINED_ON'
+       | 'EVALUATED_ON'
+       | 'HAS_CODE'
+       | 'AUTHORED_BY'
+       | 'CITES'
+       | 'USED_FOR';
+     
+     // Paper processing statuses
+     export type PaperStatus = 
+       | 'uploaded' 
+       | 'queued' 
+       | 'processing' 
+       | 'extracting_entities' 
+       | 'extracting_relationships' 
+       | 'building_knowledge_graph' 
+       | 'analyzed' 
+       | 'implementation_ready' 
+       | 'error';
+     ```
+  - [🔄] Central implementation plan for gradual TypeScript migration
+     - Week 1 (Day 1-5): Core context providers and shared types
+     - Week 2 (Day 1-5): Essential hooks and utility functions
+     - Future phases: Component migration starting with shared components
 
 - [🔄] **Knowledge Graph Optimization** (Highest Priority - Weeks 1-2)
   - [✅] Implement user experience improvements with better onboarding
