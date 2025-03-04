@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir -r requirements-api.txt
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p /app/logs /app/data /app/cache
+RUN mkdir -p /app/logs /app/data /app/cache /app/uploads
 
 # Set environment variables
 ENV PYTHONPATH="/app:${PYTHONPATH}"
