@@ -3,9 +3,9 @@
 This project aims to integrate capabilities from several advanced AI research repositories to create a comprehensive system for AI research discovery, knowledge extraction, and implementation.
 
 > **Development Statistics:**  
-> Total cost: $73.20  
-> Total duration (API): 5h 19m 0.3s  
-> Total duration (wall): 15h 1m 53.5s  
+> Total cost: $75.98  
+> Total duration (API): 5h 23m 58.2s  
+> Total duration (wall): 15h 39m 51.3s  
 
 ## Project Overview
 
@@ -275,12 +275,16 @@ For detailed information about the project architecture, integrated repositories
 All core planned features have been implemented, with one notable exception: paper processing functionality. There are also several other potential enhancements for future iterations:
 
 1. **Paper Processing Pipeline** (In Planning):
-   - Background task processing system using Celery and Redis
-   - Automated document analysis and metadata extraction
-   - Paper state management (uploaded → processing → analyzed)
-   - Integration with existing document processing components
-   - Manual processing endpoints and batch processing capability
-   - Connect paper analysis to implementation generation
+   - Background task system using Celery and Redis with monitoring and auto-retry
+   - Complete paper lifecycle management (uploaded → processing → analyzed → implemented)
+   - Entity and relationship extraction from academic papers
+   - Knowledge graph integration for storing extracted concepts
+   - Real-time processing status updates via websockets
+   - Manual processing endpoints with batch capability
+   - Implementation planning based on extracted algorithms
+   - Testing and validation frameworks for generated code
+   - Support for additional document formats (LaTeX, Word)
+   - Citation network analysis and paper interconnection
 
 1. **Enhanced Knowledge Graph Visualization**:
    - Support for more sophisticated network visualization techniques
