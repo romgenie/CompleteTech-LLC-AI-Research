@@ -3,9 +3,9 @@
 This project aims to integrate capabilities from several advanced AI research repositories to create a comprehensive system for AI research discovery, knowledge extraction, and implementation.
 
 > **Development Statistics:**  
-> Total cost: $77.21  
-> Total duration (API): 5h 26m 15.6s  
-> Total duration (wall): 15h 42m 49.7s  
+> Total cost: $77.63  
+> Total duration (API): 5h 27m 18.6s  
+> Total duration (wall): 15h 50m 47.9s  
 
 ## Project Overview
 
@@ -135,6 +135,9 @@ See [PLAN.md](./PLAN.md) for the complete implementation roadmap.
 - Neo4j for knowledge graph storage
 - FastAPI for API development
 - Docker and Docker Compose for containerization
+- MongoDB for document and metadata storage
+- React with Material-UI for web frontend
+- Celery and Redis for background task processing (future implementation)
 
 ## Architecture Design
 
@@ -145,6 +148,7 @@ The project follows a modular architecture with well-defined interfaces between 
 ### Prerequisites
 - Docker and Docker Compose
 - Python 3.9+
+- Node.js 16+ for frontend development
 
 ### Installation & Running
 
@@ -172,11 +176,32 @@ The project follows a modular architecture with well-defined interfaces between 
 ### Authentication
 - Test credentials: username: admin, password: password
 
+### Notes on Paper Uploads
+Currently, papers can be uploaded but will remain in the "uploaded" status. The automatic paper processing pipeline is planned for future implementation.
+
 ### Development Setup
-1. Explore the documentation in CLAUDE.md and the plan/ directory
-2. Install dependencies from requirements.txt
-3. Configure environment variables using .env (based on .env.example)
-4. Run tests to verify the installation
+1. Explore the documentation in this order:
+   - CLAUDE.md for project overview
+   - plan/structural/ for architectural understanding
+   - plan/file_structures/ for implementation details
+   - Each system's README.md and DEVELOPER_PLAN.md
+2. Start with core modules:
+   - research_orchestrator/core/
+   - knowledge_graph_system/core/
+   - research_implementation/core/
+3. Install dependencies from requirements.txt
+4. Configure environment variables using .env (based on .env.example)
+5. Run tests to verify the installation
+6. Follow the phased implementation approach outlined in PLAN.md
+
+## Implementation Priorities
+
+Following the guidance in the CODING_PROMPT.md file, we've implemented the project in phases:
+
+1. ✅ **First Priority**: Research Orchestration Framework core and Research Planning
+2. ✅ **Second Priority**: Knowledge Graph System core and Knowledge Extractor
+3. ✅ **Third Priority**: Research Implementation core and Research Understanding
+4. 🔄 **Fourth Priority**: Paper Processing Pipeline (Planned - Phase 3.5)
 
 ## Usage Guide
 
@@ -274,17 +299,33 @@ For detailed information about the project architecture, integrated repositories
 
 All core planned features have been implemented, with one notable exception: paper processing functionality. There are also several other potential enhancements for future iterations:
 
-1. **Paper Processing Pipeline** (In Planning):
-   - Background task system using Celery and Redis with monitoring and auto-retry
-   - Complete paper lifecycle management (uploaded → processing → analyzed → implemented)
-   - Entity and relationship extraction from academic papers
-   - Knowledge graph integration for storing extracted concepts
-   - Real-time processing status updates via websockets
-   - Manual processing endpoints with batch capability
-   - Implementation planning based on extracted algorithms
-   - Testing and validation frameworks for generated code
-   - Support for additional document formats (LaTeX, Word)
-   - Citation network analysis and paper interconnection
+1. **Paper Processing Pipeline** (Planned - Phase 3.5):
+   - **Asynchronous Processing Architecture**:
+     - Celery task queue with Redis as message broker
+     - Worker configuration with auto-retry and dead letter queues
+     - Task prioritization and rate limiting
+     - Health monitoring and logging
+   - **Paper Lifecycle Management**:
+     - State machine to track paper processing status
+     - Detailed status tracking with granular states
+     - Real-time status updates via WebSockets
+     - Progress tracking with stage information
+   - **Processing Components**:
+     - Integration with existing DocumentProcessor
+     - Entity and relationship extraction from papers
+     - Knowledge graph integration
+     - Citation network analysis
+     - Metadata extraction for paper classification
+   - **API Endpoints**:
+     - Manual processing trigger endpoints
+     - Batch processing capability
+     - Status query endpoints
+     - WebSocket endpoints for real-time updates
+   - **Implementation Integration**:
+     - Connect paper analysis to implementation requests
+     - Extract algorithms for code generation
+     - Generate implementation artifacts
+     - Implement testing and validation
 
 1. **Enhanced Knowledge Graph Visualization**:
    - Support for more sophisticated network visualization techniques
