@@ -505,10 +505,16 @@ const KnowledgeGraphPage = () => {
                 ) : selectedEntity ? (
                   <svg ref={svgRef} width="100%" height="100%"></svg>
                 ) : (
-                  <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+                  <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100%">
                     <Typography variant="body1" color="text.secondary">
                       Select an entity to visualize relationships
                     </Typography>
+                    <Alert severity="info" sx={{ mt: 2, maxWidth: 400 }}>
+                      <Typography variant="body2">
+                        The Knowledge Graph is fully implemented and integrated with the 
+                        Paper Processing Pipeline foundation (Phase 3.5).
+                      </Typography>
+                    </Alert>
                   </Box>
                 )}
               </Paper>
