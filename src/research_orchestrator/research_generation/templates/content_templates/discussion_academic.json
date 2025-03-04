@@ -1,0 +1,12 @@
+{
+  "section_type": "DISCUSSION",
+  "document_type": "RESEARCH_PAPER",
+  "template_text": "# Discussion\n\nIn this section, we discuss the implications of our results and their broader significance.\n\n## {discussion_subsection_1}\n\n{discussion_content_1}\n\n## {discussion_subsection_2}\n\n{discussion_content_2}\n\n## Limitations\n\nOur approach has several limitations that should be acknowledged:\n\n{limitations}\n\nDespite these limitations, our work {discussion_conclusion}.",
+  "style": "ACADEMIC",
+  "technical_level": "INTERMEDIATE",
+  "metadata": {
+    "version": "1.0",
+    "description": "Academic discussion template for research papers",
+    "author": "AI Research Integration Project"
+  }
+}
