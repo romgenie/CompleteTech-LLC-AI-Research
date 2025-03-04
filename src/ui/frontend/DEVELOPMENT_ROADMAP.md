@@ -12,28 +12,44 @@ TypeScript migration is being implemented incrementally to ensure a smooth trans
 - ✅ Added JSDoc type definitions in `src/utils/typeDefs.js` as an interim solution
 - ✅ Added TypeScript configuration with `tsconfig.json`
 
-#### Next Steps:
-1. **Core Contexts Migration**
-   - Convert AuthContext to TypeScript
-   - Convert WebSocketContext to TypeScript
-   - Add comprehensive interface definitions for context values
+#### TypeScript Migration Implementation Plan (Next 2 Weeks):
 
-2. **Custom Hooks Migration**
-   - Convert useD3 hook to TypeScript
-   - Convert useFetch hook to TypeScript
-   - Convert useWebSocket hook to TypeScript
-   - Convert useLocalStorage hook to TypeScript
+1. **Core Contexts Migration** (Week 1)
+   - **Day 1-2:** Convert AuthContext to TypeScript
+     - Create interfaces for auth state, context value, and props
+     - Add proper typing for JWT token handling
+     - Update related authentication utilities
+   - **Day 3-4:** Convert WebSocketContext to TypeScript
+     - Define interfaces for WebSocket messages and events
+     - Type notification system and subscription patterns
+     - Create proper typings for WebSocket connection states
+   - **Day 5:** Add comprehensive interface definitions for context values
+     - Ensure consistent type patterns across contexts
+     - Add documentation comments for all interfaces
+     - Create reusable type utilities
 
-3. **Component Migration Strategy**
-   - Focus first on shared components with clear prop interfaces
-   - Convert error handling components (ErrorBoundary, ErrorFallback, LoadingFallback)
-   - Convert reusable UI components next (StatusIndicator, NotificationCenter)
-   - Convert complex components like KnowledgeGraphFilter and PaperDashboard last
+2. **Custom Hooks Migration** (Week 2)
+   - **Day 1-2:** Convert useD3 hook to TypeScript
+     - Define proper typing for D3 selection objects
+     - Create interfaces for configuration options
+     - Add generics for data binding flexibility
+   - **Day 3:** Convert useFetch hook to TypeScript
+     - Add generics for request/response typing
+     - Define error and loading state interfaces
+     - Implement proper typing for retry mechanisms
+   - **Day 4:** Convert useWebSocket hook to TypeScript
+     - Type WebSocket connection options and events
+     - Define message type interfaces
+     - Add proper error typing
+   - **Day 5:** Convert useLocalStorage hook to TypeScript
+     - Implement generic typing for stored values
+     - Add type safety for serialization/deserialization
 
-4. **API Type Definitions**
-   - Create comprehensive interface definitions for all API models
+3. **Future Phases:**
+   - Convert reusable UI components (StatusIndicator, NotificationCenter)
+   - Add API interface definitions for all backend models
    - Implement proper type validation for API responses
-   - Add runtime type checking for API interactions
+   - Convert complex components like KnowledgeGraphFilter gradually
 
 ### 2. Knowledge Graph Visualization Enhancements ✅ (Mostly Completed)
 
@@ -65,25 +81,34 @@ Major improvements have been made to the Knowledge Graph visualization, with man
    - ✅ Centrality metrics and community detection
    - 🔄 Advanced graph algorithms (planned for future update)
 
-#### Next Steps for Knowledge Graph Visualization:
+#### Immediate Implementation Plan for Knowledge Graph Visualization (Next 2 Weeks):
+
 1. **Performance for Large Graphs** (Priority: High)
-   - Optimize D3 force simulation parameters for better performance
-   - Implement level-of-detail rendering based on zoom level
-   - Add node aggregation for dense clusters
-   - Implement WebGL-based rendering for datasets with 1000+ nodes
-   - Create progressive loading for very large knowledge graphs
+   - **Week 1:**
+     - Optimize D3 force simulation parameters (reduce alpha decay, adjust link distances)
+     - Implement node filtering based on importance metrics
+     - Add dynamic node sizing based on graph density
+   - **Week 2:**
+     - Implement level-of-detail rendering with zoom-dependent detail
+     - Add node aggregation for clusters over certain density threshold
+     - Create progressive loading mechanism for incremental graph rendering
 
 2. **Accessibility Improvements** (Priority: High)
-   - Add keyboard navigation for graph interaction
-   - Implement screen reader support for graph elements
-   - Create alternative text-based views of graph data
-   - Add high-contrast mode for better visibility
+   - **Week 1:**
+     - Add keyboard navigation for node selection (Tab/Arrow keys)
+     - Implement focus indicators for keyboard navigation
+     - Add ARIA labels to all interactive graph elements
+   - **Week 2:**
+     - Create text-based alternative view of graph data
+     - Implement screen reader announcements for graph changes
+     - Add high-contrast mode with configurable color schemes
    
 3. **Advanced Export & Sharing** (Priority: Medium)
-   - Complete URL state encoding for sharing visualizations
-   - Add annotation capabilities for shared graphs
-   - Implement presentation mode for research findings
-   - Create API for embedding visualizations in external sites
+   - **Future Sprints:**
+     - Complete URL state encoding for sharing visualizations
+     - Add annotation capabilities for shared graphs
+     - Implement presentation mode for research findings
+     - Create API for embedding visualizations in external sites
 
 ### 3. Performance Optimizations
 
@@ -110,68 +135,83 @@ Performance improvements are critical for handling larger datasets and providing
 
 Improving the research experience with better tools and capabilities, following the successful UX improvements in the Knowledge Graph Explorer.
 
-#### Current Progress:
-1. **Citation Management** (30% Complete)
-   - ✅ Added basic citation tracking for search results
-   - ✅ Implemented preliminary reference display
-   - 🔄 Working on citation export in multiple formats
-   - 🔄 Developing reference management interface
+#### Research Enhancement Implementation Plan (Next 2 Weeks):
 
-2. **Research Export** (40% Complete)
-   - ✅ Added export to JSON and CSV formats
-   - ✅ Implemented basic sharing functionality
-   - ✅ Created clipboard copy for quick sharing
-   - 🔄 Developing export to PDF and Markdown
+1. **Citation Management** (Week 1)
+   - **Day 1-2:** Complete citation export functionality
+     - Implement export in BibTeX format
+     - Add Chicago, APA, and MLA citation styles
+     - Create citation preview functionality
+   - **Day 3-4:** Enhance reference management interface
+     - Build collapsible reference panel
+     - Implement reference filtering and sorting
+     - Add direct editing capabilities for references
+   - **Day 5:** Add citation validation and enrichment
+     - Create validation for required citation fields
+     - Implement DOI lookup for citation enrichment
+     - Add persistent citation storage
 
-#### Next Steps:
-1. **Advanced Research Features** (Priority: High)
-   - Implement research history with local storage
-   - Create favorites and saved queries functionality
-   - Add research collections/folders for organization
+2. **Research Organization Features** (Week 2)
+   - **Day 1-2:** Implement research history with local storage
+     - Create history tracking for all research queries
+     - Build history viewer with filtering capabilities
+     - Add option to re-run historical queries
+   - **Day 3-4:** Develop favorites and saved queries
+     - Implement "favorite" functionality for queries
+     - Create named collections for saved searches
+     - Add tagging system for organization
+   - **Day 5:** Apply Knowledge Graph UX standards
+     - Implement step-by-step guided research flow
+     - Add progressive disclosure for advanced options
+     - Create visual feedback for search relevance
+
+3. **Future Phases:**
+   - Develop PDF and Markdown export functionality
    - Build collaborative research capabilities
-   
-2. **UX Improvements** (Priority: Medium)
-   - Apply same UX standards used in Knowledge Graph Explorer
-   - Create step-by-step guided research process
-   - Implement progressive disclosure for complex query options
-   - Add visual feedback for search relevance and quality
+   - Create advanced query builder with visual interface
+   - Implement integration with bibliography management systems
 
 ### 5. Technical Debt and Developer Experience
 
 Improving the codebase health and developer experience to ensure long-term maintainability.
 
-#### Current Progress:
-1. **Accessibility** (25% Complete)
-   - ✅ Added ARIA labels to interactive elements
-   - ✅ Implemented tooltips for complex interface elements
-   - ✅ Ensured color contrast compliance in the Knowledge Graph Explorer
-   - 🔄 Working on keyboard navigation improvements
-   - 🔄 Developing screen reader compatibility
+#### Technical Debt and Developer Experience Implementation Plan:
 
-#### Next Steps:
-1. **Code Quality Tools** (Priority: Medium)
-   - Add Prettier for consistent formatting
-   - Implement Husky with pre-commit hooks
-   - Add ESLint with TypeScript rules
+1. **Immediate Accessibility Tasks** (Week 1-2 alongside other work)
+   - **Priority Actions:**
+     - Complete keyboard navigation for Knowledge Graph Explorer
+     - Add screen reader support for visualization elements
+     - Implement focus management across all components
+     - Create text alternatives for graphical information
+
+2. **Testing Infrastructure Setup** (Week 3-4)
+   - **Day 1-2:** Set up Jest with React Testing Library
+     - Configure testing environment for components
+     - Create test utilities and helpers
+     - Set up snapshot testing infrastructure
+   - **Day 3-4:** Implement Mock Service Worker
+     - Configure API mocking for tests
+     - Create mock handlers for all endpoints
+     - Set up network request interception
+   - **Day 5-7:** Add visual regression testing
+     - Set up Storybook for component isolation
+     - Integrate visual testing tool (Chromatic/Percy)
+     - Create baseline snapshots for key components
+   - **Day 8-10:** Configure CI/CD pipeline
+     - Set up GitHub Actions workflows
+     - Configure automated testing on PR
+     - Add deployment pipeline for staging environment
+
+3. **Code Quality Improvements** (Ongoing)
+   - Configure Prettier for consistent formatting
+   - Set up Husky with pre-commit hooks
+   - Implement ESLint with TypeScript rules
    - Create standardized component templates
 
-2. **Testing Infrastructure** (Priority: High)
-   - Set up Jest with React Testing Library
-   - Implement Mock Service Worker for API testing
-   - Add visual regression testing for UI components
-   - Add E2E testing with Cypress for critical flows
-   - Set up GitHub Actions for CI/CD pipeline
-
-3. **Documentation** (Priority: Medium)
+4. **Future Phases:**
    - Create comprehensive component documentation
-   - Add API documentation with examples
-   - Implement automatic documentation generation
-   - Create usage examples for complex components
-
-4. **Design System Formalization** (Priority: Medium)
-   - Create a unified design system based on Material UI
-   - Document UX patterns established in Knowledge Graph Explorer
-   - Build a component library with standardized interfaces
+   - Develop unified design system based on Material UI
+   - Build component library with standardized interfaces
    - Create visual style guide for consistent development
 
 ## Docker & Development Environment
