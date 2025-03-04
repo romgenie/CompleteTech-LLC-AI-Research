@@ -1,0 +1,12 @@
+{
+  "section_type": "METHODOLOGY",
+  "document_type": "RESEARCH_PAPER",
+  "template_text": "# Methodology\n\nThis section describes our approach to addressing the challenges outlined in the introduction.\n\n## {methodology_subsection_1}\n\n{methodology_content_1}\n\n## {methodology_subsection_2}\n\n{methodology_content_2}\n\n## Experimental Setup\n\n{experimental_setup}\n\nOur experiments were conducted using {experimental_environment}, with the following parameters:\n\n{experimental_parameters}\n\nWe evaluate our approach using {evaluation_metrics}, which are standard metrics in this domain.",
+  "style": "ACADEMIC",
+  "technical_level": "INTERMEDIATE",
+  "metadata": {
+    "version": "1.0",
+    "description": "Academic methodology template for research papers",
+    "author": "AI Research Integration Project"
+  }
+}
