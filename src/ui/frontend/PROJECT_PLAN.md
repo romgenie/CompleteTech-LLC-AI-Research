@@ -131,14 +131,18 @@ The AI Research Integration frontend provides a user interface for interacting w
   - [ ] Create component generators with Plop
   - [ ] Improve documentation with auto-generated docs
 
-- [🔄] **Accessibility**
+- [🔄] **Accessibility** (Integrated with main work streams)
   - [✅] Ensure color contrast compliance for visualization
   - [✅] Add ARIA labels to interactive elements
   - [✅] Implement tooltip explanations for all controls
-  - [🔄] Add keyboard navigation improvements
-  - [ ] Add comprehensive accessibility testing
-  - [ ] Implement screen reader support
-  - [ ] Create high contrast mode
+  - [🔄] Add keyboard navigation improvements (Week 1-2)
+    - [🔄] Implement for Knowledge Graph Explorer
+    - [🔄] Add to Research interface components
+  - [🔄] Add screen reader support (Week 2)
+    - [🔄] Create announcements for state changes
+    - [🔄] Add descriptions for visual elements
+  - [🔄] Create high contrast mode (Week 2)
+  - [ ] Add comprehensive accessibility testing (Future)
 
 ## Timeline
 - **Phase 1: Optimization & Developer Experience** - Q1 2025 ✅ Completed
