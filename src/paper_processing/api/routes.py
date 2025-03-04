@@ -3,7 +3,20 @@ API routes for the Paper Processing Pipeline.
 
 This module defines the FastAPI routes for the Paper Processing Pipeline,
 providing endpoints for controlling paper processing and retrieving status.
-These routes will be implemented in Phase 3.5 as outlined in CODING_PROMPT.md.
+The foundation routes have been implemented as part of Phase 3.5 as outlined
+in CODING_PROMPT.md, with full functionality coming in the upcoming sprints.
+
+Current Implementation Status:
+- API route structure is defined ✓
+- Endpoint stubs with proper documentation are implemented ✓
+- Status reporting endpoints are functional ✓
+- Processing request endpoints defined ✓
+
+Upcoming Development:
+- Full task execution in process endpoints
+- Real-time WebSocket status updates
+- Batch processing with progress tracking
+- Advanced search and statistics
 """
 
 import logging
