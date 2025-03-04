@@ -42,6 +42,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Import routers
+from src.api.routers import (
+    auth,
+    health,
+    knowledge_graph,
+    research_orchestration,
+    research_implementation,
+)
+
+# Include routers
+app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+app.include_router(health.router, prefix="/health", tags=["Health"])
+app.include_router(knowledge_graph.router, prefix="/knowledge", tags=["Knowledge Graph"])
+app.include_router(research_orchestration.router, prefix="/research", tags=["Research"])
+app.include_router(research_implementation.router, prefix="/implementation", tags=["Implementation"])
+
 # Create a simple test endpoint
 @app.get("/")
 async def root():
