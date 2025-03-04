@@ -255,104 +255,251 @@ We are currently focused on the following priorities for the next 4 weeks:
 
 ### Knowledge Graph Performance Optimization (Week 1) 📈
 
-**Mon-Tue: Force Simulation Parameter Optimization**
+**Comprehensive Force Simulation Optimization**
 ```javascript
-// Optimize D3 force simulation for large graph performance
-const simulation = d3.forceSimulation(graphData.nodes)
-  // Reduce alpha decay for more stable layout with 1000+ nodes
-  .alphaDecay(0.028)  // default is 0.0228
-  .velocityDecay(0.4) // Controls movement friction
+/**
+ * Optimizes D3 force simulation for large graphs (1000+ nodes)
+ * - Adjusts parameters based on graph size automatically
+ * - Scales forces for better stability and performance
+ * - Implements early stabilization for very large graphs
+ */
+function createOptimizedForceSimulation(nodes, links, settings) {
+  // Automatically adjust parameters based on graph size
+  const nodeCount = nodes.length;
+  const isLargeGraph = nodeCount > 500;
+  const isVeryLargeGraph = nodeCount > 1000;
   
-  // Configure link forces with dynamic distance and strength
-  .force("link", d3.forceLink(graphData.links)
-    .id(d => d.id)
-    .distance(d => visualizationSettings.nodeSize * 10)
-    .strength(d => 1 / Math.min(countConnections(d.source), countConnections(d.target))))
+  // Scale parameters progressively with graph size
+  const alphaDecay = isVeryLargeGraph ? 0.035 : (isLargeGraph ? 0.028 : 0.0228);
+  const baseStrength = isVeryLargeGraph ? settings.forceStrength * 1.5 : settings.forceStrength;
   
-  // Scale charge force based on node count for better layouts
-  .force("charge", d3.forceManyBody()
-    .strength(d => -visualizationSettings.forceStrength / Math.sqrt(graphData.nodes.length))
-    .distanceMax(300))  // Limit effect distance for performance
+  // Create optimized simulation
+  const simulation = d3.forceSimulation(nodes)
+    .alphaDecay(alphaDecay)
+    .velocityDecay(0.4)
+    .force("link", d3.forceLink(links)
+      .id(d => d.id)
+      .distance(d => {
+        // Increase distance for large graphs
+        const baseDistance = settings.nodeSize * 10;
+        return isVeryLargeGraph ? baseDistance * 1.5 : baseDistance;
+      })
+      .strength(d => {
+        // Optimize link strength based on connection count
+        const sourceConnections = countConnections(d.source.id, links);
+        const targetConnections = countConnections(d.target.id, links);
+        return 1 / Math.min(Math.sqrt(sourceConnections), Math.sqrt(targetConnections));
+      }))
+    .force("charge", d3.forceManyBody()
+      .strength(d => -baseStrength / Math.sqrt(nodeCount))
+      .distanceMax(isVeryLargeGraph ? 200 : 300)
+      .theta(0.8))
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("collision", d3.forceCollide()
+      .radius(d => settings.nodeSize * (d.isSelected ? 1.75 : 1.5)));
+    
+  // Partial pre-computation for very large graphs
+  if (isVeryLargeGraph) {
+    simulation.stop();
+    for (let i = 0; i < 100; ++i) simulation.tick();
+  }
   
-  // Prevent node overlap in dense graphs
-  .force("collision", d3.forceCollide().radius(d => visualizationSettings.nodeSize * 1.5));
+  return simulation;
+}
 ```
 
-**Wed-Thu: Smart Node Filtering Based on Importance**
+**Smart Node Filtering With Fast Lookups**
 ```javascript
-// Intelligently filter nodes for large graphs
-function getVisibleNodes() {
-  return graphData.nodes.filter(node => {
-    // Always show selected node
-    if (node.id === selectedEntity.id) return true;
+/**
+ * Filters nodes in large graphs with optimized performance
+ * - Uses Set data structures for O(1) lookups
+ * - Implements logarithmic scaling for better visibility
+ * - Prioritizes connected and important nodes
+ */
+function getFilteredNodes(nodes, links, selected, settings) {
+  // Fast path for smaller graphs
+  if (nodes.length < settings.filterThreshold) {
+    return nodes;
+  }
+  
+  // Pre-compute direct connections using Sets for O(1) lookup
+  const selectedId = selected?.id;
+  const directConnectionIds = new Set();
+  const connectionCounts = {};
+  
+  // Build connection index in single pass (more efficient)
+  links.forEach(link => {
+    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
     
-    // Always show direct connections to selected node
-    if (graphData.links.some(link => 
-      (link.source.id === selectedEntity.id && link.target.id === node.id) ||
-      (link.target.id === selectedEntity.id && link.source.id === node.id))) {
-      return true;
-    }
+    // Count connections for each node
+    connectionCounts[sourceId] = (connectionCounts[sourceId] || 0) + 1;
+    connectionCounts[targetId] = (connectionCounts[targetId] || 0) + 1;
     
-    // For other nodes, filter based on connection count
-    const connectionCount = graphData.links.filter(link => 
-      link.source.id === node.id || link.target.id === node.id
-    ).length;
+    // Track direct connections to selected node
+    if (sourceId === selectedId) directConnectionIds.add(targetId);
+    if (targetId === selectedId) directConnectionIds.add(sourceId);
+  });
+  
+  // Compute importance threshold using logarithmic scaling
+  const importanceThreshold = Math.max(2, Math.log(nodes.length) / 2);
+  
+  // Filter nodes with optimized criteria
+  return nodes.filter(node => {
+    // Always include selected node and direct connections
+    if (node.id === selectedId || directConnectionIds.has(node.id)) return true;
     
-    // Show only significant nodes when graph is large
-    return graphData.nodes.length < 100 || 
-           connectionCount > Math.log(graphData.nodes.length);
+    // Include nodes with significant user-defined importance
+    if (node.importance && node.importance > settings.importanceThreshold) return true;
+    
+    // Filter based on connection count (logarithmic scaling)
+    const connectionCount = connectionCounts[node.id] || 0;
+    return connectionCount >= importanceThreshold;
   });
 }
 ```
 
-**Fri: Dynamic Node Sizing Based on Connectivity**
+**Dynamic Node Sizing and Visual Hierarchy**
 ```javascript
-// Scale node sizes based on connectivity and importance
-const nodeSizeScale = d3.scaleLinear()
-  .domain([0, d3.max(graphData.nodes, d => countConnections(d))])
-  .range([visualizationSettings.nodeSize, visualizationSettings.nodeSize * 2.5]);
-
-// Apply dynamic sizing to nodes
-node.attr("r", d => {
-  // Selected node is always prominent
-  if (d.id === selectedEntity.id) {
-    return visualizationSettings.nodeSize * 1.5;
-  }
+/**
+ * Dynamic node sizing with visual hierarchy optimization
+ * - Uses logarithmic scaling for better visual distribution
+ * - Implements distinct visual states for selected and related nodes
+ * - Adjusts sizing based on zoom level for consistent appearance
+ */
+function applyDynamicNodeSizing(nodeSelection, nodes, links, selected, settings, scale = 1) {
+  // Build connection index for O(1) lookup
+  const connectionCounts = {};
+  const connectedToSelected = new Set();
   
-  // Size based on connection count
-  return nodeSizeScale(countConnections(d));
-});
+  links.forEach(link => {
+    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+    
+    // Count connections
+    connectionCounts[sourceId] = (connectionCounts[sourceId] || 0) + 1;
+    connectionCounts[targetId] = (connectionCounts[targetId] || 0) + 1;
+    
+    // Track connections to selected node
+    if (selected?.id) {
+      if (sourceId === selected.id) connectedToSelected.add(targetId);
+      if (targetId === selected.id) connectedToSelected.add(sourceId);
+    }
+  });
+  
+  // Create logarithmic scale for better size distribution with many nodes
+  const maxConnections = Math.max(1, d3.max(Object.values(connectionCounts)));
+  const nodeSizeScale = d3.scaleLog()
+    .domain([1, maxConnections])
+    .range([settings.nodeSize, settings.nodeSize * 2.5])
+    .clamp(true);
+  
+  // Apply optimized sizing to all nodes in a single pass
+  nodeSelection.attr("r", d => {
+    // Calculate base size using logarithmic scale
+    let nodeSize = nodeSizeScale(connectionCounts[d.id] || 1);
+    
+    // Apply different sizing based on selection state
+    if (d.id === selected?.id) {
+      nodeSize = settings.nodeSize * 2;
+    } else if (connectedToSelected.has(d.id)) {
+      nodeSize = settings.nodeSize * 1.5;
+    }
+    
+    // Factor in user-defined importance if available
+    if (d.importance) {
+      nodeSize *= 0.8 + (d.importance * 0.4);
+    }
+    
+    // Adjust for zoom level to maintain consistent visual size
+    return nodeSize / Math.sqrt(scale);
+  });
+  
+  // Update visual styling for selection state
+  nodeSelection
+    .attr("stroke", d => {
+      if (d.id === selected?.id) return "#000";
+      if (connectedToSelected.has(d.id)) return "#555";
+      return "#999";
+    })
+    .attr("stroke-width", d => {
+      if (d.id === selected?.id) return 2.5 / Math.sqrt(scale);
+      if (connectedToSelected.has(d.id)) return 1.5 / Math.sqrt(scale);
+      return 1 / Math.sqrt(scale);
+    });
+}
 ```
 
-### TypeScript Migration (Week 1) 🔐
+### TypeScript Migration Implementation Plan 🔐
 
-**Mon-Tue: Convert AuthContext to TypeScript**
+**Week 1: Core Context Migration**
+
 ```typescript
-// Core authentication types
+/**
+ * TypeScript Migration Strategy
+ * 
+ * Our approach follows these principles:
+ * 1. Incremental conversion starting with core infrastructure
+ * 2. Shared type definitions in central location
+ * 3. Complete context typing before component conversion
+ * 4. Comprehensive interface definitions with documentation
+ */
+
+// Day 1-2: AuthContext with JWT token handling
 interface User {
   id: string;
   username: string;
   roles: string[];
   email?: string;
+  displayName?: string;
+  preferences?: UserPreferences;
 }
 
-interface AuthState {
+interface UserPreferences {
+  theme?: 'light' | 'dark' | 'system';
+  visualizationSettings?: {
+    nodeSize: number;
+    forceStrength: number;
+    showLabels: boolean;
+    [key: string]: any;
+  };
+}
+
+// JWT token handling with type safety
+interface JWTPayload {
+  sub: string;
+  username: string;
+  roles: string[];
+  exp: number;
+  iat: number;
+}
+
+function parseJWT(token: string): JWTPayload | null {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(window.atob(base64));
+    return payload as JWTPayload;
+  } catch (e) {
+    console.error('Error parsing JWT:', e);
+    return null;
+  }
+}
+
+// Complete AuthContext interface
+interface AuthContextType {
   currentUser: User | null;
   token: string | null;
   loading: boolean;
   error: Error | null;
   isAuthenticated: boolean;
-}
-
-interface AuthContextType extends AuthState {
   login: (username: string, password: string) => Promise<User>;
   logout: () => void;
+  refreshToken: () => Promise<boolean>;
+  updateUserPreferences: (preferences: Partial<UserPreferences>) => Promise<void>;
 }
-```
 
-**Wed-Fri: Convert WebSocketContext to TypeScript**
-```typescript
-// WebSocket message types
+// Day 3-4: WebSocketContext with real-time messaging
 interface WebSocketMessage {
   type: string;
   [key: string]: any;
@@ -363,20 +510,161 @@ interface NotificationMessage extends WebSocketMessage {
   id: string;
   title: string;
   message: string;
-  category: 'info' | 'success' | 'warning' | 'error' | 'paper_status';
+  category: 'info' | 'success' | 'warning' | 'error' | 'paper_status' | 'system';
   timestamp: string;
+  entityId?: string;
+  paperId?: string;
+  isRead?: boolean;
 }
 
+interface PaperStatusMessage extends WebSocketMessage {
+  type: 'paper_status';
+  paperId: string;
+  status: PaperStatus;
+  previousStatus?: PaperStatus;
+  timestamp: string;
+  progress?: number;
+  message?: string;
+}
+
+// Comprehensive WebSocket context interface
 interface WebSocketContextType {
   isConnected: boolean;
   connect: () => void;
   disconnect: () => void;
-  sendMessage: (data: WebSocketMessage) => boolean;
+  reconnect: () => void;
+  sendMessage: <T extends WebSocketMessage>(data: T) => boolean;
   lastMessage: WebSocketMessage | null;
   error: Event | null;
   notifications: NotificationMessage[];
   clearNotifications: () => void;
+  removeNotification: (id: string) => void;
+  markNotificationAsRead: (id: string) => void;
   subscribeToPaperUpdates: (paperId: string) => boolean;
+  unsubscribeFromPaperUpdates: (paperId: string) => boolean;
+  paperStatusMap: Record<string, PaperStatus>;
+}
+
+// Day 5: Central type definitions
+// Create shared types in src/types/index.ts
+namespace Types {
+  // Knowledge Graph Types
+  export interface GraphNode {
+    id: string;
+    name: string;
+    type: EntityType;
+    properties?: Record<string, any>;
+    importance?: number;
+    year?: number;
+    color?: string;
+  }
+
+  export interface GraphLink {
+    source: string | GraphNode;
+    target: string | GraphNode;
+    type: RelationshipType;
+    properties?: Record<string, any>;
+    weight?: number;
+    confidence?: number;
+  }
+
+  export interface GraphData {
+    nodes: GraphNode[];
+    links: GraphLink[];
+  }
+
+  // API Response Types
+  export interface ApiResponse<T> {
+    success: boolean;
+    data?: T;
+    error?: string;
+    message?: string;
+  }
+
+  export interface PaginatedResponse<T> {
+    items: T[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  }
+}
+```
+
+**Week 2: Custom Hooks Migration**
+
+```typescript
+// Day 1-2: useD3 Hook with D3.js typing
+import { useRef, useEffect } from 'react';
+import * as d3 from 'd3';
+
+/**
+ * Hook to integrate D3 visualizations with React
+ * - Generic typing for different element types
+ * - Proper cleanup to prevent memory leaks
+ * - Support for dependencies for controlled updates
+ */
+function useD3<GElement extends d3.BaseType>(
+  renderFn: (selection: d3.Selection<GElement, unknown, null, undefined>) => void,
+  dependencies: React.DependencyList = []
+): React.RefObject<GElement> {
+  const ref = useRef<GElement>(null);
+  
+  useEffect(() => {
+    if (ref.current) {
+      // Create D3 selection and call the render function
+      const selection = d3.select(ref.current) as d3.Selection<GElement, unknown, null, undefined>;
+      renderFn(selection);
+    }
+    
+    // Cleanup function to prevent memory leaks
+    return () => {
+      if (ref.current) {
+        // Stop any running transitions or timers
+        const selection = d3.select(ref.current);
+        selection.selectAll('*').interrupt();
+      }
+    };
+  }, dependencies);
+  
+  return ref;
+}
+
+// Day 3-5: useFetch Hook with advanced features
+interface UseFetchOptions<TRequestData = any> {
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  headers?: Record<string, string>;
+  data?: TRequestData;
+  timeout?: number;
+  retries?: number;
+  retryDelay?: number;
+  useCache?: boolean;
+  cacheTime?: number;
+}
+
+/**
+ * Enhanced data fetching hook with comprehensive features:
+ * - Type-safe request and response handling
+ * - Automatic retries with exponential backoff
+ * - Request cancellation support
+ * - Caching with configurable TTL
+ * - Mock data fallback for development
+ */
+function useFetch<TData = any, TError = ApiError, TRequestData = any>(
+  url: string,
+  options?: UseFetchOptions<TRequestData>,
+  immediate: boolean = true,
+  mockDataFn?: () => TData
+): {
+  data: TData | null;
+  loading: boolean;
+  error: TError | null;
+  timestamp: number | null;
+  refetch: (customOptions?: Partial<UseFetchOptions>) => Promise<TData>;
+  cancel: () => void;
+} {
+  // Implementation with comprehensive error handling,
+  // caching, and retry logic...
 }
 ```
 
