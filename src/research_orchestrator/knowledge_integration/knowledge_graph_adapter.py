@@ -18,6 +18,8 @@ from research_orchestrator.knowledge_integration.entity_converter import EntityC
 from research_orchestrator.knowledge_integration.relationship_converter import RelationshipConverter
 from research_orchestrator.knowledge_integration.conflict_resolver import ConflictResolver
 from research_orchestrator.knowledge_integration.connection_discovery import ConnectionDiscoveryEngine
+from research_orchestrator.knowledge_integration.temporal_evolution_tracker import TemporalEvolutionTracker
+from research_orchestrator.knowledge_integration.knowledge_gap_identifier import KnowledgeGapIdentifier
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -59,7 +61,8 @@ class KnowledgeGraphAdapter:
     def __init__(self, 
                  config_path: Optional[str] = None,
                  db_connection_params: Optional[Dict[str, Any]] = None,
-                 local_storage_path: Optional[str] = None):
+                 local_storage_path: Optional[str] = None,
+                 config: Optional[Dict[str, Any]] = None):
         """
         Initialize the Knowledge Graph Adapter.
         
@@ -67,11 +70,29 @@ class KnowledgeGraphAdapter:
             config_path: Path to configuration file for the Knowledge Graph System
             db_connection_params: Connection parameters for the graph database
             local_storage_path: Path for local storage fallback if Knowledge Graph System is unavailable
+            config: Additional configuration parameters for components
         """
-        self.entity_converter = EntityConverter()
-        self.relationship_converter = RelationshipConverter()
-        self.conflict_resolver = ConflictResolver()
-        self.connection_discovery = ConnectionDiscoveryEngine()
+        # Store configuration
+        self.config = config or {}
+        
+        # Initialize entity and relationship converters
+        self.entity_converter = EntityConverter(config=self.config.get("entity_converter"))
+        self.relationship_converter = RelationshipConverter(config=self.config.get("relationship_converter"))
+        
+        # Initialize conflict resolution and connection discovery
+        self.conflict_resolver = ConflictResolver(config=self.config.get("conflict_resolver"))
+        self.connection_discovery = ConnectionDiscoveryEngine(config=self.config.get("connection_discovery"))
+        
+        # Initialize temporal evolution tracker
+        temporal_config = self.config.get("temporal_evolution_tracker", {})
+        if not local_storage_path and "local_storage_path" not in temporal_config:
+            temporal_config["local_storage_path"] = os.path.join(
+                os.getcwd(), "knowledge_store", "temporal_evolution"
+            )
+        self.temporal_evolution = TemporalEvolutionTracker(config=temporal_config)
+        
+        # Initialize knowledge gap identifier
+        self.gap_identifier = KnowledgeGapIdentifier(config=self.config.get("knowledge_gap_identifier"))
         
         # Initialize storage backend
         self.kg_manager = None
@@ -102,6 +123,7 @@ class KnowledgeGraphAdapter:
             os.makedirs(os.path.join(self.local_storage_path, "entities"), exist_ok=True)
             os.makedirs(os.path.join(self.local_storage_path, "relationships"), exist_ok=True)
             os.makedirs(os.path.join(self.local_storage_path, "connections"), exist_ok=True)
+            os.makedirs(os.path.join(self.local_storage_path, "gaps"), exist_ok=True)
     
     def integrate_extracted_knowledge(self, 
                                       entities: List[Entity], 
@@ -191,7 +213,7 @@ class KnowledgeGraphAdapter:
         Returns:
             Dictionary containing successful and failed entities
         """
-        results = {"success": [], "failed": []}
+        results = {"success": [], "failed": [], "updated": []}
         
         if self.using_local_storage:
             # Store in local storage
@@ -201,12 +223,37 @@ class KnowledgeGraphAdapter:
                     entity_id = getattr(entity, "id", str(uuid.uuid4()))
                     entity_file = os.path.join(entities_dir, f"{entity_id}.json")
                     
+                    # Check if entity already exists for tracking evolution
+                    existing_entity = None
+                    if os.path.exists(entity_file):
+                        try:
+                            with open(entity_file, 'r') as f:
+                                existing_entity = json.load(f)
+                        except Exception as e:
+                            logger.warning(f"Failed to load existing entity for evolution tracking: {e}")
+                    
                     # Convert entity to serializable format
                     entity_data = self._serialize_entity(entity)
                     
+                    # Track entity evolution if we have an existing version
+                    if existing_entity:
+                        self.temporal_evolution.track_entity_change(
+                            entity=entity_data,
+                            previous_version=existing_entity,
+                            change_source="knowledge_extraction"
+                        )
+                        results["updated"].append(entity)
+                    else:
+                        # For new entities, track as creation
+                        self.temporal_evolution.track_entity_change(
+                            entity=entity_data,
+                            previous_version=None,
+                            change_source="knowledge_extraction",
+                            change_type="create"
+                        )
+                    
                     # Write to file
                     with open(entity_file, 'w') as f:
-                        import json
                         json.dump(entity_data, f, indent=2)
                     
                     results["success"].append(entity)
@@ -218,9 +265,30 @@ class KnowledgeGraphAdapter:
             try:
                 for entity in entities:
                     try:
+                        # First check if entity exists to track evolution
+                        query_result = self.kg_manager.get_entity(entity.get("id"))
+                        existing_entity = query_result.get("entity")
+                        
+                        # Add or update entity
                         result = self.kg_manager.add_entity(entity)
+                        
                         if result.get("success", False):
-                            results["success"].append(entity)
+                            # Track entity evolution
+                            if existing_entity:
+                                self.temporal_evolution.track_entity_change(
+                                    entity=entity,
+                                    previous_version=existing_entity,
+                                    change_source="knowledge_extraction"
+                                )
+                                results["updated"].append(entity)
+                            else:
+                                self.temporal_evolution.track_entity_change(
+                                    entity=entity,
+                                    previous_version=None,
+                                    change_source="knowledge_extraction",
+                                    change_type="create"
+                                )
+                                results["success"].append(entity)
                         else:
                             results["failed"].append((entity, result.get("error", "Unknown error")))
                     except Exception as e:
@@ -242,7 +310,7 @@ class KnowledgeGraphAdapter:
         Returns:
             Dictionary containing successful and failed relationships
         """
-        results = {"success": [], "failed": []}
+        results = {"success": [], "failed": [], "updated": []}
         
         if self.using_local_storage:
             # Store in local storage
@@ -252,12 +320,37 @@ class KnowledgeGraphAdapter:
                     relationship_id = getattr(relationship, "id", str(uuid.uuid4()))
                     relationship_file = os.path.join(relationships_dir, f"{relationship_id}.json")
                     
+                    # Check if relationship already exists for tracking evolution
+                    existing_relationship = None
+                    if os.path.exists(relationship_file):
+                        try:
+                            with open(relationship_file, 'r') as f:
+                                existing_relationship = json.load(f)
+                        except Exception as e:
+                            logger.warning(f"Failed to load existing relationship for evolution tracking: {e}")
+                    
                     # Convert relationship to serializable format
                     relationship_data = self._serialize_relationship(relationship)
                     
+                    # Track relationship evolution if we have an existing version
+                    if existing_relationship:
+                        self.temporal_evolution.track_relationship_change(
+                            relationship=relationship_data,
+                            previous_version=existing_relationship,
+                            change_source="knowledge_extraction"
+                        )
+                        results["updated"].append(relationship)
+                    else:
+                        # For new relationships, track as creation
+                        self.temporal_evolution.track_relationship_change(
+                            relationship=relationship_data,
+                            previous_version=None,
+                            change_source="knowledge_extraction",
+                            change_type="create"
+                        )
+                    
                     # Write to file
                     with open(relationship_file, 'w') as f:
-                        import json
                         json.dump(relationship_data, f, indent=2)
                     
                     results["success"].append(relationship)
@@ -269,9 +362,30 @@ class KnowledgeGraphAdapter:
             try:
                 for relationship in relationships:
                     try:
+                        # First check if relationship exists to track evolution
+                        query_result = self.kg_manager.get_relationship(relationship.get("id"))
+                        existing_relationship = query_result.get("relationship")
+                        
+                        # Add or update relationship
                         result = self.kg_manager.add_relationship(relationship)
+                        
                         if result.get("success", False):
-                            results["success"].append(relationship)
+                            # Track relationship evolution
+                            if existing_relationship:
+                                self.temporal_evolution.track_relationship_change(
+                                    relationship=relationship,
+                                    previous_version=existing_relationship,
+                                    change_source="knowledge_extraction"
+                                )
+                                results["updated"].append(relationship)
+                            else:
+                                self.temporal_evolution.track_relationship_change(
+                                    relationship=relationship,
+                                    previous_version=None,
+                                    change_source="knowledge_extraction",
+                                    change_type="create"
+                                )
+                                results["success"].append(relationship)
                         else:
                             results["failed"].append((relationship, result.get("error", "Unknown error")))
                     except Exception as e:
@@ -563,6 +677,182 @@ class KnowledgeGraphAdapter:
         
         return relationship_data
     
+    def identify_knowledge_gaps(self) -> Dict[str, Any]:
+        """
+        Identify gaps and opportunities in the knowledge graph.
+        
+        Returns:
+            Dictionary containing identified knowledge gaps and research opportunities
+        """
+        # First, retrieve all entities and relationships
+        if self.using_local_storage:
+            # Get from local storage
+            try:
+                entities_dir = os.path.join(self.local_storage_path, "entities")
+                relationships_dir = os.path.join(self.local_storage_path, "relationships")
+                
+                entities = []
+                relationships = []
+                
+                # Load all entities
+                for file_name in os.listdir(entities_dir):
+                    if file_name.endswith(".json"):
+                        file_path = os.path.join(entities_dir, file_name)
+                        try:
+                            with open(file_path, 'r') as f:
+                                entity = json.load(f)
+                                entities.append(entity)
+                        except Exception as e:
+                            logger.error(f"Error loading entity from {file_path}: {e}")
+                
+                # Load all relationships
+                for file_name in os.listdir(relationships_dir):
+                    if file_name.endswith(".json"):
+                        file_path = os.path.join(relationships_dir, file_name)
+                        try:
+                            with open(file_path, 'r') as f:
+                                relationship = json.load(f)
+                                relationships.append(relationship)
+                        except Exception as e:
+                            logger.error(f"Error loading relationship from {file_path}: {e}")
+                
+                # Identify knowledge gaps
+                gaps = self.gap_identifier.identify_gaps(entities, relationships)
+                
+                # Store identified gaps for later retrieval
+                gaps_file = os.path.join(self.local_storage_path, "gaps", "identified_gaps.json")
+                with open(gaps_file, 'w') as f:
+                    json.dump(gaps, f, indent=2)
+                
+                # Generate research opportunities
+                opportunities = self.gap_identifier.generate_research_opportunities(top_n=10)
+                
+                # Add opportunities to the results
+                gaps["research_opportunities"] = opportunities
+                
+                return gaps
+                
+            except Exception as e:
+                logger.error(f"Error identifying knowledge gaps from local storage: {e}")
+                return {"error": str(e)}
+        else:
+            # Get from Knowledge Graph System
+            try:
+                # Query entities and relationships from the knowledge graph
+                entities_result = self.kg_manager.get_all_entities()
+                relationships_result = self.kg_manager.get_all_relationships()
+                
+                entities = entities_result.get("entities", [])
+                relationships = relationships_result.get("relationships", [])
+                
+                # Identify knowledge gaps
+                gaps = self.gap_identifier.identify_gaps(entities, relationships)
+                
+                # Generate research opportunities
+                opportunities = self.gap_identifier.generate_research_opportunities(top_n=10)
+                
+                # Add opportunities to the results
+                gaps["research_opportunities"] = opportunities
+                
+                return gaps
+                
+            except Exception as e:
+                logger.error(f"Error identifying knowledge gaps from Knowledge Graph System: {e}")
+                return {"error": str(e)}
+    
+    def get_entity_history(self, entity_id: str) -> Dict[str, Any]:
+        """
+        Get the version history for a specific entity.
+        
+        Args:
+            entity_id: ID of the entity
+            
+        Returns:
+            Dictionary containing the entity's version history and evolution analysis
+        """
+        try:
+            # Get entity history from temporal evolution tracker
+            versions = self.temporal_evolution.get_entity_history(entity_id)
+            
+            if not versions:
+                return {
+                    "entity_id": entity_id,
+                    "error": "No history found for this entity",
+                    "versions": []
+                }
+            
+            # Get evolution analysis
+            analysis = self.temporal_evolution.analyze_entity_evolution(entity_id)
+            
+            # Return combined results
+            return {
+                "entity_id": entity_id,
+                "versions": versions,
+                "version_count": len(versions),
+                "first_seen": analysis.get("first_seen"),
+                "last_updated": analysis.get("last_updated"),
+                "analysis": analysis
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting entity history: {e}")
+            return {"entity_id": entity_id, "error": str(e)}
+    
+    def get_relationship_history(self, relationship_id: str) -> Dict[str, Any]:
+        """
+        Get the version history for a specific relationship.
+        
+        Args:
+            relationship_id: ID of the relationship
+            
+        Returns:
+            Dictionary containing the relationship's version history and evolution analysis
+        """
+        try:
+            # Get relationship history from temporal evolution tracker
+            versions = self.temporal_evolution.get_relationship_history(relationship_id)
+            
+            if not versions:
+                return {
+                    "relationship_id": relationship_id,
+                    "error": "No history found for this relationship",
+                    "versions": []
+                }
+            
+            # Get evolution analysis
+            analysis = self.temporal_evolution.analyze_relationship_evolution(relationship_id)
+            
+            # Return combined results
+            return {
+                "relationship_id": relationship_id,
+                "versions": versions,
+                "version_count": len(versions),
+                "first_seen": analysis.get("first_seen"),
+                "last_updated": analysis.get("last_updated"),
+                "analysis": analysis
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting relationship history: {e}")
+            return {"relationship_id": relationship_id, "error": str(e)}
+    
+    def get_knowledge_graph_state_at_time(self, timestamp: str) -> Dict[str, Any]:
+        """
+        Get the state of the knowledge graph at a specific point in time.
+        
+        Args:
+            timestamp: ISO format timestamp (e.g., "2023-01-01T12:00:00")
+            
+        Returns:
+            Dictionary containing entities and relationships at the specified time
+        """
+        try:
+            # Get knowledge graph state from temporal evolution tracker
+            return self.temporal_evolution.get_knowledge_graph_state_at_time(timestamp)
+        except Exception as e:
+            logger.error(f"Error getting knowledge graph state at time {timestamp}: {e}")
+            return {"error": str(e), "timestamp": timestamp}
+    
     def get_statistics(self) -> Dict[str, Any]:
         """
         Get statistics about the knowledge graph.
@@ -581,10 +871,30 @@ class KnowledgeGraphAdapter:
                 relationship_count = len(os.listdir(relationships_dir))
                 connection_count = len(os.listdir(connections_dir))
                 
+                # Get temporal statistics
+                entity_versions = sum(len(self.temporal_evolution.get_entity_history(entity_id)) 
+                                    for entity_id in [f.split('.')[0] for f in os.listdir(entities_dir)])
+                relationship_versions = sum(len(self.temporal_evolution.get_relationship_history(rel_id)) 
+                                          for rel_id in [f.split('.')[0] for f in os.listdir(relationships_dir)])
+                
+                # Try to get knowledge gaps
+                gaps_file = os.path.join(self.local_storage_path, "gaps", "identified_gaps.json")
+                gap_stats = {}
+                if os.path.exists(gaps_file):
+                    try:
+                        with open(gaps_file, 'r') as f:
+                            gaps = json.load(f)
+                            gap_stats = gaps.get("summary", {})
+                    except Exception as e:
+                        logger.error(f"Error loading gap statistics: {e}")
+                
                 return {
                     "entity_count": entity_count,
                     "relationship_count": relationship_count,
                     "connection_count": connection_count,
+                    "entity_versions": entity_versions,
+                    "relationship_versions": relationship_versions,
+                    "knowledge_gaps": gap_stats,
                     "storage_type": "local"
                 }
             except Exception as e:
@@ -594,6 +904,19 @@ class KnowledgeGraphAdapter:
             # Get statistics from Knowledge Graph System
             try:
                 stats = self.kg_manager.get_statistics()
+                
+                # Add temporal statistics
+                entity_ids = [entity.get("id") for entity in self.kg_manager.get_all_entities().get("entities", [])]
+                relationship_ids = [rel.get("id") for rel in self.kg_manager.get_all_relationships().get("relationships", [])]
+                
+                entity_versions = sum(len(self.temporal_evolution.get_entity_history(entity_id)) 
+                                    for entity_id in entity_ids)
+                relationship_versions = sum(len(self.temporal_evolution.get_relationship_history(rel_id)) 
+                                          for rel_id in relationship_ids)
+                
+                stats["entity_versions"] = entity_versions
+                stats["relationship_versions"] = relationship_versions
+                
                 return stats
             except Exception as e:
                 logger.error(f"Error getting statistics from Knowledge Graph System: {e}")
