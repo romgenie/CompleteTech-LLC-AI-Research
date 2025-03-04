@@ -173,9 +173,9 @@ See [PROJECT_PLAN.md](./PROJECT_PLAN.md) for the detailed project roadmap, which
 
 We are focusing on the following priorities:
 
-1. **TypeScript Migration**: Adding TypeScript support for better type safety and developer experience
-2. **Paper Management Dashboard**: Creating a comprehensive dashboard for paper management
-3. **Knowledge Graph Visualization Enhancements**: Optimizing visualization for large graphs
+1. **TypeScript Implementation**: Continuing the TypeScript migration with full interfaces and type safety
+2. **Knowledge Graph Visualization Enhancements**: Optimizing visualization for large graphs
+3. **Performance Optimization**: Implementing React Query and virtualization for better performance
 
 See [CODING_PROMPT.md](./CODING_PROMPT.md) for detailed development guidelines and next steps.
 
