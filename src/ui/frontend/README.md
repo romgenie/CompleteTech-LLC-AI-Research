@@ -5,7 +5,7 @@ This project is the frontend interface for the AI Research Integration system, p
 ## Features
 
 - **Research Interface**: Conduct research queries and generate comprehensive reports
-- **Knowledge Graph Visualization**: Explore and visualize knowledge graphs of research entities and relationships
+- **Knowledge Graph Visualization**: Explore and visualize knowledge graphs of research entities and relationships with advanced filtering, analysis tools, and multiple export formats
 - **Paper Implementation**: Generate code implementations from research papers
 - **Authentication**: Secure login with JWT authentication
 - **Responsive Design**: Works on devices of all sizes
@@ -191,7 +191,7 @@ See [PROJECT_PLAN.md](./PROJECT_PLAN.md) for the detailed project roadmap, which
 - Current implementation status
 - Phase 1: Optimization & Developer Experience ✅ (Completed)
 - Phase 2: Real-time Features & Paper Processing ✅ (Completed)
-- Phase 3: Advanced Features 🔄 (In Progress, TypeScript migration started)
+- Phase 3: Advanced Features 🔄 (In Progress)
 - Technical debt management (Ongoing)
 - Timeline and success metrics
 
@@ -200,8 +200,12 @@ See [PROJECT_PLAN.md](./PROJECT_PLAN.md) for the detailed project roadmap, which
 We are focusing on the following priorities:
 
 1. **TypeScript Implementation**: Continuing the TypeScript migration with full interfaces and type safety
-2. **Knowledge Graph Visualization Enhancements**: Optimizing visualization for large graphs
+2. **Knowledge Graph Visualization Further Enhancements**: 
+   - ✅ Added advanced filtering, visualization settings, and export capabilities
+   - ✅ Implemented research-focused analysis tools (metrics, frontiers)
+   - 🔄 Optimizing performance for graphs with 1000+ nodes (In progress)
 3. **Performance Optimization**: Implementing React Query and virtualization for better performance
+4. **Research Enhancement**: Adding source citation, reference tracking, and export capabilities
 
 See the following documents for more details:
 - [CODING_PROMPT.md](./CODING_PROMPT.md): Development guidelines and standards
