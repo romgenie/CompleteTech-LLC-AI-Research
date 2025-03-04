@@ -272,7 +272,15 @@ For detailed information about the project architecture, integrated repositories
 
 ## Future Work
 
-While all planned features have been implemented, there are several potential enhancements for future iterations:
+All core planned features have been implemented, with one notable exception: paper processing functionality. There are also several other potential enhancements for future iterations:
+
+1. **Paper Processing Pipeline** (In Planning):
+   - Background task processing system using Celery and Redis
+   - Automated document analysis and metadata extraction
+   - Paper state management (uploaded → processing → analyzed)
+   - Integration with existing document processing components
+   - Manual processing endpoints and batch processing capability
+   - Connect paper analysis to implementation generation
 
 1. **Enhanced Knowledge Graph Visualization**:
    - Support for more sophisticated network visualization techniques
