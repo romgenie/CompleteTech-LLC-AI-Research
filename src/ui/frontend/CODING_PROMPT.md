@@ -162,20 +162,39 @@ The AI Research Integration frontend provides a UI for interacting with our know
   - Server errors: Display appropriate UI message
   - Default to mock data when backend unavailable
 
-## Knowledge Graph Visualization
+## Knowledge Graph Visualization 
+### Core Principles
 - Use the useD3 hook for all D3 integrations
-- Implement node and edge filtering
-- Add zooming and panning controls
+- Follow established UX patterns from the existing implementation
+- Implement progressive disclosure for advanced features
+- Always provide meaningful empty states with clear user guidance
+
+### Performance Optimization (Priority)
+- Optimize rendering for graphs with 1000+ nodes
+- Implement level-of-detail rendering based on zoom level
+- Add node aggregation for dense clusters
+- Use edge bundling for complex relationship networks
+- Implement node filtering based on importance metrics
+- Add client-side caching for graph data
+- Optimize D3 force simulation parameters
+
+### Accessibility Requirements (Priority)
+- Add keyboard navigation for all graph interactions
+- Implement focus indicators for selected nodes/edges
+- Provide screen reader announcements for graph changes
+- Create text-based alternatives for visualization data
+- Support high-contrast mode for better visibility
+- Add ARIA labels to all interactive elements
+- Ensure all interactions are possible without a mouse
+
+### UI/UX Standards
 - Use color coding for entity and relationship types
-- Optimize rendering for graphs with 100+ nodes
+- Add zooming and panning controls with clear affordances
 - Implement selection and focus mechanisms
-- Use tooltips to explain visualization features
-- Provide progressive disclosure of advanced features
+- Use tooltips to explain visualization features 
 - Ensure visualization controls have clear visual feedback
-- Implement keyboard navigation for accessibility
-- Follow consistent visual hierarchy for visualization options
+- Follow consistent visual hierarchy
 - Include contextual help for complex features
-- Always provide empty states with clear user guidance
 - Consider visual information density for different screen sizes
 
 ## Research Query Interface
