@@ -100,7 +100,7 @@ We have implemented the following components for the AI Research Integration Pro
 
 4. **External Repository Adapters**
    - ✅ GDesigner adapter for graph-based agent communication
-   - open_deep_research adapter for information gathering and research
+   - ✅ open_deep_research adapter for information gathering and research
    - AutoCodeAgent2.0 adapter for code generation and implementation
 
 5. **Research Generation System**
