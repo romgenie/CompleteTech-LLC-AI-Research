@@ -29,6 +29,10 @@ class DocumentType(Enum):
     SHORT_PAPER = auto()            # Brief research communications
     DEMO_PAPER = auto()             # Papers demonstrating a system or tool
     POSTER = auto()                 # Poster presentation format
+    EXTENDED_ABSTRACT = auto()      # Condensed versions submitted for conferences or symposia
+    EDITORIAL = auto()              # Opinion or commentary articles by journal editors or experts
+    WHITE_PAPER = auto()            # Detailed, authoritative reports often with industry focus
+    BOOK_CHAPTER = auto()           # Scholarly chapters within edited volumes
     
     @classmethod
     def from_string(cls, value: str) -> 'DocumentType':
@@ -49,6 +53,7 @@ class DocumentType(Enum):
 
 class SectionType(Enum):
     """Types of sections that can be included in a research document."""
+    # Core section types
     TITLE = auto()                  # Document title
     ABSTRACT = auto()               # Brief summary of the document
     INTRODUCTION = auto()           # Introduction to the topic
@@ -65,19 +70,60 @@ class SectionType(Enum):
     ACKNOWLEDGMENTS = auto()        # Acknowledgment of contributors
     REFERENCES = auto()             # Reference list
     APPENDIX = auto()               # Supplementary material
+    FUNDING_INFORMATION = auto()    # Funding sources and grant acknowledgements
+    ETHICS_STATEMENT = auto()       # Ethical considerations and approvals
+    CONFLICT_OF_INTEREST = auto()   # Disclosures of conflict of interest
     
-    # Additional section types for specific document types
+    # Literature review section types
     LITERATURE_SEARCH_STRATEGY = auto()  # Literature review search methodology
     THEORETICAL_FRAMEWORK = auto()       # Theoretical underpinnings
+    STUDY_SELECTION_CRITERIA = auto()    # Criteria for inclusion and exclusion of studies
+    
+    # Technical document section types
     SYSTEM_ARCHITECTURE = auto()         # System design details
     ALGORITHM_DESCRIPTION = auto()       # Detailed algorithm descriptions
     USE_CASE = auto()                    # Specific use cases
+    PROBLEM = auto()                     # Problem statement or challenge
+    PERFORMANCE_EVALUATION = auto()      # Analysis of performance metrics and benchmarks
+    SECURITY_CONSIDERATIONS = auto()     # Security aspects and risk assessment
+    
+    # Tutorial section types
     TUTORIAL_STEPS = auto()              # Step-by-step tutorial instructions
     CODE_EXAMPLES = auto()               # Example code snippets
+    PREREQUISITES = auto()               # Required knowledge and setup
+    TROUBLESHOOTING = auto()             # Common issues and solutions
+    LEARNING_OBJECTIVES = auto()         # Goals and objectives for the tutorial
+    
+    # Research-specific section types
     EXPERIMENTAL_SETUP = auto()          # Details of experimental configuration
     DATASETS = auto()                    # Description of datasets used
     RESEARCH_QUESTIONS = auto()          # Specific research questions addressed
+    STATISTICAL_ANALYSIS = auto()        # Details of statistical tests and analyses performed
+    
+    # Opinion and editorial section types
     POSITION_STATEMENT = auto()          # Statement of position or argument
+    CALL_TO_ACTION = auto()              # Explicit call for action or change
+    EDITORIAL_COMMENTARY = auto()        # Commentary or perspective on current trends
+    
+    # White paper section types
+    EXECUTIVE_SUMMARY = auto()           # Brief summary for executives
+    MARKET_ANALYSIS = auto()             # Analysis of market conditions
+    SOLUTION_DESCRIPTION = auto()        # Description of proposed solution
+    BENEFITS_AND_ROI = auto()            # Benefits and return on investment
+    IMPLEMENTATION_PLAN = auto()         # Plan for implementation
+    CASE_FOR_CHANGE = auto()             # Rationale for change and recommended actions
+    
+    # Book chapter section types
+    CHAPTER_SUMMARY = auto()             # Summary of the chapter
+    KEY_CONCEPTS = auto()                # Key concepts introduced in the chapter
+    SUGGESTED_READINGS = auto()          # Suggested additional readings
+    EXERCISES = auto()                   # Exercises or problems for readers
+    DISCUSSION_SECTION = auto()          # In-depth discussion and critical analysis
+    
+    # Extended abstract section types
+    KEY_FINDINGS = auto()                # Key findings or contributions
+    IMPACT_STATEMENT = auto()            # Statement of research impact
+    SIGNIFICANCE_STATEMENT = auto()      # Statement emphasizing the significance of the work
     
     @classmethod
     def from_string(cls, value: str) -> 'SectionType':
@@ -379,6 +425,22 @@ class ReportStructurePlanner:
         survey = self._create_survey_template()
         survey.save_to_file(os.path.join(self.template_dir, "survey.json"))
         
+        # Create extended abstract template
+        extended_abstract = self._create_extended_abstract_template()
+        extended_abstract.save_to_file(os.path.join(self.template_dir, "extended_abstract.json"))
+        
+        # Create editorial template
+        editorial = self._create_editorial_template()
+        editorial.save_to_file(os.path.join(self.template_dir, "editorial.json"))
+        
+        # Create white paper template
+        white_paper = self._create_white_paper_template()
+        white_paper.save_to_file(os.path.join(self.template_dir, "white_paper.json"))
+        
+        # Create book chapter template
+        book_chapter = self._create_book_chapter_template()
+        book_chapter.save_to_file(os.path.join(self.template_dir, "book_chapter.json"))
+        
         self.logger.info(f"Created default templates in {self.template_dir}")
     
     def _create_research_paper_template(self) -> DocumentStructure:
@@ -483,13 +545,40 @@ class ReportStructurePlanner:
                 order=7
             ),
             Section(
-                section_type=SectionType.ACKNOWLEDGMENTS,
-                title="Acknowledgments",
-                description="Acknowledgment of contributors",
-                content_guidance="Should acknowledge funding sources, contributors, and other support",
+                section_type=SectionType.FUNDING_INFORMATION,
+                title="Funding Information",
+                description="Sources of funding",
+                content_guidance="Should acknowledge funding sources, grant numbers, and financial support",
                 estimated_length="0.25 page",
                 required=False,
                 order=8
+            ),
+            Section(
+                section_type=SectionType.ACKNOWLEDGMENTS,
+                title="Acknowledgments",
+                description="Acknowledgment of contributors",
+                content_guidance="Should acknowledge contributors, technical support, and other assistance",
+                estimated_length="0.25 page",
+                required=False,
+                order=9
+            ),
+            Section(
+                section_type=SectionType.ETHICS_STATEMENT,
+                title="Ethics Statement",
+                description="Ethical considerations",
+                content_guidance="Should state ethical approvals, consent procedures, and ethical considerations",
+                estimated_length="0.25 page",
+                required=False,
+                order=10
+            ),
+            Section(
+                section_type=SectionType.CONFLICT_OF_INTEREST,
+                title="Conflict of Interest",
+                description="Disclosures of conflicts",
+                content_guidance="Should disclose any conflicts of interest or state that none exist",
+                estimated_length="0.25 page",
+                required=False,
+                order=11
             ),
             Section(
                 section_type=SectionType.REFERENCES,
@@ -498,7 +587,7 @@ class ReportStructurePlanner:
                 content_guidance="Should list all cited works in the appropriate format",
                 estimated_length="As needed",
                 required=True,
-                order=9
+                order=12
             )
         ]
         
@@ -710,6 +799,24 @@ class ReportStructurePlanner:
                 order=7
             ),
             Section(
+                section_type=SectionType.PERFORMANCE_EVALUATION,
+                title="Performance Evaluation",
+                description="Detailed performance analysis",
+                content_guidance="Should provide comprehensive performance metrics, benchmarks, and comparative analysis",
+                estimated_length="2-4 pages",
+                required=True,
+                order=8
+            ),
+            Section(
+                section_type=SectionType.SECURITY_CONSIDERATIONS,
+                title="Security Considerations",
+                description="Security analysis and considerations",
+                content_guidance="Should outline security features, potential vulnerabilities, and mitigation strategies",
+                estimated_length="1-2 pages",
+                required=False,
+                order=9
+            ),
+            Section(
                 section_type=SectionType.CONCLUSION,
                 title="Conclusion",
                 description="Concluding remarks",
@@ -767,10 +874,19 @@ class ReportStructurePlanner:
                 section_type=SectionType.INTRODUCTION,
                 title="Introduction",
                 description="Introduction to the tutorial",
-                content_guidance="Should introduce the topic, explain its relevance, and set learning objectives",
+                content_guidance="Should introduce the topic and explain its relevance",
                 estimated_length="0.5-1 page",
                 required=True,
                 order=1
+            ),
+            Section(
+                section_type=SectionType.LEARNING_OBJECTIVES,
+                title="Learning Objectives",
+                description="What you will learn",
+                content_guidance="Should clearly state the knowledge and skills learners will gain from this tutorial",
+                estimated_length="0.25-0.5 page",
+                required=True,
+                order=2
             ),
             Section(
                 section_type=SectionType.BACKGROUND,
@@ -974,6 +1090,439 @@ class ReportStructurePlanner:
         template_path = os.path.join(self.template_dir, f"{template_name}.json")
         template.save_to_file(template_path)
     
+    def _create_extended_abstract_template(self) -> DocumentStructure:
+        """Create a template for an extended abstract."""
+        sections = [
+            Section(
+                section_type=SectionType.TITLE,
+                title="Title",
+                description="Title of the extended abstract",
+                content_guidance="Should be concise, specific, and reflective of the research",
+                estimated_length="1-2 lines",
+                required=True,
+                order=0
+            ),
+            Section(
+                section_type=SectionType.ABSTRACT,
+                title="Abstract",
+                description="Very brief summary of the research",
+                content_guidance="Should provide a concise overview of the entire work in 100-150 words",
+                estimated_length="100-150 words",
+                required=True,
+                order=1
+            ),
+            Section(
+                section_type=SectionType.INTRODUCTION,
+                title="Introduction",
+                description="Introduction to the research",
+                content_guidance="Should briefly introduce the problem, its importance, and research goals",
+                estimated_length="200-300 words",
+                required=True,
+                order=2
+            ),
+            Section(
+                section_type=SectionType.METHODOLOGY,
+                title="Methodology",
+                description="Brief description of research methods",
+                content_guidance="Should outline the key aspects of the methodology used",
+                estimated_length="200-300 words",
+                required=True,
+                order=3
+            ),
+            Section(
+                section_type=SectionType.RESULTS,
+                title="Results and Discussion",
+                description="Summary of key findings",
+                content_guidance="Should present the most significant results and their implications",
+                estimated_length="200-300 words",
+                required=True,
+                order=4
+            ),
+            Section(
+                section_type=SectionType.CONCLUSION,
+                title="Conclusion",
+                description="Brief concluding remarks",
+                content_guidance="Should summarize the main conclusions and future directions",
+                estimated_length="100-200 words",
+                required=True,
+                order=5
+            ),
+            Section(
+                section_type=SectionType.REFERENCES,
+                title="References",
+                description="Key references only",
+                content_guidance="Should include only the most essential references (usually limited to 3-5)",
+                estimated_length="Limited to conference guidelines",
+                required=True,
+                order=6
+            )
+        ]
+        
+        return DocumentStructure(
+            title="Extended Abstract Template",
+            document_type=DocumentType.EXTENDED_ABSTRACT,
+            sections=sections,
+            audience="Conference attendees and reviewers",
+            target_length="2-4 pages",
+            style_guide="Conference-specific",
+            metadata={
+                "template_version": "1.0",
+                "description": "Template for a conference extended abstract"
+            }
+        )
+    
+    def _create_editorial_template(self) -> DocumentStructure:
+        """Create a template for an editorial."""
+        sections = [
+            Section(
+                section_type=SectionType.TITLE,
+                title="Title",
+                description="Title of the editorial",
+                content_guidance="Should be engaging and reflect the editorial's perspective",
+                estimated_length="1-2 lines",
+                required=True,
+                order=0
+            ),
+            Section(
+                section_type=SectionType.INTRODUCTION,
+                title="Introduction",
+                description="Introduction to the editorial topic",
+                content_guidance="Should introduce the topic and its significance to the field",
+                estimated_length="1-2 paragraphs",
+                required=True,
+                order=1
+            ),
+            Section(
+                section_type=SectionType.POSITION_STATEMENT,
+                title="Context and Background",
+                description="Background information on the topic",
+                content_guidance="Should provide necessary context and background for the editorial position",
+                estimated_length="2-3 paragraphs",
+                required=True,
+                order=2
+            ),
+            Section(
+                section_type=SectionType.POSITION_STATEMENT,
+                title="Main Perspective or Position",
+                description="Main editorial position",
+                content_guidance="Should articulate the main perspective or position being advocated",
+                estimated_length="3-4 paragraphs",
+                required=True,
+                order=3
+            ),
+            Section(
+                section_type=SectionType.DISCUSSION,
+                title="Implications and Considerations",
+                description="Discussion of implications",
+                content_guidance="Should discuss the implications of the position for the field",
+                estimated_length="2-3 paragraphs",
+                required=True,
+                order=4
+            ),
+            Section(
+                section_type=SectionType.CONCLUSION,
+                title="Conclusion",
+                description="Concluding remarks",
+                content_guidance="Should summarize the editorial position and call to action if applicable",
+                estimated_length="1-2 paragraphs",
+                required=True,
+                order=5
+            ),
+            Section(
+                section_type=SectionType.REFERENCES,
+                title="References",
+                description="Optional references",
+                content_guidance="Typically minimal references, if any",
+                estimated_length="As needed",
+                required=False,
+                order=6
+            )
+        ]
+        
+        return DocumentStructure(
+            title="Editorial Template",
+            document_type=DocumentType.EDITORIAL,
+            sections=sections,
+            audience="Journal readers and field practitioners",
+            target_length="1-3 pages",
+            style_guide="Journal-specific",
+            metadata={
+                "template_version": "1.0",
+                "description": "Template for a journal editorial or opinion piece"
+            }
+        )
+    
+    def _create_white_paper_template(self) -> DocumentStructure:
+        """Create a template for a white paper."""
+        sections = [
+            Section(
+                section_type=SectionType.TITLE,
+                title="Title",
+                description="Title of the white paper",
+                content_guidance="Should clearly indicate the topic and appeal to the target audience",
+                estimated_length="1-2 lines",
+                required=True,
+                order=0
+            ),
+            Section(
+                section_type=SectionType.ABSTRACT,
+                title="Executive Summary",
+                description="Summary of the white paper",
+                content_guidance="Should summarize the problem, approach, and key recommendations",
+                estimated_length="1 page",
+                required=True,
+                order=1
+            ),
+            Section(
+                section_type=SectionType.INTRODUCTION,
+                title="Introduction",
+                description="Introduction to the problem or opportunity",
+                content_guidance="Should introduce the subject matter and its importance to the audience",
+                estimated_length="1-2 pages",
+                required=True,
+                order=2
+            ),
+            Section(
+                section_type=SectionType.BACKGROUND,
+                title="Background and Market Context",
+                description="Market or industry background",
+                content_guidance="Should provide necessary context and background about the market or industry situation",
+                estimated_length="2-3 pages",
+                required=True,
+                order=3
+            ),
+            Section(
+                section_type=SectionType.PROBLEM,
+                title="Problem Statement or Challenge",
+                description="Detailed problem description",
+                content_guidance="Should articulate the specific challenge or opportunity being addressed",
+                estimated_length="2-3 pages",
+                required=True,
+                order=4
+            ),
+            Section(
+                section_type=SectionType.METHODOLOGY,
+                title="Solution Approach",
+                description="Detailed solution description",
+                content_guidance="Should detail the approach, technology, or methodology proposed",
+                estimated_length="3-5 pages",
+                required=True,
+                order=5,
+                subsections=[
+                    Section(
+                        section_type=SectionType.METHODOLOGY,
+                        title="Solution Components",
+                        description="Details of solution components",
+                        content_guidance="Should describe the key components of the solution",
+                        estimated_length="1-2 pages",
+                        required=True
+                    ),
+                    Section(
+                        section_type=SectionType.IMPLEMENTATION,
+                        title="Implementation Considerations",
+                        description="Implementation details",
+                        content_guidance="Should address practical implementation aspects",
+                        estimated_length="1-2 pages",
+                        required=True
+                    )
+                ]
+            ),
+            Section(
+                section_type=SectionType.USE_CASE,
+                title="Case Studies or Examples",
+                description="Real-world examples",
+                content_guidance="Should provide real-world examples or use cases that demonstrate the solution",
+                estimated_length="2-3 pages",
+                required=True,
+                order=6
+            ),
+            Section(
+                section_type=SectionType.DISCUSSION,
+                title="Benefits and ROI",
+                description="Benefits and return on investment",
+                content_guidance="Should outline the specific benefits and potential ROI of the proposed solution",
+                estimated_length="1-2 pages",
+                required=True,
+                order=7
+            ),
+            Section(
+                section_type=SectionType.CONCLUSION,
+                title="Conclusion and Recommendations",
+                description="Concluding remarks and recommendations",
+                content_guidance="Should summarize key points and provide clear recommendations for action",
+                estimated_length="1-2 pages",
+                required=True,
+                order=8
+            ),
+            Section(
+                section_type=SectionType.REFERENCES,
+                title="Resources and References",
+                description="Additional resources",
+                content_guidance="Should provide references and additional resources for further information",
+                estimated_length="1 page",
+                required=True,
+                order=9
+            ),
+            Section(
+                section_type=SectionType.APPENDIX,
+                title="About the Company/Authors",
+                description="Company or author information",
+                content_guidance="Should provide information about the authoring organization or individuals",
+                estimated_length="0.5 page",
+                required=True,
+                order=10
+            )
+        ]
+        
+        return DocumentStructure(
+            title="White Paper Template",
+            document_type=DocumentType.WHITE_PAPER,
+            sections=sections,
+            audience="Industry professionals and decision-makers",
+            target_length="15-20 pages",
+            style_guide="Industry standard with company branding",
+            metadata={
+                "template_version": "1.0",
+                "description": "Template for an industry white paper on AI/ML technology"
+            }
+        )
+    
+    def _create_book_chapter_template(self) -> DocumentStructure:
+        """Create a template for a book chapter."""
+        sections = [
+            Section(
+                section_type=SectionType.TITLE,
+                title="Chapter Title",
+                description="Title of the book chapter",
+                content_guidance="Should be descriptive and fit within the overall book theme",
+                estimated_length="1-2 lines",
+                required=True,
+                order=0
+            ),
+            Section(
+                section_type=SectionType.ABSTRACT,
+                title="Abstract",
+                description="Brief summary of the chapter",
+                content_guidance="Should summarize the chapter's key topics and contributions",
+                estimated_length="200-300 words",
+                required=False,  # Not all book chapters require abstracts
+                order=1
+            ),
+            Section(
+                section_type=SectionType.INTRODUCTION,
+                title="Introduction",
+                description="Introduction to the chapter topic",
+                content_guidance="Should introduce the topic, its importance, and the chapter's structure",
+                estimated_length="2-3 pages",
+                required=True,
+                order=2
+            ),
+            Section(
+                section_type=SectionType.BACKGROUND,
+                title="Background and Foundations",
+                description="Foundational concepts",
+                content_guidance="Should provide necessary background and contextual information for readers",
+                estimated_length="3-5 pages",
+                required=True,
+                order=3
+            ),
+            # Main content sections would be added dynamically based on chapter topic
+            Section(
+                section_type=SectionType.METHODOLOGY,
+                title="Main Content Section 1",
+                description="First main content section",
+                content_guidance="First key topic or concept of the chapter",
+                estimated_length="5-8 pages",
+                required=True,
+                order=4
+            ),
+            Section(
+                section_type=SectionType.METHODOLOGY,
+                title="Main Content Section 2",
+                description="Second main content section",
+                content_guidance="Second key topic or concept of the chapter",
+                estimated_length="5-8 pages",
+                required=True,
+                order=5
+            ),
+            Section(
+                section_type=SectionType.METHODOLOGY,
+                title="Main Content Section 3",
+                description="Third main content section",
+                content_guidance="Third key topic or concept of the chapter",
+                estimated_length="5-8 pages",
+                required=True,
+                order=6
+            ),
+            Section(
+                section_type=SectionType.DISCUSSION,
+                title="Critical Analysis and Discussion",
+                description="Critical discussion of the topic",
+                content_guidance="Should provide critical analysis and discussion of the main topics",
+                estimated_length="3-5 pages",
+                required=True,
+                order=7
+            ),
+            Section(
+                section_type=SectionType.FUTURE_WORK,
+                title="Future Directions",
+                description="Future research directions",
+                content_guidance="Should discuss future research directions and open questions",
+                estimated_length="2-3 pages",
+                required=True,
+                order=8
+            ),
+            Section(
+                section_type=SectionType.CONCLUSION,
+                title="Conclusion",
+                description="Concluding remarks",
+                content_guidance="Should summarize key points and contributions of the chapter",
+                estimated_length="1-2 pages",
+                required=True,
+                order=9
+            ),
+            Section(
+                section_type=SectionType.ACKNOWLEDGMENTS,
+                title="Acknowledgments",
+                description="Acknowledgment of contributors",
+                content_guidance="Should acknowledge contributors, funding, and support",
+                estimated_length="0.5 page",
+                required=False,
+                order=10
+            ),
+            Section(
+                section_type=SectionType.REFERENCES,
+                title="References",
+                description="Reference list",
+                content_guidance="Should list all cited works in the appropriate format",
+                estimated_length="As needed",
+                required=True,
+                order=11
+            ),
+            Section(
+                section_type=SectionType.APPENDIX,
+                title="Appendices",
+                description="Supplementary material",
+                content_guidance="Should include any supplementary material that doesn't fit in the main text",
+                estimated_length="As needed",
+                required=False,
+                order=12
+            )
+        ]
+        
+        return DocumentStructure(
+            title="Book Chapter Template",
+            document_type=DocumentType.BOOK_CHAPTER,
+            sections=sections,
+            audience="Academic readers and practitioners",
+            target_length="25-40 pages",
+            style_guide="Publisher-specific",
+            metadata={
+                "template_version": "1.0",
+                "description": "Template for a scholarly book chapter in AI/ML"
+            }
+        )
+    
     def generate_structure(self, 
                            title: str,
                            document_type: Union[DocumentType, str],
@@ -1006,7 +1555,11 @@ class ReportStructurePlanner:
             DocumentType.TECHNICAL_REPORT: "technical_report",
             DocumentType.TUTORIAL: "tutorial",
             DocumentType.SURVEY: "survey",
-            # Add mappings for other document types as needed
+            DocumentType.EXTENDED_ABSTRACT: "extended_abstract",
+            DocumentType.EDITORIAL: "editorial",
+            DocumentType.WHITE_PAPER: "white_paper",
+            DocumentType.BOOK_CHAPTER: "book_chapter",
+            # Additional document types can be added here
         }
         
         template_name = template_map.get(document_type, "research_paper")
