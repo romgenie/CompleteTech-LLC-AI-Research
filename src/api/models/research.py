@@ -31,6 +31,19 @@ class ImplementationStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
+class PaperStatus(str, Enum):
+    """Status of an uploaded paper."""
+    UPLOADED = "uploaded"
+    QUEUED = "queued"
+    PROCESSING = "processing"
+    EXTRACTING_ENTITIES = "extracting_entities"
+    EXTRACTING_RELATIONSHIPS = "extracting_relationships"
+    BUILDING_KNOWLEDGE_GRAPH = "building_knowledge_graph"
+    ANALYZED = "analyzed"
+    IMPLEMENTATION_READY = "implementation_ready"
+    FAILED = "failed"
+
+
 class DocumentType(str, Enum):
     """Type of research document."""
     PAPER = "paper"
