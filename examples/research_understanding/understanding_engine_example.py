@@ -177,6 +177,25 @@ characteristics in both time and space complexity.
         # Show libraries used if any
         if details.libraries_used:
             logger.info(f"Libraries used: {', '.join(details.libraries_used)}")
+            
+        # Demonstrate knowledge graph export
+        logger.info(f"\nExporting to knowledge graph format...")
+        kg_export = engine.export_to_knowledge_graph(paper, details)
+        logger.info(f"Knowledge graph export: {len(kg_export['entities'])} entities, {len(kg_export['relationships'])} relationships")
+        
+        # Show paper summary
+        logger.info(f"\nGenerating paper summary...")
+        summary = engine.summarize_paper(paper)
+        logger.info(f"Title: {summary['title']}")
+        logger.info(f"Authors: {', '.join(summary['authors'])}")
+        logger.info(f"Sections: {len(summary['main_sections'])}")
+        if 'algorithms' in summary:
+            logger.info(f"Algorithms: {len(summary['algorithms'])}")
+            for algo_summary in summary['algorithms']:
+                if 'complexity' in algo_summary and algo_summary['complexity']:
+                    time_complexity = algo_summary['complexity'].get('time', 'Unknown')
+                    space_complexity = algo_summary['complexity'].get('space', 'Unknown')
+                    logger.info(f"  - {algo_summary['name']} (Time: {time_complexity}, Space: {space_complexity})")
 
 def process_arxiv_paper(engine):
     """Process a paper from ArXiv."""
