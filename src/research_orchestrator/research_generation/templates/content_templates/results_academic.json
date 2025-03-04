@@ -1,0 +1,12 @@
+{
+  "section_type": "RESULTS",
+  "document_type": "RESEARCH_PAPER",
+  "template_text": "# Results\n\nThis section presents the results of our experiments on {topic}.\n\n## {results_subsection_1}\n\n{results_content_1}\n\n{figure_1}\n\nAs shown in {figure_reference_1}, our approach {result_interpretation_1}.\n\n## {results_subsection_2}\n\n{results_content_2}\n\n{table_1}\n\nTable {table_number} demonstrates that {result_interpretation_2}.\n\n## Comparative Analysis\n\n{comparative_analysis}\n\nOverall, these results indicate that {overall_result_interpretation}.",
+  "style": "ACADEMIC",
+  "technical_level": "INTERMEDIATE",
+  "metadata": {
+    "version": "1.0",
+    "description": "Academic results template for research papers",
+    "author": "AI Research Integration Project"
+  }
+}
