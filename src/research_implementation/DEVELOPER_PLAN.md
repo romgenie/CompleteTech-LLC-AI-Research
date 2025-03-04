@@ -1,220 +1,143 @@
-# Developer Plan for AI Research Implementation System
+# Research Implementation System - Developer Plan
 
-This document outlines the development plan for the AI Research Implementation System. It provides guidance for developers on implementation priorities, technical decisions, and integration approaches.
+## Overview
 
-## Development Phases
+The Research Implementation System is designed to automatically implement, test, and validate AI research concepts from academic papers. This plan outlines the development approach, architecture, and integration with the Paper Processing Pipeline.
 
-### Phase 1: Core System and Research Understanding (Weeks 1-4)
+## Core Components
 
-1. **Core System Architecture**
-   - Set up system initialization and coordination
-   - Implement configuration management
-   - Create exception handling infrastructure
-   - Define system-wide interfaces
-   - Set up logging and monitoring
+### Implementation Manager
 
-2. **Research Understanding Engine**
-   - Develop PDF extraction and processing module
-   - Implement section classification system
-   - Create algorithm extraction from pseudocode and text
-   - Build model architecture analysis from diagrams and text
-   - Implement hyperparameter and training detail extraction
+- **ImplementationManager**: Coordinates the implementation process
+- **ImplementationPlanner**: Plans implementation based on paper analysis
+- **CodeGenerator**: Generates code from algorithms and models
+- **ImplementationTester**: Tests and validates implementations
 
-### Phase 2: Implementation Planning and Code Generation (Weeks 5-8)
+### Research Understanding Engine
 
-1. **Implementation Planning System**
-   - Develop task decomposition engine
-   - Implement dependency graph builder
-   - Create library selection optimizer
-   - Build resource estimation system
-   - Implement implementation strategy generator
+- **PaperProcessor**: Processes and analyzes research papers
+- **AlgorithmExtractor**: Extracts algorithms from papers
+- **ImplementationDetailCollector**: Collects details for implementation
 
-2. **Code Generation Pipeline**
-   - Develop model architecture generation for multiple frameworks
-   - Implement training pipeline generation
-   - Create algorithm implementation module
-   - Build utility function generation
-   - Implement code integration and packaging
+### Data Models
 
-### Phase 3: Experiment Management and Verification (Weeks 9-12)
+- **Paper**: Represents a research paper with metadata
+- **Implementation**: Represents an implementation with code and tests
+- **Algorithm**: Represents an extracted algorithm
+- **Model**: Represents an AI model described in a paper
 
-1. **Experiment Management Framework**
-   - Develop experiment design system
-   - Implement dataset preparation engine
-   - Create execution monitoring system
-   - Build result collection framework
-   - Implement hyperparameter optimization system
+## Development Approach
 
-2. **Research Verification System**
-   - Develop performance comparison engine
-   - Implement reproducibility analysis tool
-   - Create error analysis framework
-   - Build visualization generation system
-   - Implement extended experimentation planner
+1. **Phase 1**: Core interfaces and data models
+   - Define abstract base classes
+   - Create data models
+   - Design interfaces between components
 
-### Phase 4: API, UI, and Integration (Weeks 13-16)
+2. **Phase 2**: Implementation of specific components
+   - Research understanding engine
+   - Implementation manager
+   - Code generation system
 
-1. **API and UI Development**
-   - Implement REST API endpoints
-   - Create CLI interface
-   - Develop web UI
-   - Build Jupyter notebook extensions
-   - Implement authentication and access control
+3. **Phase 3**: Integration and testing
+   - Integration with Knowledge Graph
+   - Integration with Research Orchestrator
+   - Testing and validation framework
 
-2. **Integration and Testing**
-   - Connect all system components
-   - Implement end-to-end workflows
-   - Create comprehensive test suite
-   - Perform benchmarking on standard papers
-   - Conduct user acceptance testing
-
-## Integration Priorities
-
-### External Repository Integration
-
-1. **AutoCodeAgent2.0 Integration** (Highest Priority)
-   - Leverage code generation capabilities
-   - Adapt code validation mechanisms
-   - Integrate with implementation planning
-
-2. **TDAG Integration** (High Priority)
-   - Adapt task decomposition mechanisms
-   - Integrate planning capabilities
-   - Leverage sub-agent generation for specialized tasks
-
-3. **open_deep_research Integration** (High Priority)
-   - Utilize research paper analysis
-   - Adapt information retrieval capabilities
-   - Leverage literature understanding components
-
-4. **GDesigner Integration** (Medium Priority)
-   - Implement agent-based experimental design
-   - Adapt graph-based agent communication
-
-5. **KARMA Integration** (Medium Priority)
-   - Leverage knowledge extraction from papers
-   - Integrate contradiction detection for validation
+4. **Phase 3.5**: Paper Processing Integration
+   - Connect with Paper Processing Pipeline
+   - Implement automatic triggering of implementations
+   - Create implementation artifacts from processed papers
 
 ## Technical Decisions
 
-### Programming Language and Framework
-- Python 3.9+ as primary language
-- FastAPI for API development
-- Click for CLI development
-- React for web interface
+1. **Modular Design** for extensibility
+   - Abstract base classes with clear interfaces
+   - Factory pattern for component creation
+   - Adapter pattern for external integrations
 
-### Deep Learning Frameworks
-- PyTorch as primary implementation target
-- TensorFlow support as secondary target
-- JAX support for specific algorithm types
-- Framework-agnostic design pattern for extensibility
+2. **Code Generation Architecture**
+   - Template-based generation for common patterns
+   - LLM-based generation for complex algorithms
+   - Hybrid approach for optimal results
 
-### Code Generation
-- Template-based generation for standard components
-- AST manipulation for fine-grained code construction
-- Jinja2 for template rendering
-- Black and isort for code formatting
+3. **Testing and Validation**
+   - Automatic test generation from paper metrics
+   - Framework comparison with original paper results
+   - Verification against benchmark datasets
 
-### Experiment Management
-- Ray for distributed experiment execution
-- Weights & Biases for experiment tracking
-- Hydra for configuration management
-- Docker for environment isolation
+## Integration with Paper Processing Pipeline
 
-### Deployment
-- Docker containers for all components
-- Docker Compose for development
-- Kubernetes for production deployment
-- GitHub Actions for CI/CD
+### Current State
+Currently, the Research Implementation System can process papers manually, but lacks automated integration with the paper upload process. Papers remain in the "uploaded" status without automatic processing.
 
-## Implementation Standards
+### Future Integration (Phase 3.5)
 
-### Code Structure
-- Module organization follows the system architecture
-- Separation of concerns between components
-- Dependency injection for component coupling
-- Factory pattern for framework-specific implementations
+1. **Automatic Implementation Triggering**:
+   - Listen for paper state transitions to "analyzed" status
+   - Trigger implementation requests automatically
+   - Maintain configuration for automatic vs. manual implementation
 
-### Code Style
-- Follow PEP 8 for Python code
-- Use type hints throughout the codebase
-- Black for consistent formatting
-- Comprehensive docstrings for all public APIs
+2. **Algorithm Extraction Integration**:
+   - Connect with entity extraction to identify algorithms
+   - Process algorithm descriptions into formal specifications
+   - Generate implementation plans from extracted algorithms
 
-### Testing Strategy
-- Unit tests for all components
-- Integration tests for interaction between modules
-- System tests for end-to-end workflows
-- Benchmark tests for performance evaluation
-- Test reproducibility with fixed seeds
+3. **Code Generation from Extracted Entities**:
+   - Map extracted entities to code components
+   - Generate implementation artifacts from paper analysis
+   - Create framework-specific implementations based on paper context
+   - Build component hierarchy matching paper architecture
 
-### Documentation
-- README.md for project overview
-- API documentation with OpenAPI
-- Component architecture documentation
-- Usage examples and tutorials
-- Development guides for each module
+4. **Validation Framework**:
+   - Generate tests based on paper metrics and evaluations
+   - Validate implementation results against paper claims
+   - Create comparison reports between implementation and paper
+   - Implement continuous verification as paper knowledge evolves
 
-## Framework Support Strategy
+5. **Implementation Artifact Management**:
+   - Organize generated code by paper and algorithm
+   - Maintain traceability between paper entities and code
+   - Version control and track implementation evolution
+   - Support for multiple programming languages and frameworks
 
-### Initial Framework Support
-1. **PyTorch** (Priority 1)
-   - Full support for model architectures
-   - Training loops and optimizers
-   - Data loading and preprocessing
+## Testing Strategy
 
-2. **TensorFlow/Keras** (Priority 2)
-   - Core model architectures
-   - Standard training workflows
-   - Basic custom components
+1. **Unit Tests** for individual components
+   - Test each component in isolation
+   - Mock dependencies for controlled testing
 
-3. **JAX** (Priority 3)
-   - Basic model support
-   - Focus on algorithm implementations
-   - Scientific computing applications
+2. **Integration Tests** for component interactions
+   - Test the implementation workflow end-to-end
+   - Verify correct data flow between components
 
-### Framework Abstraction
-- Create framework-agnostic internal representations
-- Implement framework-specific generators
-- Use adapter pattern for component conversion
-- Support for custom component mapping between frameworks
+3. **System Tests** for full implementation process
+   - Test with real research papers
+   - Verify implementations against expected outcomes
 
-## Paper Understanding Capabilities
+## Implementation Timeline
 
-### Initial Focus Areas
-1. **Computer Vision Models** (Priority 1)
-   - CNN architectures
-   - Vision Transformer variants
-   - Object detection frameworks
+1. **Month 1**: Core interfaces and data models
+2. **Month 2**: Research understanding engine
+3. **Month 3**: Implementation manager and code generation
+4. **Month 4+**: Integration with Paper Processing Pipeline (Phase 3.5)
 
-2. **NLP Models** (Priority 2)
-   - Transformer architectures
-   - Encoder-decoder models
-   - Word embedding techniques
+## Dependencies
 
-3. **Reinforcement Learning** (Priority 3)
-   - Policy gradient methods
-   - Q-learning variants
-   - Model-based RL approaches
+- **External**: AutoCodeAgent2.0, OpenAI/Anthropic APIs
+- **Internal**: Knowledge Graph System, Research Orchestrator
 
-### Understanding Techniques
-- Section-based paper parsing
-- Figure and diagram interpretation
-- Algorithm extraction from pseudocode
-- Hyperparameter identification
-- Evaluation protocol recognition
+## Risk Assessment
 
-## Risk Management
+1. **Code Generation Quality**
+   - Mitigation: Hybrid approach, human review, test validation
 
-1. **Technical Risks**
-   - Accuracy of research understanding
-   - Quality of generated code
-   - Framework compatibility issues
-   - Experiment reproducibility challenges
+2. **Algorithm Extraction Accuracy**
+   - Mitigation: Multiple extraction techniques, confidence scoring
 
-2. **Mitigation Strategies**
-   - Implement human-in-the-loop verification for critical components
-   - Extensive testing against benchmark papers
-   - Comprehensive unit and integration tests
-   - Clear error reporting and debugging tools
-   - Framework-specific validation mechanisms
+3. **Paper Complexity Handling**
+   - Mitigation: Decomposition strategies, specialized extractors
+
+4. **Programming Language Support**
+   - Mitigation: Prioritize Python, gradual expansion to other languages
+
+This plan adheres to the project architecture and implementation priorities outlined in CODING_PROMPT.md, with special attention to the integration with the Paper Processing Pipeline planned for Phase 3.5.
