@@ -2,6 +2,11 @@
 
 This file contains key information about the repositories in this workspace and their functionalities.
 
+> **Development Statistics:**  
+> Total cost: $10.69  
+> Total duration (API): 57m 41.7s  
+> Total duration (wall): 1h 52m 8.9s  
+
 ## Project Implementation Status
 
 ### Current Implementation Progress
