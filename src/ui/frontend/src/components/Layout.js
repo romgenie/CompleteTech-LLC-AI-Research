@@ -27,6 +27,7 @@ import {
   Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { NotificationCenter } from './index';
 
 // Drawer width for desktop
 const drawerWidth = 240;
