@@ -61,11 +61,13 @@ The AI Research Integration frontend provides a UI for interacting with our know
 - Add E2E tests for main user journeys
 
 ## Error Handling
-- Implement error boundaries for critical components
-- Provide user-friendly error messages
-- Log errors to console in development
-- Add retry mechanism for transient failures
-- Gracefully degrade when services are unavailable
+- Use the ErrorBoundary component for critical UI sections
+- Provide user-friendly error messages with ErrorFallback
+- Log errors to console in development mode only
+- Use useFetch hook with built-in retry mechanism 
+- Implement graceful degradation with mock data fallbacks
+- Add descriptive error states for different error types
+- Keep error messaging consistent across the application
 
 ## Accessibility
 - Use semantic HTML elements
@@ -76,11 +78,14 @@ The AI Research Integration frontend provides a UI for interacting with our know
 - Test with screen readers
 
 ## Paper Processing Integration
-- Use WebSockets for real-time status updates
-- Show processing stages with progress indicators
-- Implement graceful fallbacks for disconnected state
-- Cache paper status locally for quick loading
-- Add retry mechanisms for failed operations
+- Use WebSocketContext for real-time status updates
+- Show processing stages with StatusIndicator component
+- Implement useWebSocket hook for WebSocket connection management
+- Handle reconnection automatically with exponential backoff
+- Display paper status transitions with meaningful visual cues
+- Cache paper status locally for quick loading and offline display
+- Subscribe to specific paper updates using the WebSocket API
+- Implement notification system for status changes
 
 ## Common Development Tasks
 - **Adding a new page**:
