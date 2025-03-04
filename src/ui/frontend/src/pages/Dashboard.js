@@ -1,340 +1,240 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Container,
-  Grid,
-  Card,
-  CardContent,
+import { 
+  Box, 
+  Typography, 
+  Grid, 
+  Card, 
+  CardContent, 
+  CardHeader,
   CardActions,
   Button,
-  Typography,
-  Box,
+  Divider,
   Paper,
-  CircularProgress,
+  List,
+  ListItem,
+  ListItemText,
+  Tabs,
+  Tab,
+  Chip,
+  useTheme,
+  Alert
 } from '@mui/material';
 import {
-  Search as SearchIcon,
-  AccountTree as GraphIcon,
-  Code as CodeIcon,
-  TrendingUp as TrendingUpIcon,
+  ArticleOutlined as ArticleIcon,
+  SchemaOutlined as SchemaIcon,
+  CodeOutlined as CodeIcon,
+  TerminalOutlined as TerminalIcon
 } from '@mui/icons-material';
-
-import knowledgeGraphService from '../services/knowledgeGraphService';
-import researchService from '../services/researchService';
-import implementationService from '../services/implementationService';
+import { useNavigate } from 'react-router-dom';
+import { ErrorBoundary, ErrorFallback, PaperStatusCard } from '../components';
+import { useFetch } from '../hooks';
+import { mockData } from '../utils/mockData';
 
 /**
- * Dashboard page component.
+ * Dashboard page displaying overview of system capabilities and recent activity
  * 
- * @returns {React.ReactElement} Dashboard page
+ * @returns {JSX.Element} Dashboard component
  */
 function Dashboard() {
-  const [stats, setStats] = useState({
-    entities: 0,
-    relationships: 0,
-    research: { pending: 0, completed: 0 },
-    implementations: { requested: 0, completed: 0 },
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState(0);
+  const theme = useTheme();
   const navigate = useNavigate();
-
-  // Fetch dashboard stats
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // In a real application, we would make actual API calls here
-        // For now we'll use placeholder data for the demonstration
-
-        // Example of how we would get the actual data:
-        // const graphStats = await knowledgeGraphService.getGraphStats();
-        // const researchTasks = await researchService.getTasks();
-        // const implementations = await implementationService.getImplementations();
-
-        // Placeholder data
-        const graphStats = {
-          entities: 42,
-          relationships: 128,
-          entity_types: ['Model', 'Dataset', 'Paper', 'Author'],
-          relationship_types: ['TRAINED_ON', 'AUTHORED_BY', 'CITES'],
-        };
-
-        const researchTasks = [
-          { status: 'pending' },
-          { status: 'pending' },
-          { status: 'completed' },
-          { status: 'completed' },
-          { status: 'completed' },
-        ];
-
-        const implementations = [
-          { status: 'requested' },
-          { status: 'requested' },
-          { status: 'completed' },
-        ];
-
-        // Process the data
-        const pendingResearch = researchTasks.filter(task => task.status === 'pending').length;
-        const completedResearch = researchTasks.filter(task => task.status === 'completed').length;
-        
-        const requestedImpl = implementations.filter(impl => impl.status === 'requested').length;
-        const completedImpl = implementations.filter(impl => impl.status === 'completed').length;
-
-        setStats({
-          entities: graphStats.entities,
-          relationships: graphStats.relationships,
-          research: {
-            pending: pendingResearch,
-            completed: completedResearch,
-          },
-          implementations: {
-            requested: requestedImpl,
-            completed: completedImpl,
-          },
-        });
-      } catch (err) {
-        console.error('Error fetching dashboard stats:', err);
-        setError('Failed to load dashboard data. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  const featureCards = [
+  
+  // Fetch recent papers
+  const { 
+    data: papers, 
+    loading: papersLoading, 
+    error: papersError 
+  } = useFetch('/api/papers/recent', {
+    method: 'GET'
+  }, true, () => mockData.papers.slice(0, 5));
+  
+  // Handle tab change
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
+  
+  // Navigate to paper details
+  const handleViewPaper = (paper) => {
+    navigate(`/implementation?paper=${paper.id}`);
+  };
+  
+  // Navigate to paper implementation
+  const handleImplementPaper = (paper) => {
+    navigate(`/implementation?paper=${paper.id}&tab=implementation`);
+  };
+  
+  // Navigate to knowledge graph for a paper
+  const handleViewGraph = (paper) => {
+    navigate(`/knowledge-graph?paper=${paper.id}`);
+  };
+  
+  // Dashboard statistics
+  const stats = {
+    papers: 42,
+    entities: 1876,
+    relationships: 5432,
+    implementations: 23
+  };
+  
+  // Feature cards
+  const features = [
     {
       title: 'Research',
-      description: 'Submit research queries, explore AI research topics, and generate research reports',
-      icon: <SearchIcon fontSize="large" color="primary" />,
-      action: () => navigate('/research'),
-      buttonText: 'Start Research',
+      description: 'Conduct research queries and generate comprehensive reports with up-to-date information from multiple sources.',
+      icon: <ArticleIcon fontSize="large" />,
+      path: '/research',
+      color: theme.palette.primary.main
     },
     {
       title: 'Knowledge Graph',
-      description: 'Explore the AI research knowledge graph, discover connections, and visualize relationships',
-      icon: <GraphIcon fontSize="large" color="primary" />,
-      action: () => navigate('/knowledge-graph'),
-      buttonText: 'Explore Graph',
+      description: 'Explore the knowledge graph of research entities and relationships, with visualization and query capabilities.',
+      icon: <SchemaIcon fontSize="large" />,
+      path: '/knowledge-graph',
+      color: theme.palette.secondary.main
     },
     {
       title: 'Implementation',
-      description: 'Request implementations of research papers, upload papers, and track implementation progress',
-      icon: <CodeIcon fontSize="large" color="primary" />,
-      action: () => navigate('/implementation'),
-      buttonText: 'Implement Research',
-    },
+      description: 'Generate code implementations from research papers, with customization and explanation of algorithms.',
+      icon: <CodeIcon fontSize="large" />,
+      path: '/implementation',
+      color: theme.palette.success.main
+    }
   ];
-
-  // Show loading state
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  // Show error state
-  if (error) {
-    return (
-      <Box mt={4}>
-        <Paper elevation={3} sx={{ p: 3, bgcolor: 'error.light', color: 'error.contrastText' }}>
-          <Typography variant="h6">Error</Typography>
-          <Typography>{error}</Typography>
-          <Button variant="contained" sx={{ mt: 2 }} onClick={() => window.location.reload()}>
-            Retry
-          </Button>
-        </Paper>
-      </Box>
-    );
-  }
-
+  
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom>
+    <Box>
+      <Typography variant="h4" component="h1" gutterBottom>
         Dashboard
       </Typography>
-
-      {/* Stats Summary */}
+      
+      {/* System stats */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper
-            sx={{
-              p: 2,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              height: 140,
-              bgcolor: 'primary.light',
-              color: 'primary.contrastText',
-            }}
-          >
-            <Typography variant="h6" gutterBottom>
-              Entities
-            </Typography>
-            <Typography variant="h3">{stats.entities}</Typography>
-            <Typography variant="body2">in Knowledge Graph</Typography>
-          </Paper>
+        <Grid item xs={6} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <ArticleIcon color="primary" fontSize="large" />
+              <Typography variant="h4">{stats.papers}</Typography>
+              <Typography variant="subtitle1">Papers</Typography>
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper
-            sx={{
-              p: 2,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              height: 140,
-              bgcolor: 'secondary.light',
-              color: 'secondary.contrastText',
-            }}
-          >
-            <Typography variant="h6" gutterBottom>
-              Relationships
-            </Typography>
-            <Typography variant="h3">{stats.relationships}</Typography>
-            <Typography variant="body2">in Knowledge Graph</Typography>
-          </Paper>
+        <Grid item xs={6} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <SchemaIcon color="secondary" fontSize="large" />
+              <Typography variant="h4">{stats.entities}</Typography>
+              <Typography variant="subtitle1">Entities</Typography>
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper
-            sx={{
-              p: 2,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              height: 140,
-              bgcolor: 'success.light',
-              color: 'success.contrastText',
-            }}
-          >
-            <Typography variant="h6" gutterBottom>
-              Research Tasks
-            </Typography>
-            <Typography variant="h3">{stats.research.pending + stats.research.completed}</Typography>
-            <Typography variant="body2">
-              {stats.research.pending} pending, {stats.research.completed} completed
-            </Typography>
-          </Paper>
+        <Grid item xs={6} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <SchemaIcon color="info" fontSize="large" />
+              <Typography variant="h4">{stats.relationships}</Typography>
+              <Typography variant="subtitle1">Relationships</Typography>
+            </CardContent>
+          </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper
-            sx={{
-              p: 2,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              height: 140,
-              bgcolor: 'info.light',
-              color: 'info.contrastText',
-            }}
-          >
-            <Typography variant="h6" gutterBottom>
-              Implementations
-            </Typography>
-            <Typography variant="h3">{stats.implementations.requested + stats.implementations.completed}</Typography>
-            <Typography variant="body2">
-              {stats.implementations.requested} requested, {stats.implementations.completed} completed
-            </Typography>
-          </Paper>
+        <Grid item xs={6} md={3}>
+          <Card>
+            <CardContent sx={{ textAlign: 'center' }}>
+              <CodeIcon color="success" fontSize="large" />
+              <Typography variant="h4">{stats.implementations}</Typography>
+              <Typography variant="subtitle1">Implementations</Typography>
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
-
-      {/* Feature Cards */}
-      <Typography variant="h5" gutterBottom>
+      
+      {/* Feature cards */}
+      <Typography variant="h5" component="h2" gutterBottom>
         Features
       </Typography>
-      <Grid container spacing={3}>
-        {featureCards.map(card => (
-          <Grid item xs={12} sm={6} md={4} key={card.title}>
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        {features.map((feature) => (
+          <Grid item xs={12} md={4} key={feature.title}>
             <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <CardHeader
+                title={feature.title}
+                avatar={React.cloneElement(feature.icon, { 
+                  sx: { color: feature.color } 
+                })}
+              />
               <CardContent sx={{ flexGrow: 1 }}>
-                <Box display="flex" alignItems="center" mb={2}>
-                  {card.icon}
-                  <Typography variant="h5" component="div" sx={{ ml: 1 }}>
-                    {card.title}
-                  </Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary">
-                  {card.description}
+                <Typography variant="body1">
+                  {feature.description}
                 </Typography>
               </CardContent>
               <CardActions>
-                <Button size="small" onClick={card.action}>
-                  {card.buttonText}
+                <Button 
+                  size="small" 
+                  onClick={() => navigate(feature.path)}
+                >
+                  Explore
                 </Button>
               </CardActions>
             </Card>
           </Grid>
         ))}
       </Grid>
-
-      {/* Activity */}
-      <Box mt={4}>
-        <Typography variant="h5" gutterBottom>
-          Recent Activity
-        </Typography>
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="body1" color="text.secondary" align="center">
-            No recent activity to display.
-          </Typography>
-        </Paper>
-      </Box>
       
-      {/* Development Status */}
-      <Box mt={4}>
-        <Typography variant="h5" gutterBottom>
-          Development Status
-        </Typography>
-        <Paper sx={{ p: 2 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1" gutterBottom>
-                Completed Components
-              </Typography>
-              <Box component="ul" sx={{ pl: 2 }}>
-                <Box component="li">
-                  <Typography variant="body2">Knowledge Extraction Pipeline</Typography>
-                </Box>
-                <Box component="li">
-                  <Typography variant="body2">Knowledge Graph System</Typography>
-                </Box>
-                <Box component="li">
-                  <Typography variant="body2">Research Generation System</Typography>
-                </Box>
-                <Box component="li">
-                  <Typography variant="body2">Technical Infrastructure and UI</Typography>
-                </Box>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1" gutterBottom>
-                In Progress (Phase 3.5)
-              </Typography>
-              <Box component="ul" sx={{ pl: 2 }}>
-                <Box component="li">
-                  <Typography variant="body2">
-                    Paper Processing Pipeline
-                    <Box component="span" sx={{ ml: 1, color: 'primary.main', fontWeight: 'bold' }}>
-                      (Foundation Implemented)
-                    </Box>
-                  </Typography>
-                </Box>
-              </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                The Paper Processing Pipeline foundation has been implemented with the core state machine 
-                architecture, Celery task definitions, and API endpoints. Full processing capabilities are
-                planned for completion in the next release.
-              </Typography>
-            </Grid>
-          </Grid>
-        </Paper>
-      </Box>
-    </Container>
+      {/* Recent papers */}
+      <Typography variant="h5" component="h2" gutterBottom>
+        Recent Papers
+      </Typography>
+      
+      <ErrorBoundary
+        fallback={
+          <ErrorFallback 
+            message="Failed to load recent papers. Please try again later."
+            resetButtonText="Retry"
+          />
+        }
+      >
+        {papersError ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            Error loading recent papers: {papersError.message}
+          </Alert>
+        ) : (
+          <Box sx={{ mb: 4 }}>
+            <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
+              <Tab label="All Papers" />
+              <Tab label="Processing" />
+              <Tab label="Analyzed" />
+              <Tab label="Implemented" />
+            </Tabs>
+            
+            {papers && papers.length > 0 ? (
+              papers
+                .filter(paper => {
+                  if (activeTab === 0) return true;
+                  if (activeTab === 1) return ['uploaded', 'queued', 'processing', 'extracting_entities', 'extracting_relationships', 'building_knowledge_graph'].includes(paper.status);
+                  if (activeTab === 2) return ['analyzed', 'implementation_ready'].includes(paper.status);
+                  if (activeTab === 3) return paper.status === 'implemented';
+                  return true;
+                })
+                .map(paper => (
+                  <PaperStatusCard
+                    key={paper.id}
+                    paper={paper}
+                    onView={handleViewPaper}
+                    onImplement={handleImplementPaper}
+                    onViewGraph={handleViewGraph}
+                  />
+                ))
+            ) : (
+              <Paper sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="body1" color="text.secondary">
+                  No papers available.
+                </Typography>
+              </Paper>
+            )}
+          </Box>
+        )}
+      </ErrorBoundary>
+    </Box>
   );
 }
 
