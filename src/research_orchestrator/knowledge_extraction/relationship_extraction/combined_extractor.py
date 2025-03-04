@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Optional, Set, Type
 import logging
 from collections import defaultdict
 
-from ..entity_recognition.entity import Entity
+from ..entity_recognition.entity import Entity, EntityType
 from .base_extractor import RelationshipExtractor
 from .relationship import Relationship, RelationType
 
