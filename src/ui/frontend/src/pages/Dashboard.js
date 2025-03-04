@@ -284,6 +284,56 @@ function Dashboard() {
           </Typography>
         </Paper>
       </Box>
+      
+      {/* Development Status */}
+      <Box mt={4}>
+        <Typography variant="h5" gutterBottom>
+          Development Status
+        </Typography>
+        <Paper sx={{ p: 2 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" gutterBottom>
+                Completed Components
+              </Typography>
+              <Box component="ul" sx={{ pl: 2 }}>
+                <Box component="li">
+                  <Typography variant="body2">Knowledge Extraction Pipeline</Typography>
+                </Box>
+                <Box component="li">
+                  <Typography variant="body2">Knowledge Graph System</Typography>
+                </Box>
+                <Box component="li">
+                  <Typography variant="body2">Research Generation System</Typography>
+                </Box>
+                <Box component="li">
+                  <Typography variant="body2">Technical Infrastructure and UI</Typography>
+                </Box>
+              </Box>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" gutterBottom>
+                In Progress (Phase 3.5)
+              </Typography>
+              <Box component="ul" sx={{ pl: 2 }}>
+                <Box component="li">
+                  <Typography variant="body2">
+                    Paper Processing Pipeline
+                    <Box component="span" sx={{ ml: 1, color: 'primary.main', fontWeight: 'bold' }}>
+                      (Foundation Implemented)
+                    </Box>
+                  </Typography>
+                </Box>
+              </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                The Paper Processing Pipeline foundation has been implemented with the core state machine 
+                architecture, Celery task definitions, and API endpoints. Full processing capabilities are
+                planned for completion in the next release.
+              </Typography>
+            </Grid>
+          </Grid>
+        </Paper>
+      </Box>
     </Container>
   );
 }
