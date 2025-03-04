@@ -7,51 +7,47 @@
 - ✅ Created intuitive onboarding experience with step-by-step guidance
 - ✅ Improved export capabilities with multiple format options
 
-## Implementation Plan for Next 4 Weeks
+## Development Roadmap (Next 4 Weeks)
 
 ### Week 1: Knowledge Graph Performance & TypeScript Foundations
-1. **Knowledge Graph Performance Optimization** (Mon-Wed)
-   - Implement optimized force simulation for 1000+ nodes
-   - Create smart node filtering based on importance metrics
-   - Add dynamic node sizing based on connectivity patterns
 
-2. **TypeScript Core Context Migration** (Mon-Fri)
-   - Convert AuthContext with JWT token handling (Mon-Tue)
-   - Migrate WebSocketContext with message typing (Wed-Thu)
-   - Create shared type definitions in central location (Fri)
+| Day | Knowledge Graph Performance | TypeScript Migration |
+|-----|---------------------------|---------------------|
+| **Mon** | Configure optimized force simulation parameters for 1000+ nodes | Begin AuthContext conversion with JWT token interfaces |
+| **Tue** | Implement node connection counting and strength calculation | Complete AuthContext with token validation and refresh |
+| **Wed** | Create smart node filtering with Set-based lookups | Start WebSocketContext message type definitions |
+| **Thu** | Develop dynamic node sizing based on connectivity | Complete WebSocketContext with subscription typing |
+| **Fri** | Test & benchmark with large dataset (1000+ nodes) | Create shared `types/index.ts` with core interfaces |
 
-### Week 2: Accessibility & TypeScript Hooks
-1. **Accessibility Implementation** (Mon-Wed)
-   - Add keyboard navigation system for graph exploration
-   - Implement screen reader support with ARIA attributes
-   - Create text-based alternative views and high-contrast mode
+### Week 2: Accessibility Implementation & Hook Typing
 
-2. **TypeScript Custom Hooks Migration** (Wed-Fri)
-   - Convert useD3 hook with proper D3.js typing
-   - Implement type-safe useFetch with generics
-   - Add typing to useWebSocket and useLocalStorage
+| Day | Accessibility Features | TypeScript Migration |
+|-----|----------------------|---------------------|
+| **Mon** | Implement keyboard navigation system | Create D3.js type definitions |
+| **Tue** | Add ARIA attributes and announcements | Convert useD3 hook with proper generics |
+| **Wed** | Create screen reader support with live regions | Start useFetch conversion with error typing |
+| **Thu** | Develop text-based alternative view | Complete useFetch with request/response generics |
+| **Fri** | Implement high contrast mode with WCAG AA compliance | Convert useWebSocket and useLocalStorage hooks |
 
-### Week 3: Research Enhancement - Citations
-1. **Citation Management** (Mon-Wed)
-   - Implement multi-format citation export (BibTeX, APA, etc.)
-   - Create reference panel with filtering capabilities
-   - Add DOI lookup and citation validation
-   
-2. **Performance Optimization Foundations** (Thu-Fri)
-   - Implement lazy loading and virtualization for lists
-   - Add strategic memoization for expensive calculations
-   - Set up React Query for optimized API data fetching
+### Week 3: Citation Management & Performance Optimization  
 
-### Week 4: Research Enhancement - Organization
-1. **Research History & Organization** (Mon-Wed)
-   - Create search history with localStorage persistence
-   - Implement favorites and saved queries functionality
-   - Add tagging system for research organization
+| Day | Citation Management | Performance Improvements |
+|-----|-------------------|------------------------|
+| **Mon** | Implement BibTeX and APA citation formats | Research React Query integration options |
+| **Tue** | Add MLA and Chicago citation formats | Set up React Query for API caching |
+| **Wed** | Create citation export UI with previews | Implement background refetching and prefetching |
+| **Thu** | Build reference management panel | Add virtualization for long citation lists |
+| **Fri** | Implement DOI lookup and enrichment | Optimize component rendering with memoization |
 
-2. **UX Standardization** (Thu-Fri)
-   - Apply consistent patterns across research interface
-   - Implement step-by-step research flow with guidance
-   - Add progressive disclosure for advanced options
+### Week 4: Research Organization & UX Standardization
+
+| Day | Research Organization | UX Improvements |
+|-----|----------------------|----------------|
+| **Mon** | Implement research history with localStorage | Create consistent UI components library |
+| **Tue** | Add favorites functionality with persistence | Implement step-by-step guided workflows |
+| **Wed** | Create tagging system for query management | Add progressive disclosure for advanced options |
+| **Thu** | Build advanced filtering for search history | Implement unified error handling and feedback |
+| **Fri** | Add search statistics and export capabilities | Create comprehensive help documentation |
 
 ## Implementation Priorities
 
