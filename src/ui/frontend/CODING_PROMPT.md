@@ -705,48 +705,1175 @@ function setupKeyboardNavigation() {
 }
 ```
 
-#### Week 1: ARIA Enhancements
-```javascript
-// Add ARIA live region for announcements
-function setupAccessibilityAnnouncements() {
-  // Add a visually hidden announcement area
-  const announcer = d3.select("body")
-    .append("div")
-    .attr("id", "graph-announcer")
-    .attr("role", "status")
-    .attr("aria-live", "polite")
-    .style("position", "absolute")
-    .style("width", "1px")
-    .style("height", "1px")
-    .style("margin", "-1px")
-    .style("padding", "0")
-    .style("overflow", "hidden")
-    .style("clip", "rect(0, 0, 0, 0)")
-    .style("white-space", "nowrap")
-    .style("border", "0");
+## TypeScript Migration Implementation Plan
+
+The TypeScript migration will be implemented incrementally, starting with the core system components and hooks. This approach ensures that we maintain a stable application while gradually adding type safety.
+
+### Week 1: Core Context Migration
+
+#### Day 1-2: AuthContext Migration
+```typescript
+// src/contexts/AuthContext.tsx
+
+// Step 1: Define core interfaces
+interface User {
+  id: string;
+  username: string;
+  roles: string[];
+  email?: string;
+  displayName?: string;
+  preferences?: UserPreferences;
+}
+
+interface UserPreferences {
+  theme?: 'light' | 'dark' | 'system';
+  visualizationSettings?: {
+    nodeSize: number;
+    forceStrength: number;
+    showLabels: boolean;
+    [key: string]: any;
+  };
+}
+
+interface AuthState {
+  currentUser: User | null;
+  token: string | null;
+  loading: boolean;
+  error: Error | null;
+  isAuthenticated: boolean;
+}
+
+interface AuthContextType extends AuthState {
+  login: (username: string, password: string) => Promise<User>;
+  logout: () => void;
+  refreshToken: () => Promise<boolean>;
+  updateUserPreferences: (preferences: Partial<UserPreferences>) => Promise<void>;
+}
+
+// Step 2: Type JWT token handling
+interface JWTPayload {
+  sub: string;
+  username: string;
+  roles: string[];
+  exp: number;
+  iat: number;
+}
+
+function parseJWT(token: string): JWTPayload | null {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(window.atob(base64));
+    return payload as JWTPayload;
+  } catch (e) {
+    console.error('Error parsing JWT:', e);
+    return null;
+  }
+}
+
+function isTokenExpired(token: string): boolean {
+  const payload = parseJWT(token);
+  if (!payload) return true;
   
-  // Function to make announcements
-  window.announceToScreenReader = (message) => {
-    announcer.text(message);
+  // Add a 30-second buffer to prevent edge cases
+  const currentTime = Math.floor(Date.now() / 1000) + 30;
+  return payload.exp < currentTime;
+}
+
+// Step 3: Create context with default value
+const AuthContext = React.createContext<AuthContextType>({
+  currentUser: null,
+  token: null,
+  loading: false,
+  error: null,
+  isAuthenticated: false,
+  login: async () => { throw new Error('AuthContext not initialized'); },
+  logout: () => {},
+  refreshToken: async () => false,
+  updateUserPreferences: async () => {},
+});
+
+// Step 4: Create provider component
+interface AuthProviderProps {
+  children: React.ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [state, setState] = useState<AuthState>({
+    currentUser: null,
+    token: localStorage.getItem('auth_token'),
+    loading: false,
+    error: null,
+    isAuthenticated: !!localStorage.getItem('auth_token')
+  });
+  
+  // Initialize auth state from localStorage
+  useEffect(() => {
+    const storedToken = localStorage.getItem('auth_token');
+    if (storedToken) {
+      // Validate token and set up refresh timer
+      if (!isTokenExpired(storedToken)) {
+        initializeUserFromToken(storedToken);
+        setupTokenRefresh(storedToken);
+      } else {
+        // Token expired, clear it
+        localStorage.removeItem('auth_token');
+        setState({
+          currentUser: null,
+          token: null,
+          loading: false,
+          error: null,
+          isAuthenticated: false
+        });
+      }
+    }
+  }, []);
+  
+  // Implementation of auth methods...
+  const login = async (username: string, password: string): Promise<User> => {
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Authentication failed');
+      }
+      
+      const data = await response.json();
+      const { token, user } = data;
+      
+      // Store token and update state
+      localStorage.setItem('auth_token', token);
+      setState({
+        currentUser: user,
+        token,
+        loading: false,
+        error: null,
+        isAuthenticated: true
+      });
+      
+      // Set up refresh timer
+      setupTokenRefresh(token);
+      
+      return user;
+    } catch (error) {
+      setState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: error instanceof Error ? error : new Error('Unknown error'),
+        isAuthenticated: false
+      }));
+      throw error;
+    }
   };
   
-  // Add landmark role to the main visualization
-  svg.attr("role", "application")
-    .attr("aria-label", "Knowledge Graph Visualization");
-    
-  // Add description
-  svg.append("desc")
-    .text("Interactive visualization of AI research entities and their relationships");
-    
-  // Add ARIA attributes to all controls
-  d3.selectAll(".visualization-control")
-    .attr("aria-controls", "knowledge-graph-visualization");
-    
-  // Add role and state to visualization settings
-  d3.selectAll(".visualization-setting")
-    .attr("role", "switch")
-    .attr("aria-checked", d => d.active ? "true" : "false");
+  const logout = (): void => {
+    localStorage.removeItem('auth_token');
+    setState({
+      currentUser: null,
+      token: null,
+      loading: false,
+      error: null,
+      isAuthenticated: false
+    });
+  };
+  
+  // More implementation details...
+  
+  // Create context value
+  const contextValue: AuthContextType = {
+    ...state,
+    login,
+    logout,
+    refreshToken: async () => { /* implementation */ return true; },
+    updateUserPreferences: async () => { /* implementation */ }
+  };
+  
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// Step 5: Create hook for accessing context
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  
+  return context;
+};
+
+// Step 6: Create higher-order component for protected routes
+interface WithAuthProps {
+  [key: string]: any;
 }
+
+export function withAuth<P extends WithAuthProps>(
+  Component: React.ComponentType<P>,
+  requiredRoles: string[] = []
+): React.FC<Omit<P, keyof AuthContextType>> {
+  const WithAuthComponent: React.FC<Omit<P, keyof AuthContextType>> = (props) => {
+    const auth = useAuth();
+    const navigate = useNavigate();
+    
+    useEffect(() => {
+      if (!auth.isAuthenticated) {
+        navigate('/login', { 
+          state: { from: window.location.pathname },
+          replace: true
+        });
+        return;
+      }
+      
+      if (requiredRoles.length > 0 && 
+          !requiredRoles.some(role => auth.currentUser?.roles.includes(role))) {
+        navigate('/unauthorized', { replace: true });
+      }
+    }, [auth.isAuthenticated, auth.currentUser, navigate]);
+    
+    if (!auth.isAuthenticated) {
+      return <LoadingFallback message="Checking authentication..." />;
+    }
+    
+    if (requiredRoles.length > 0 && 
+        !requiredRoles.some(role => auth.currentUser?.roles.includes(role))) {
+      return null; // Will redirect in useEffect
+    }
+    
+    return <Component {...(props as P)} {...auth} />;
+  };
+  
+  WithAuthComponent.displayName = `WithAuth(${Component.displayName || Component.name})`;
+  
+  return WithAuthComponent;
+}
+```
+
+#### Day 3-4: WebSocketContext Migration
+```typescript
+// src/contexts/WebSocketContext.tsx
+
+// Step 1: Define base message interfaces
+interface WebSocketMessage {
+  type: string;
+  [key: string]: any;
+}
+
+interface NotificationMessage extends WebSocketMessage {
+  type: 'notification';
+  id: string;
+  title: string;
+  message: string;
+  category: 'info' | 'success' | 'warning' | 'error' | 'paper_status' | 'system';
+  timestamp: string;
+  entityId?: string;
+  paperId?: string;
+  isRead?: boolean;
+}
+
+interface SubscriptionMessage extends WebSocketMessage {
+  type: 'subscribe' | 'unsubscribe';
+  channel: string;
+}
+
+interface PaperStatusMessage extends WebSocketMessage {
+  type: 'paper_status';
+  paperId: string;
+  status: PaperStatus;
+  previousStatus?: PaperStatus;
+  timestamp: string;
+  progress?: number;
+  message?: string;
+}
+
+type PaperStatus = 
+  | 'uploaded' 
+  | 'queued' 
+  | 'processing' 
+  | 'extracting_entities' 
+  | 'extracting_relationships' 
+  | 'building_knowledge_graph' 
+  | 'analyzed' 
+  | 'implementation_ready' 
+  | 'error';
+
+// Step 2: Define context interface
+interface WebSocketContextType {
+  isConnected: boolean;
+  connect: () => void;
+  disconnect: () => void;
+  reconnect: () => void;
+  sendMessage: <T extends WebSocketMessage>(data: T) => boolean;
+  lastMessage: WebSocketMessage | null;
+  error: Event | null;
+  notifications: NotificationMessage[];
+  clearNotifications: () => void;
+  removeNotification: (id: string) => void;
+  markNotificationAsRead: (id: string) => void;
+  subscribeToPaperUpdates: (paperId: string) => boolean;
+  unsubscribeFromPaperUpdates: (paperId: string) => boolean;
+  paperStatusMap: Record<string, PaperStatus>;
+}
+
+// Step 3: Create context with default values
+const WebSocketContext = React.createContext<WebSocketContextType>({
+  isConnected: false,
+  connect: () => {},
+  disconnect: () => {},
+  reconnect: () => {},
+  sendMessage: () => false,
+  lastMessage: null,
+  error: null,
+  notifications: [],
+  clearNotifications: () => {},
+  removeNotification: () => {},
+  markNotificationAsRead: () => {},
+  subscribeToPaperUpdates: () => false,
+  unsubscribeFromPaperUpdates: () => false,
+  paperStatusMap: {},
+});
+
+// Step 4: Create provider component
+interface WebSocketProviderProps {
+  children: React.ReactNode;
+  url?: string;
+  reconnectInterval?: number;
+  maxReconnectAttempts?: number;
+  onConnected?: () => void;
+  onDisconnected?: () => void;
+  onError?: (error: Event) => void;
+}
+
+interface WebSocketState {
+  socket: WebSocket | null;
+  isConnected: boolean;
+  reconnectAttempts: number;
+  lastMessage: WebSocketMessage | null;
+  error: Event | null;
+  notifications: NotificationMessage[];
+  paperStatusMap: Record<string, PaperStatus>;
+}
+
+export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
+  children,
+  url = 'ws://localhost:8000/ws',
+  reconnectInterval = 3000,
+  maxReconnectAttempts = 5,
+  onConnected,
+  onDisconnected,
+  onError,
+}) => {
+  const { token } = useAuth();
+  const [state, setState] = useState<WebSocketState>({
+    socket: null,
+    isConnected: false,
+    reconnectAttempts: 0,
+    lastMessage: null,
+    error: null,
+    notifications: [],
+    paperStatusMap: {},
+  });
+  
+  const activeSubscriptions = useRef<Set<string>>(new Set());
+  const reconnectTimeoutRef = useRef<number | null>(null);
+  
+  // Connect to WebSocket
+  const connect = useCallback(() => {
+    if (state.socket?.readyState === WebSocket.OPEN) return;
+    
+    try {
+      // Add authentication token if available
+      const fullUrl = token ? `${url}?token=${token}` : url;
+      const socket = new WebSocket(fullUrl);
+      
+      socket.onopen = () => {
+        console.log('WebSocket connection established');
+        setState(prev => ({ 
+          ...prev, 
+          socket, 
+          isConnected: true,
+          reconnectAttempts: 0,
+          error: null
+        }));
+        
+        // Resubscribe to all active channels
+        activeSubscriptions.current.forEach(channel => {
+          socket.send(JSON.stringify({ 
+            type: 'subscribe', 
+            channel 
+          }));
+        });
+        
+        if (onConnected) onConnected();
+      };
+      
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data) as WebSocketMessage;
+          
+          setState(prev => {
+            // Handle different message types
+            if (data.type === 'notification') {
+              const notification = data as NotificationMessage;
+              return {
+                ...prev,
+                lastMessage: data,
+                notifications: [notification, ...prev.notifications].slice(0, 100)
+              };
+            } else if (data.type === 'paper_status') {
+              const statusMsg = data as PaperStatusMessage;
+              return {
+                ...prev,
+                lastMessage: data,
+                paperStatusMap: {
+                  ...prev.paperStatusMap,
+                  [statusMsg.paperId]: statusMsg.status
+                }
+              };
+            }
+            
+            return {
+              ...prev,
+              lastMessage: data
+            };
+          });
+        } catch (err) {
+          console.error('Error parsing WebSocket message:', err);
+        }
+      };
+      
+      socket.onclose = (event) => {
+        console.log('WebSocket connection closed', event.code, event.reason);
+        setState(prev => ({ 
+          ...prev, 
+          socket: null, 
+          isConnected: false
+        }));
+        
+        if (onDisconnected) onDisconnected();
+        
+        // Attempt to reconnect if not closed cleanly
+        if (event.code !== 1000 && event.code !== 1001) {
+          scheduleReconnect();
+        }
+      };
+      
+      socket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setState(prev => ({ ...prev, error }));
+        
+        if (onError) onError(error);
+      };
+      
+      setState(prev => ({ ...prev, socket }));
+    } catch (error) {
+      console.error('Error establishing WebSocket connection:', error);
+      scheduleReconnect();
+    }
+  }, [url, token, onConnected, onDisconnected, onError, state.socket]);
+  
+  // Disconnect from WebSocket
+  const disconnect = useCallback(() => {
+    if (state.socket) {
+      state.socket.close(1000, 'User initiated disconnect');
+      setState(prev => ({ ...prev, socket: null, isConnected: false }));
+    }
+    
+    // Clear any pending reconnect
+    if (reconnectTimeoutRef.current !== null) {
+      window.clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+  }, [state.socket]);
+  
+  // Schedule reconnection with exponential backoff
+  const scheduleReconnect = useCallback(() => {
+    if (state.reconnectAttempts >= maxReconnectAttempts) {
+      console.log('Maximum reconnection attempts reached');
+      return;
+    }
+    
+    const delay = Math.min(
+      reconnectInterval * Math.pow(1.5, state.reconnectAttempts),
+      30000 // Cap at 30 seconds
+    );
+    
+    console.log(`Scheduling reconnect in ${delay}ms`);
+    
+    if (reconnectTimeoutRef.current !== null) {
+      window.clearTimeout(reconnectTimeoutRef.current);
+    }
+    
+    reconnectTimeoutRef.current = window.setTimeout(() => {
+      setState(prev => ({ ...prev, reconnectAttempts: prev.reconnectAttempts + 1 }));
+      connect();
+    }, delay);
+  }, [connect, reconnectInterval, maxReconnectAttempts, state.reconnectAttempts]);
+  
+  // Force reconnection
+  const reconnect = useCallback(() => {
+    disconnect();
+    setState(prev => ({ ...prev, reconnectAttempts: 0 }));
+    connect();
+  }, [disconnect, connect]);
+  
+  // Send message to WebSocket
+  const sendMessage = useCallback(<T extends WebSocketMessage>(data: T): boolean => {
+    if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
+      console.error('Cannot send message, WebSocket is not connected');
+      return false;
+    }
+    
+    try {
+      state.socket.send(JSON.stringify(data));
+      return true;
+    } catch (error) {
+      console.error('Error sending WebSocket message:', error);
+      return false;
+    }
+  }, [state.socket]);
+  
+  // Subscribe to paper updates
+  const subscribeToPaperUpdates = useCallback((paperId: string): boolean => {
+    const channel = `paper_${paperId}`;
+    activeSubscriptions.current.add(channel);
+    
+    return sendMessage({
+      type: 'subscribe',
+      channel
+    });
+  }, [sendMessage]);
+  
+  // Unsubscribe from paper updates
+  const unsubscribeFromPaperUpdates = useCallback((paperId: string): boolean => {
+    const channel = `paper_${paperId}`;
+    activeSubscriptions.current.delete(channel);
+    
+    return sendMessage({
+      type: 'unsubscribe',
+      channel
+    });
+  }, [sendMessage]);
+  
+  // Clear all notifications
+  const clearNotifications = useCallback(() => {
+    setState(prev => ({ ...prev, notifications: [] }));
+  }, []);
+  
+  // Remove a specific notification
+  const removeNotification = useCallback((id: string) => {
+    setState(prev => ({
+      ...prev,
+      notifications: prev.notifications.filter(n => n.id !== id)
+    }));
+  }, []);
+  
+  // Mark notification as read
+  const markNotificationAsRead = useCallback((id: string) => {
+    setState(prev => ({
+      ...prev,
+      notifications: prev.notifications.map(n => 
+        n.id === id ? { ...n, isRead: true } : n
+      )
+    }));
+  }, []);
+  
+  // Connect on mount or when token changes
+  useEffect(() => {
+    connect();
+    
+    return () => {
+      disconnect();
+    };
+  }, [connect, disconnect, token]);
+  
+  // Load notifications from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedNotifications = localStorage.getItem('notifications');
+      if (savedNotifications) {
+        const parsedNotifications = JSON.parse(savedNotifications) as NotificationMessage[];
+        setState(prev => ({
+          ...prev,
+          notifications: parsedNotifications
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading notifications from localStorage:', error);
+    }
+  }, []);
+  
+  // Save notifications to localStorage when changed
+  useEffect(() => {
+    try {
+      localStorage.setItem('notifications', JSON.stringify(state.notifications));
+    } catch (error) {
+      console.error('Error saving notifications to localStorage:', error);
+    }
+  }, [state.notifications]);
+  
+  // Create context value
+  const contextValue: WebSocketContextType = {
+    isConnected: state.isConnected,
+    connect,
+    disconnect,
+    reconnect,
+    sendMessage,
+    lastMessage: state.lastMessage,
+    error: state.error,
+    notifications: state.notifications,
+    clearNotifications,
+    removeNotification,
+    markNotificationAsRead,
+    subscribeToPaperUpdates,
+    unsubscribeFromPaperUpdates,
+    paperStatusMap: state.paperStatusMap,
+  };
+  
+  return (
+    <WebSocketContext.Provider value={contextValue}>
+      {children}
+    </WebSocketContext.Provider>
+  );
+};
+
+// Step 5: Create hook for accessing context
+export const useWebSocket = (): WebSocketContextType => {
+  const context = useContext(WebSocketContext);
+  
+  if (!context) {
+    throw new Error('useWebSocket must be used within a WebSocketProvider');
+  }
+  
+  return context;
+};
+```
+
+#### Day 5: Add Shared Type Definitions
+
+```typescript
+// src/types/index.ts
+
+// Create a central type definitions file with shared interfaces
+
+// User and Authentication Types
+export interface User {
+  id: string;
+  username: string;
+  roles: string[];
+  email?: string;
+  displayName?: string;
+  preferences?: UserPreferences;
+}
+
+export interface UserPreferences {
+  theme?: 'light' | 'dark' | 'system';
+  visualizationSettings?: VisualizationSettings;
+}
+
+export interface VisualizationSettings {
+  nodeSize: number;
+  forceStrength: number;
+  showLabels: boolean;
+  darkMode: boolean;
+  highlightNeighbors: boolean;
+  showRelationshipLabels: boolean;
+  [key: string]: any;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+// WebSocket Message Types
+export interface WebSocketMessage {
+  type: string;
+  [key: string]: any;
+}
+
+export interface NotificationMessage extends WebSocketMessage {
+  type: 'notification';
+  id: string;
+  title: string;
+  message: string;
+  category: 'info' | 'success' | 'warning' | 'error' | 'paper_status' | 'system';
+  timestamp: string;
+  entityId?: string;
+  paperId?: string;
+  isRead?: boolean;
+}
+
+// Knowledge Graph Types
+export interface GraphNode {
+  id: string;
+  name: string;
+  type: EntityType;
+  properties?: Record<string, any>;
+  importance?: number;
+  year?: number;
+  color?: string;
+}
+
+export interface GraphLink {
+  source: string | GraphNode;
+  target: string | GraphNode;
+  type: RelationshipType;
+  properties?: Record<string, any>;
+  weight?: number;
+  confidence?: number;
+}
+
+export interface GraphData {
+  nodes: GraphNode[];
+  links: GraphLink[];
+}
+
+export type EntityType = 
+  | 'MODEL' 
+  | 'DATASET' 
+  | 'ALGORITHM'
+  | 'PAPER' 
+  | 'AUTHOR' 
+  | 'CODE'
+  | 'FRAMEWORK'
+  | 'METRIC'
+  | 'METHOD'
+  | 'TASK';
+
+export type RelationshipType =
+  | 'IS_A'
+  | 'PART_OF'
+  | 'BUILDS_ON'
+  | 'OUTPERFORMS'
+  | 'TRAINED_ON'
+  | 'EVALUATED_ON'
+  | 'HAS_CODE'
+  | 'AUTHORED_BY'
+  | 'CITES'
+  | 'USED_FOR';
+
+// Paper Types
+export interface Paper {
+  id: string;
+  title: string;
+  authors: string[];
+  abstract?: string;
+  year?: number;
+  url?: string;
+  doi?: string;
+  status: PaperStatus;
+  uploadedAt: string;
+  processedAt?: string;
+  metadata?: Record<string, any>;
+}
+
+export type PaperStatus = 
+  | 'uploaded' 
+  | 'queued' 
+  | 'processing' 
+  | 'extracting_entities' 
+  | 'extracting_relationships' 
+  | 'building_knowledge_graph' 
+  | 'analyzed' 
+  | 'implementation_ready' 
+  | 'error';
+
+// API Response Types
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+// Error Types
+export interface ApiError {
+  statusCode: number;
+  message: string;
+  details?: any;
+}
+```
+
+### Week 2: Custom Hooks Migration
+
+#### Day 1-2: useD3 Hook Migration
+```typescript
+// src/hooks/useD3.ts
+
+import { useRef, useEffect } from 'react';
+import * as d3 from 'd3';
+
+/**
+ * Hook to integrate D3 with React
+ * 
+ * @template GElement - The element type for D3 selection
+ * @param renderFn - Function that receives D3 selection and renders visualization
+ * @param dependencies - Array of dependencies to trigger re-rendering
+ * @returns React ref to attach to the DOM element
+ */
+function useD3<GElement extends d3.BaseType>(
+  renderFn: (selection: d3.Selection<GElement, unknown, null, undefined>) => void,
+  dependencies: React.DependencyList = []
+): React.RefObject<GElement> {
+  const ref = useRef<GElement>(null);
+  
+  useEffect(() => {
+    // Only run if ref is attached to an element
+    if (ref.current) {
+      // Create D3 selection and call the render function
+      const selection = d3.select(ref.current);
+      renderFn(selection as d3.Selection<GElement, unknown, null, undefined>);
+    }
+    
+    // Cleanup function to prevent memory leaks
+    return () => {
+      if (ref.current) {
+        // Stop any running transitions or timers
+        const selection = d3.select(ref.current);
+        selection.selectAll('*').interrupt();
+      }
+    };
+  }, dependencies); // Re-run when dependencies change
+  
+  return ref;
+}
+
+// Specialized version for SVG element
+export function useSvgD3(
+  renderFn: (selection: d3.Selection<SVGSVGElement, unknown, null, undefined>) => void,
+  dependencies: React.DependencyList = []
+): React.RefObject<SVGSVGElement> {
+  return useD3<SVGSVGElement>(renderFn, dependencies);
+}
+
+// Specialized version for div element
+export function useDivD3(
+  renderFn: (selection: d3.Selection<HTMLDivElement, unknown, null, undefined>) => void,
+  dependencies: React.DependencyList = []
+): React.RefObject<HTMLDivElement> {
+  return useD3<HTMLDivElement>(renderFn, dependencies);
+}
+
+export default useD3;
+```
+
+#### Day 3: useFetch Hook Migration
+```typescript
+// src/hooks/useFetch.ts
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { ApiResponse, ApiError } from '../types';
+
+interface UseFetchOptions<TRequestData = any> {
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  headers?: Record<string, string>;
+  data?: TRequestData;
+  timeout?: number;
+  retries?: number;
+  retryDelay?: number;
+  useCache?: boolean;
+  cacheTime?: number; // In milliseconds
+}
+
+interface UseFetchState<TData, TError> {
+  data: TData | null;
+  loading: boolean;
+  error: TError | null;
+  timestamp: number | null;
+}
+
+interface UseFetchResult<TData, TError> extends UseFetchState<TData, TError> {
+  refetch: (options?: Partial<UseFetchOptions>) => Promise<TData>;
+  cancel: () => void;
+}
+
+// Cache for storing responses
+const responseCache: Record<string, { data: any; timestamp: number }> = {};
+
+/**
+ * Custom hook for data fetching with advanced features
+ * 
+ * @template TData - Type of the response data
+ * @template TError - Type of the error
+ * @template TRequestData - Type of the request data
+ * 
+ * @param url - URL to fetch from
+ * @param options - Fetch options including method, headers, etc.
+ * @param immediate - Whether to fetch immediately on mount
+ * @param mockDataFn - Function to return mock data when API fails
+ * 
+ * @returns Object with data, loading state, error, refetch function, and cancel function
+ */
+function useFetch<
+  TData = any,
+  TError = ApiError,
+  TRequestData = any
+>(
+  url: string,
+  options: UseFetchOptions<TRequestData> = {},
+  immediate: boolean = true,
+  mockDataFn?: () => TData
+): UseFetchResult<TData, TError> {
+  // Default options
+  const defaultOptions: UseFetchOptions = {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    retries: 3,
+    retryDelay: 1000,
+    useCache: true,
+    cacheTime: 5 * 60 * 1000, // 5 minutes
+  };
+  
+  // Merge default options with provided options
+  const mergedOptions = { ...defaultOptions, ...options };
+  
+  // State for data, loading, and error
+  const [state, setState] = useState<UseFetchState<TData, TError>>({
+    data: null,
+    loading: immediate,
+    error: null,
+    timestamp: null,
+  });
+  
+  // Refs for the abort controller and retry count
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const retryCountRef = useRef<number>(0);
+  const isMountedRef = useRef<boolean>(true);
+  
+  // Create unique cache key based on URL and request data
+  const getCacheKey = useCallback(() => {
+    const dataString = mergedOptions.data ? JSON.stringify(mergedOptions.data) : '';
+    return `${mergedOptions.method}-${url}-${dataString}`;
+  }, [url, mergedOptions.method, mergedOptions.data]);
+  
+  // Function to check if cached data is still valid
+  const isValidCache = useCallback((cacheKey: string): boolean => {
+    if (!responseCache[cacheKey]) return false;
+    
+    const now = Date.now();
+    const { timestamp } = responseCache[cacheKey];
+    
+    return now - timestamp < mergedOptions.cacheTime!;
+  }, [mergedOptions.cacheTime]);
+  
+  // Fetch function with retry logic
+  const fetchWithRetry = useCallback(async (
+    currentUrl: string,
+    currentOptions: UseFetchOptions,
+    currentRetry: number = 0
+  ): Promise<TData> => {
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+    
+    try {
+      // Set up fetch options
+      const fetchOptions: RequestInit = {
+        method: currentOptions.method,
+        headers: currentOptions.headers as HeadersInit,
+        signal: abortControllerRef.current.signal,
+      };
+      
+      // Add body for non-GET requests
+      if (currentOptions.method !== 'GET' && currentOptions.data) {
+        fetchOptions.body = JSON.stringify(currentOptions.data);
+      }
+      
+      // Set up timeout if specified
+      let timeoutId: number | undefined;
+      if (currentOptions.timeout) {
+        timeoutId = window.setTimeout(() => {
+          if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+          }
+        }, currentOptions.timeout);
+      }
+      
+      // Execute fetch
+      const response = await fetch(currentUrl, fetchOptions);
+      
+      // Clear timeout if it was set
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+      
+      // Check for successful response
+      if (!response.ok) {
+        // Try to parse error response
+        let errorData: any;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { message: response.statusText };
+        }
+        
+        throw {
+          statusCode: response.status,
+          message: errorData.message || 'An error occurred',
+          details: errorData.details || errorData,
+        } as TError;
+      }
+      
+      // Parse response as JSON
+      const data = await response.json() as ApiResponse<TData>;
+      
+      // Handle API wrapper format if it exists
+      const result = data.data !== undefined ? data.data : data as unknown as TData;
+      
+      // Cache successful response if caching is enabled
+      if (currentOptions.useCache) {
+        responseCache[getCacheKey()] = {
+          data: result,
+          timestamp: Date.now(),
+        };
+      }
+      
+      return result;
+    } catch (error) {
+      // Don't retry if the request was aborted
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw error;
+      }
+      
+      // Retry logic
+      if (currentRetry < currentOptions.retries!) {
+        // Exponential backoff with jitter
+        const delay = currentOptions.retryDelay! * Math.pow(1.5, currentRetry) * (0.9 + Math.random() * 0.2);
+        
+        console.log(`Fetch attempt ${currentRetry + 1} failed, retrying in ${delay}ms...`);
+        
+        // Wait for delay
+        await new Promise(resolve => setTimeout(resolve, delay));
+        
+        // Check if component is still mounted
+        if (!isMountedRef.current) {
+          throw new Error('Component unmounted during retry');
+        }
+        
+        // Retry the fetch
+        return fetchWithRetry(currentUrl, currentOptions, currentRetry + 1);
+      }
+      
+      // If we've exhausted retries, check for mock data
+      if (mockDataFn) {
+        console.warn('Fetch failed, using mock data', error);
+        return mockDataFn();
+      }
+      
+      // Otherwise throw the error
+      throw error;
+    }
+  }, [getCacheKey, mockDataFn]);
+  
+  // Main fetch function that handles state updates
+  const executeFetch = useCallback(async (
+    customOptions: Partial<UseFetchOptions> = {}
+  ): Promise<TData> => {
+    // Merge original options with custom options for this call
+    const currentOptions = { ...mergedOptions, ...customOptions };
+    const cacheKey = getCacheKey();
+    
+    // Set loading state
+    if (isMountedRef.current) {
+      setState(prev => ({ ...prev, loading: true, error: null }));
+    }
+    
+    // Check cache first if enabled
+    if (currentOptions.useCache && isValidCache(cacheKey)) {
+      const cachedData = responseCache[cacheKey].data;
+      
+      if (isMountedRef.current) {
+        setState({
+          data: cachedData,
+          loading: false,
+          error: null,
+          timestamp: responseCache[cacheKey].timestamp,
+        });
+      }
+      
+      return cachedData;
+    }
+    
+    try {
+      // Execute fetch with retry logic
+      const data = await fetchWithRetry(url, currentOptions);
+      
+      // Update state with successful result
+      if (isMountedRef.current) {
+        setState({
+          data,
+          loading: false,
+          error: null,
+          timestamp: Date.now(),
+        });
+      }
+      
+      return data;
+    } catch (error) {
+      // Update state with error
+      if (isMountedRef.current) {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: error as TError,
+          timestamp: Date.now(),
+        }));
+      }
+      
+      throw error;
+    }
+  }, [url, mergedOptions, getCacheKey, isValidCache, fetchWithRetry]);
+  
+  // Function to cancel the current request
+  const cancel = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }, []);
+  
+  // Fetch on mount if immediate is true
+  useEffect(() => {
+    if (immediate) {
+      executeFetch().catch(() => {}); // Catch error since it's already handled in state
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      isMountedRef.current = false;
+      cancel();
+    };
+  }, [immediate, executeFetch, cancel]);
+  
+  // Return state and functions
+  return {
+    ...state,
+    refetch: executeFetch,
+    cancel,
+  };
+}
+
+export default useFetch;
+```
 ```
 
 #### Week 2: Comprehensive Accessibility Implementation
