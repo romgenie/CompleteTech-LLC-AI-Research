@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance for research implementation API
 const implementationApi = axios.create({
-  baseURL: '/api/research-implementation',
+  baseURL: '/implementation',
 });
 
 // Add request interceptor to add authentication token
