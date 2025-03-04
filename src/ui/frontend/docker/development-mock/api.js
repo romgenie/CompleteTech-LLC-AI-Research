@@ -13,7 +13,7 @@ const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 
 // Mock data
-const mockData = require('../../src/utils/mockData').default;
+const mockData = require('./mockData.js');
 
 // Create Express app
 const app = express();
