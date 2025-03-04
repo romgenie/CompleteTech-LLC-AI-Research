@@ -144,13 +144,17 @@ We have implemented the following components for the AI Research Integration Pro
 ### Implementation Achievements
 
 1. **Knowledge Extraction Pipeline (Completed)** ✅
-   - ✅ Entity Recognition System for identifying AI and scientific entities
-   - ✅ Relationship Extraction Module for identifying connections between entities
-   - ✅ Knowledge Extraction Coordinator for integrating extraction components
-   - ✅ Document Processing Engine for different document formats
-   - ✅ Knowledge graph creation and querying capabilities
-   - ✅ Enhanced entity type system with 35+ entity types in organized categories
-   - ✅ Enhanced relationship type system with 50+ relationship types in organized categories
+   - Note: While all pipeline components are developed, the automated paper processing workflow is planned for future implementation
+
+### Planned Enhancements
+
+1. **Paper Processing Pipeline (Planned)** 🔄
+   - Background task processing system using Celery and Redis
+   - Automated document analysis and metadata extraction
+   - Paper state management (uploaded → processing → analyzed)
+   - Integration with existing document processing components
+   - Manual processing endpoints and batch processing capability
+   - Connect paper analysis to implementation generation
 
 2. **Knowledge Graph Integration (Completed)** ✅
    - ✅ Connection discovery engine for finding relationships between entities
