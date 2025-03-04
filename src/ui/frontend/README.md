@@ -92,6 +92,7 @@ Common UI components with standardized APIs:
 - **NotificationCenter**: Component for displaying and managing WebSocket notifications
 - **KnowledgeGraphFilter**: Component for filtering knowledge graph entities and relationships
 - **PaperUploadDialog**: Dialog for uploading papers with validation and metadata editing
+- **PaperDashboard**: Comprehensive dashboard for paper management with filtering and sorting
 
 ### Available Scripts
 
