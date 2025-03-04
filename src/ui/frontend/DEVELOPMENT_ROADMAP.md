@@ -370,23 +370,27 @@ Improving the codebase health and developer experience to ensure long-term maint
      - Implement focus management across all components
      - Create text alternatives for graphical information
 
-2. **Testing Infrastructure Setup** (Week 3-4)
-   - **Day 1-2:** Set up Jest with React Testing Library
-     - Configure testing environment for components
-     - Create test utilities and helpers
-     - Set up snapshot testing infrastructure
-   - **Day 3-4:** Implement Mock Service Worker
-     - Configure API mocking for tests
+2. **Testing Infrastructure Setup** (Future Phase)
+   - **Phase 1: Core Testing Framework**
+     - Set up Jest with React Testing Library
+     - Configure testing environment with TypeScript support
+     - Create test utilities for hooks and components
+     - Add unit tests for utility functions and hooks
+   - **Phase 2: API and State Testing**
+     - Implement Mock Service Worker for API testing
      - Create mock handlers for all endpoints
-     - Set up network request interception
-   - **Day 5-7:** Add visual regression testing
+     - Test context providers and state management
+     - Add tests for error handling and recovery
+   - **Phase 3: UI Component Testing**  
+     - Create comprehensive component tests
      - Set up Storybook for component isolation
-     - Integrate visual testing tool (Chromatic/Percy)
-     - Create baseline snapshots for key components
-   - **Day 8-10:** Configure CI/CD pipeline
-     - Set up GitHub Actions workflows
-     - Configure automated testing on PR
-     - Add deployment pipeline for staging environment
+     - Implement visual regression testing
+     - Add accessibility testing with axe-core
+   - **Phase 4: CI/CD Integration**
+     - Configure GitHub Actions workflows
+     - Set up automated PR testing
+     - Implement test coverage reporting
+     - Create deployment pipeline for staging
 
 3. **Code Quality Improvements** (Ongoing)
    - Configure Prettier for consistent formatting

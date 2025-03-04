@@ -49,64 +49,69 @@
 | **Thu** | Build advanced filtering for search history | Implement unified error handling and feedback |
 | **Fri** | Add search statistics and export capabilities | Create comprehensive help documentation |
 
-## Implementation Priorities
+## Implementation Guidelines
 
-### 1. Knowledge Graph Performance & Accessibility (Weeks 1-2)
-- **Must Have**:
-  - Optimized rendering for large graphs (1000+ nodes)
-  - Keyboard navigation for all interactive elements
-  - Screen reader support with ARIA attributes
-  - Text alternatives for visualization data
-  
-- **Should Have**:
-  - High contrast mode for improved visibility
-  - Progressive loading for very large datasets
-  - Node aggregation for dense clusters
-  - Level-of-detail rendering based on zoom
+### 1. Knowledge Graph Performance (Week 1)
 
-- **Nice to Have**:
-  - URL state encoding for sharing graph views
-  - Advanced filtering options for complex graphs
-  - Temporal visualization capabilities
-  - Custom layout algorithms for specific relationship types
+| Priority | Feature | Implementation Approach |
+|----------|---------|------------------------|
+| **P0** | Force simulation for 1000+ nodes | Use adaptive parameters based on node count with optimized physics |
+| **P0** | Smart node filtering | Implement logarithmic thresholds with Set-based lookups for O(1) performance |
+| **P0** | Dynamic node sizing | Scale node size using logarithmic scale based on connection count |
+| **P1** | Progressive loading | Load initial subset of nodes, then add remaining nodes incrementally |
+| **P1** | Level-of-detail rendering | Show/hide elements based on zoom level for better performance |
+| **P2** | Node aggregation | Group dense clusters of similar nodes when zoomed out |
 
-### 2. TypeScript Migration (Weeks 1-2)
-- **Must Have**:
-  - Type definitions for core contexts (Auth, WebSocket)
-  - Typed custom hooks (useD3, useFetch, useWebSocket)
-  - Shared interfaces for API data models
-  - Proper typing for WebSocket messages
-  
-- **Should Have**:
-  - Generic helper types for common patterns
-  - Typed utility functions with documentation
-  - Type guards for runtime validation
-  - Migration of shared UI components
-  
-- **Nice to Have**:
-  - Full application type coverage
-  - Type-based API validation
-  - Automated type generation from API schema
-  - Storybook integration with TypeScript examples
+### 2. Accessibility Features (Week 2)
 
-### 3. Research Enhancement (Weeks 3-4)
-- **Must Have**:
-  - Citation export in multiple formats
-  - Reference management interface
-  - Research history with persistence
-  - Favorites and saved queries
-  
-- **Should Have**:
-  - DOI lookup and metadata enrichment
-  - Filtering and sorting for references
-  - Step-by-step guided research flow
-  - Tagging system for organization
-  
-- **Nice to Have**:
-  - PDF and Markdown export
-  - Collaborative research capabilities
-  - Advanced query builder interface
-  - Integration with bibliography managers
+| Priority | Feature | Implementation Approach |
+|----------|---------|------------------------|
+| **P0** | Keyboard navigation | Complete system with arrow keys, Tab management, and focus indicators |
+| **P0** | ARIA attributes | Add appropriate roles, labels, and descriptions to all elements |
+| **P0** | Screen reader support | Implement live regions for dynamic announcements |
+| **P0** | Text alternatives | Create semantic HTML table view of graph data |
+| **P1** | High contrast mode | Ensure all colors meet WCAG AA contrast ratio of 4.5:1 |
+| **P1** | Focus management | Visual indicators that meet WCAG 2.1 focus visibility requirements |
+
+### 3. TypeScript Migration (Weeks 1-2)
+
+| Priority | Feature | Implementation Approach |
+|----------|---------|------------------------|
+| **P0** | AuthContext typing | Complete interfaces for user, token, and auth state |
+| **P0** | WebSocketContext typing | Message type definitions with generics for all WS operations |
+| **P0** | useD3 hook conversion | Generic typing for D3 selections and data binding |
+| **P0** | Shared type definitions | Centralized types/index.ts with core entity interfaces |
+| **P1** | useFetch with generics | Type-safe API requests with error handling |
+| **P1** | Type guards | Runtime validation for API responses |
+
+### 4. Citation Management (Week 3)
+
+| Priority | Feature | Implementation Approach |
+|----------|---------|------------------------|
+| **P0** | Multi-format export | Implement BibTeX, APA, MLA, and Chicago citation formats |
+| **P0** | Reference panel | Create UI with filtering, sorting, and pagination |
+| **P0** | Export capabilities | Add export to clipboard and file download options |
+| **P1** | DOI lookup | Integrate with CrossRef API for metadata enrichment |
+| **P1** | Citation validation | Check for required fields and formatting |
+| **P2** | Import capabilities | Allow CSV/BibTeX import of existing references |
+
+### 5. Research Organization (Week 4)
+
+| Priority | Feature | Implementation Approach |
+|----------|---------|------------------------|
+| **P0** | Research history | Persist in localStorage with timestamps and metadata |
+| **P0** | Favorites system | Allow marking and filtering favorite queries |
+| **P0** | Advanced filtering | Filter history by date, text, and favorites status |
+| **P1** | Tagging system | Create, assign, and filter by user-defined tags |
+| **P1** | Guided workflows | Step-by-step research process with progressive disclosure |
+| **P2** | Research insights | Generate statistics about research patterns |
+
+---
+
+**Priority Legend**:
+- **P0**: Must-have (critical for functionality)
+- **P1**: Should-have (important but not blocking)
+- **P2**: Nice-to-have (enhances experience but optional)
 
 ## Project Overview
 The AI Research Integration frontend provides a UI for interacting with our knowledge graph, research, and paper implementation systems. It's built with React, MUI, and integrates with our FastAPI backend.
@@ -168,15 +173,28 @@ The AI Research Integration frontend provides a UI for interacting with our know
    - Add client-side caching where appropriate
 
 ## Testing Strategy
-- Unit tests for utilities and hooks (minimum 80% coverage)
-- Component tests with React Testing Library
-- Mock API responses using Mock Service Worker
-- Visual regression tests for UI components
-- Focus on critical user flows
-- Add E2E tests for main user journeys
-- Include accessibility testing in component tests
-- Test keyboard navigation for all interactive elements
-- Verify screen reader compatibility for critical components
+
+### Phase 1: Core Testing (Weeks 1-2)
+| Type | Scope | Tools | Coverage Goal |
+|------|-------|-------|--------------|
+| Unit | Utility functions | Jest | 90% |
+| Unit | Custom hooks | React Testing Library + Hooks | 80% |
+| Unit | TypeScript types | tsd | Type correctness |
+| Integration | Context providers | React Testing Library | API boundaries |
+
+### Phase 2: Comprehensive Testing (Weeks 3-4)
+| Type | Scope | Tools | Coverage Goal |
+|------|-------|-------|--------------|
+| Component | UI components | React Testing Library | Key interactions |
+| API | Service modules | MSW (Mock Service Worker) | All endpoints |
+| Visual | UI components | Storybook + Percy | Critical components |
+| Accessibility | All UI | axe-core + Jest | WCAG 2.1 AA compliance |
+
+### Testing Priorities
+1. **Performance**: Test D3 optimization with large datasets using performance marks
+2. **Accessibility**: Verify keyboard navigation and screen reader compatibility
+3. **Type Safety**: Ensure TypeScript interfaces correctly model API data
+4. **Error Handling**: Test fallback behavior and recovery mechanisms
 
 ## Docker Development
 - Use Docker for consistent development environments
@@ -234,27 +252,62 @@ The AI Research Integration frontend provides a UI for interacting with our know
   5. Add appropriate retry mechanisms
 
 ## Backend Integration
-- API base URL: http://localhost:8000
-- Authentication: JWT tokens stored in localStorage
-- Endpoints:
-  - `/auth/login` - User authentication
-  - `/api/research` - Research query endpoints
-  - `/api/knowledge-graph` - Knowledge graph operations
-  - `/api/implementation` - Paper implementation endpoints
-- Error handling:
-  - Network errors: Retry with exponential backoff
-  - Authentication errors: Redirect to login
-  - Server errors: Display appropriate UI message
-  - Default to mock data when backend unavailable
 
-## Knowledge Graph Visualization 
+### API Services & Endpoints
+
+| Service | Endpoint | Purpose | Error Handling |
+|---------|----------|---------|---------------|
+| **Authentication** | `/auth/login` | User authentication | Redirect to login page |
+| **Authentication** | `/auth/refresh` | Refresh JWT token | Silent retry, then login |
+| **Research** | `/api/research/query` | Perform research query | Retry with backoff, fallback to mock |
+| **Research** | `/api/research/history` | Get query history | Local cache fallback |
+| **Knowledge Graph** | `/api/knowledge-graph/entity` | Get entity details | Retry with backoff, fallback to mock |
+| **Knowledge Graph** | `/api/knowledge-graph/search` | Search for entities | Retry with backoff, fallback to mock |
+| **Knowledge Graph** | `/api/knowledge-graph/related` | Get related entities | Retry with backoff, fallback to mock |
+| **Implementation** | `/api/implementation/paper` | Get implementation details | Retry with backoff, fallback to mock |
+| **Implementation** | `/api/implementation/generate` | Generate implementation | Graceful timeout handling |
+
+### WebSocket Integration
+
+| Event Type | Purpose | Reconnection Strategy |
+|------------|---------|----------------------|
+| `paper_status` | Real-time paper processing status | Auto reconnect with exponential backoff |
+| `notification` | System notifications | Auto reconnect with exponential backoff |
+| `graph_update` | Knowledge graph changes | Auto reconnect with exponential backoff |
+
+### Error Handling Strategy
+
+1. **Network Errors**: 
+   - Implement retry with exponential backoff (max 3 attempts)
+   - Fall back to cached data when possible
+   - Show user-friendly network error message
+
+2. **Authentication Errors**:
+   - Attempt token refresh on 401 errors
+   - Redirect to login if refresh fails
+   - Preserve current location for post-login redirect
+
+3. **Server Errors**:
+   - Log error details (in development mode)
+   - Display appropriate user message based on error type
+   - Fall back to mock data when possible
+   - Provide option to retry operation
+
+4. **Fallback Strategy**:
+   - Always include mock data as fallback
+   - Clearly indicate when using fallback data
+   - Provide seamless transition between real/mock data
+
+## Knowledge Graph Implementation Guide
+
 ### Core Principles
-- Use the useD3 hook for all D3 integrations
-- Follow established UX patterns from the existing implementation
+- Use the useD3 hook for all D3 integrations with proper cleanup
+- Follow established UX patterns from the Knowledge Graph Explorer
 - Implement progressive disclosure for advanced features
-- Always provide meaningful empty states with clear user guidance
+- Provide meaningful empty states with clear user guidance
+- Ensure full accessibility for all interaction patterns
 
-### Knowledge Graph Performance Optimization (Priority)
+### Knowledge Graph Performance Optimization (Week 1)
 
 #### Week 1: D3 Force Simulation Optimization
 ```javascript

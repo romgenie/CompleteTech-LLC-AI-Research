@@ -70,6 +70,29 @@ This file contains key information about the repositories in this workspace and 
 - Comprehensive type hints
 - 80%+ test coverage
 
+### Frontend Code Style
+- **README Guidelines**: 
+  - README files should NEVER contain code or code blocks
+  - All documentation should go in /docs with file structure matching /src
+- **TypeScript Conventions**:
+  - Use interfaces for object shapes over type aliases
+  - Explicit return types on all functions
+  - Proper generic typing for hooks and components
+- **Component Structure**:
+  - Functional components with React hooks
+  - Props interfaces defined above components
+  - Named exports preferred over default exports
+- **Documentation**:
+  - JSDoc comments for all components and functions
+  - Component usage examples in documentation
+- **Testing**:
+  - Jest with React Testing Library
+  - Component tests focus on user interaction
+  - Mock API responses for service tests
+- **Cost Tracking**:
+  - Always track development costs after each sprint
+  - Include cost metrics in sprint retrospectives
+
 ## Project Structure
 
 The project is organized into the following structure:
@@ -174,3 +197,11 @@ Each plan includes detailed breakdowns at high, mid, and low levels of abstracti
    - Implement code versioning and diff viewing
    - Add execution environment for testing implementations
    - Enhance traceability between papers and implementations
+
+
+########   CRITCIAL INSTRUCTIONS   ########
+          Readme should never contain the following:
+               Code, Code Blocks, Etc
+               Documentation go in /docs with the file structure matching the /src
+               Always Track costs after sprints
+########   CRITCIAL INSTRUCTIONS   ########

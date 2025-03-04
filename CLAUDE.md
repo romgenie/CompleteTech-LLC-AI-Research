@@ -362,6 +362,29 @@ We have implemented the following components for the AI Research Integration Pro
 - **Adapter pattern**: Use adapters for all external repository integrations
 - **Unit tests**: Aim for 80%+ test coverage for all components
 
+### Frontend Code Style
+- **README Guidelines**: 
+  - README files should NEVER contain code or code blocks
+  - All documentation should go in /docs with file structure matching /src
+- **TypeScript Conventions**:
+  - Use interfaces for object shapes over type aliases
+  - Explicit return types on all functions
+  - Proper generic typing for hooks and components
+- **Component Structure**:
+  - Functional components with React hooks
+  - Props interfaces defined above components
+  - Named exports preferred over default exports
+- **Documentation**:
+  - JSDoc comments for all components and functions
+  - Component usage examples in documentation
+- **Testing**:
+  - Jest with React Testing Library
+  - Component tests focus on user interaction
+  - Mock API responses for service tests
+- **Cost Tracking**:
+  - Always track development costs after each sprint
+  - Include cost metrics in sprint retrospectives
+
 ## Integration Plans
 
 The `/plan/structural` directory contains detailed architectural plans for integrating the repositories in this workspace for AI research and knowledge discovery:
