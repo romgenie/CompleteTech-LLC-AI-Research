@@ -47,7 +47,20 @@ This file contains key information about the repositories in this workspace and 
 
 ## Common Commands
 
-- To be added as needed
+### Frontend Development
+- `cd /Users/completetech/open-computer-use/claude_workspace/src/ui/frontend` - Navigate to frontend directory
+- `npm start` - Start the React development server (runs on port 3001)
+- `npm run build` - Build production version
+- `npm test` - Run frontend tests
+
+### Backend Development
+- `docker-compose up -d` - Start backend services (FastAPI, Neo4j, MongoDB)
+- `docker-compose down` - Stop backend services
+- `docker-compose logs -f api` - Follow API logs
+- `curl http://localhost:8000/health` - Check API health
+
+### Authentication
+- Test credentials: username: admin, password: password
 
 ## Code Style Preferences
 
@@ -66,9 +79,31 @@ src/
 ├── research_orchestrator/      # Research Orchestration Framework
 ├── knowledge_graph_system/     # Dynamic Knowledge Graph System
 ├── research_implementation/    # AI Research Implementation System
+├── ui/                         # User Interface
+│   ├── frontend/               # React frontend application
+│   └── api/                    # FastAPI backend
 ├── plan/                       # Architecture and implementation plans
 ├── tests/                      # Test suite
 └── adapters/                   # External repository adapters
+```
+
+### Frontend Structure
+
+```
+frontend/
+├── public/                     # Static assets
+├── src/
+│   ├── components/             # Reusable UI components
+│   ├── contexts/               # React context providers
+│   ├── pages/                  # Main application pages
+│   │   ├── Dashboard.js        # Overview dashboard
+│   │   ├── KnowledgeGraphPage.js # Knowledge graph visualization
+│   │   ├── ResearchPage.js     # Research query interface
+│   │   ├── ImplementationPage.js # Paper implementation interface
+│   │   └── Login.js            # Authentication page
+│   ├── services/               # API client services
+│   └── utils/                  # Utility functions
+└── package.json                # Dependencies and scripts
 ```
 
 ## Integration Plans
@@ -94,3 +129,32 @@ The `/plan/structural` directory contains detailed architectural plans for integ
 - Utilizes AutoCodeAgent2.0's code generation with TDAG's task decomposition and knowledge from research papers
 
 Each plan includes detailed breakdowns at high, mid, and low levels of abstraction to guide implementation.
+
+## Implementation Progress
+
+### Current Status (March 2025)
+- All core backend components are now implemented and functional
+- Frontend UI has been developed with React and connected to backend services
+- Docker containerization is complete and services are operational
+- User authentication system is working with JWT tokens
+- Three main feature pages are implemented:
+  - Research page for conducting research queries
+  - Knowledge Graph page with interactive visualization
+  - Implementation page for code generation from research papers
+- Graceful fallbacks to mock data are in place when backend services are unavailable
+
+### Next Steps
+1. **Enhanced Knowledge Graph Visualization**:
+   - Implement more sophisticated D3.js visualizations
+   - Add filtering and advanced query capabilities
+   - Improve performance with large graph datasets
+
+2. **Research Query Improvements**:
+   - Implement streaming response for better UX
+   - Add source citation and reference tracking
+   - Improve search relevance with better query planning
+
+3. **Code Implementation Enhancements**:
+   - Add syntax highlighting for generated code
+   - Implement code versioning and diff viewing
+   - Add execution environment for testing implementations
