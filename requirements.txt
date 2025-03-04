@@ -24,6 +24,24 @@ spacy>=3.6.0
 fuzzywuzzy>=0.18.0
 langchain-experimental>=0.0.10
 
+# API and Web Server
+fastapi>=0.105.0
+uvicorn>=0.24.0
+websockets>=12.0
+python-multipart>=0.0.6
+httpx>=0.25.0
+starlette>=0.31.0
+jinja2>=3.1.0
+itsdangerous>=2.1.2
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# Database and storage
+pymongo>=4.5.0
+motor>=3.3.0
+beanie>=1.22.0
+asyncio>=3.4.0
+
 # Development dependencies
 pytest>=6.0
 pytest-cov>=2.12.0
