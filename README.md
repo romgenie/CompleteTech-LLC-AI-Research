@@ -89,18 +89,19 @@ The AI Research Integration Project consists of three main systems:
 
 1. **Knowledge Extraction Pipeline** (continued)
    - ✅ Entity Recognition System for AI and scientific entities
-   - Relationship Extraction Module for identifying connections between entities
+   - ✅ Relationship Extraction Module for identifying connections between entities
    - Knowledge Extraction Coordinator for the overall extraction process
    
-2. **Research Understanding Engine** (starting)
-   - Paper parsing and processing systems
-   - Algorithm and architecture extraction
-   - Implementation detail collection
-   
-3. **Knowledge Graph Integration**
+2. **Knowledge Graph Integration**
+   - Entity and relationship conversion to graph format
    - Connection discovery engine
    - Contradiction resolution mechanisms
    - Temporal evolution tracking
+   
+3. **Research Understanding Engine** (starting)
+   - Paper parsing and processing systems
+   - Algorithm and architecture extraction
+   - Implementation detail collection
 
 4. **Technical Infrastructure** (planned)
    - Neo4j and MongoDB setup
