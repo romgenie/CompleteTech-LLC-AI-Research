@@ -90,6 +90,8 @@ Common UI components with standardized APIs:
 - **StatusIndicator**: Component for displaying paper processing status with visual indicators
 - **PaperStatusCard**: Card component for displaying paper information with real-time status updates
 - **NotificationCenter**: Component for displaying and managing WebSocket notifications
+- **KnowledgeGraphFilter**: Component for filtering knowledge graph entities and relationships
+- **PaperUploadDialog**: Dialog for uploading papers with validation and metadata editing
 
 ### Available Scripts
 
@@ -161,11 +163,21 @@ The application implements comprehensive error handling:
 See [PROJECT_PLAN.md](./PROJECT_PLAN.md) for the detailed project roadmap, which outlines:
 
 - Current implementation status
-- Phase 1: Optimization & Developer Experience (in progress)
-- Phase 2: Real-time Features
-- Phase 3: Advanced Features
-- Technical debt management
+- Phase 1: Optimization & Developer Experience ✅ (Completed)
+- Phase 2: Real-time Features 🔄 (In Progress, 75% complete)
+- Phase 3: Advanced Features (Scheduled for Q4 2025)
+- Technical debt management (Ongoing)
 - Timeline and success metrics
+
+### Current Focus
+
+We are focusing on the following priorities:
+
+1. **TypeScript Migration**: Adding TypeScript support for better type safety and developer experience
+2. **Paper Management Dashboard**: Creating a comprehensive dashboard for paper management
+3. **Knowledge Graph Visualization Enhancements**: Optimizing visualization for large graphs
+
+See [CODING_PROMPT.md](./CODING_PROMPT.md) for detailed development guidelines and next steps.
 
 ## License
 
