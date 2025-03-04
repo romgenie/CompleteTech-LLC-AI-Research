@@ -68,7 +68,9 @@ frontend/
 └── package.json            # Dependencies and scripts
 ```
 
-### Custom Hooks
+### Custom Hooks and Components
+
+#### Hooks
 
 The project uses several custom hooks to abstract common functionality:
 
@@ -77,6 +79,15 @@ The project uses several custom hooks to abstract common functionality:
 - **useLocalStorage**: Manages state that persists in localStorage
 - **useWebSocket**: Manages WebSocket connections with reconnection capability
 - **useErrorBoundary**: Provides error boundary components for graceful error handling
+
+#### Reusable Components
+
+Common UI components with standardized APIs:
+
+- **ErrorBoundary**: Class component that catches and handles React errors
+- **ErrorFallback**: Component for displaying error states with customizable UI
+- **LoadingFallback**: Component for displaying loading indicators and states
+- **StatusIndicator**: Component for displaying paper processing status with visual indicators
 
 ### Available Scripts
 
