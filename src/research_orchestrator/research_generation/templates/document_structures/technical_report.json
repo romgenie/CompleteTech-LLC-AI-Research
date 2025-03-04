@@ -1,0 +1,97 @@
+{
+  "document_type": "TECHNICAL_REPORT",
+  "title": "Technical Report Template",
+  "description": "Standard structure for detailed technical reports",
+  "sections": [
+    {
+      "title": "Title",
+      "section_type": "TITLE",
+      "required": true
+    },
+    {
+      "title": "Abstract",
+      "section_type": "ABSTRACT",
+      "required": true
+    },
+    {
+      "title": "Introduction",
+      "section_type": "INTRODUCTION",
+      "required": true
+    },
+    {
+      "title": "Background and Related Work",
+      "section_type": "BACKGROUND",
+      "required": true
+    },
+    {
+      "title": "Technical Approach",
+      "section_type": "TECHNICAL_APPROACH",
+      "required": true,
+      "subsections": [
+        {
+          "title": "System Architecture",
+          "section_type": "SYSTEM_ARCHITECTURE",
+          "required": true
+        },
+        {
+          "title": "Algorithms and Methods",
+          "section_type": "ALGORITHMS",
+          "required": true
+        },
+        {
+          "title": "Implementation Details",
+          "section_type": "IMPLEMENTATION",
+          "required": true
+        }
+      ]
+    },
+    {
+      "title": "Experiments and Results",
+      "section_type": "RESULTS",
+      "required": true,
+      "subsections": [
+        {
+          "title": "Experimental Setup",
+          "section_type": "EXPERIMENTAL_SETUP",
+          "required": true
+        },
+        {
+          "title": "Performance Evaluation",
+          "section_type": "PERFORMANCE",
+          "required": true
+        },
+        {
+          "title": "Analysis",
+          "section_type": "ANALYSIS",
+          "required": true
+        }
+      ]
+    },
+    {
+      "title": "Discussion",
+      "section_type": "DISCUSSION",
+      "required": true
+    },
+    {
+      "title": "Conclusions and Future Work",
+      "section_type": "CONCLUSION",
+      "required": true
+    },
+    {
+      "title": "References",
+      "section_type": "REFERENCES",
+      "required": true
+    },
+    {
+      "title": "Appendices",
+      "section_type": "APPENDICES",
+      "required": false
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "field": "Engineering and Computer Science",
+    "suitable_for": ["Internal Documentation", "Technical Audiences", "Project Reports"],
+    "typical_length": "20-50 pages"
+  }
+}
