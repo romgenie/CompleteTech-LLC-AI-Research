@@ -33,6 +33,7 @@ from src.api.models.research import (
     Implementation, 
     ImplementationRequestCreate, 
     ImplementationStatus,
+    PaperStatus,
     Author,
     PaperInfo
 )
@@ -127,7 +128,12 @@ async def upload_paper(
         "abstract": abstract,
         "uploaded_by": current_user.username,
         "uploaded_at": now,
-        "status": "uploaded"
+        "status": PaperStatus.UPLOADED.value,
+        "processing_history": [],
+        "entities": [],
+        "relationships": [],
+        "knowledge_graph_id": None,
+        "implementation_ready": False
     }
     
     # Save to database
@@ -140,8 +146,8 @@ async def upload_paper(
         "authors": author_list,
         "year": year,
         "uploaded_at": now,
-        "status": "uploaded",
-        "message": "Paper uploaded successfully"
+        "status": PaperStatus.UPLOADED.value,
+        "message": "Paper uploaded successfully. Note: Paper processing pipeline is not yet implemented. Papers will remain in 'uploaded' status until the processing pipeline is implemented in a future release."
     }
 
 
