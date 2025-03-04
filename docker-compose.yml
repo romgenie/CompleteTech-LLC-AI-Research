@@ -1,4 +1,4 @@
-version: '3.8'
+# Docker Compose configuration for AI Research Integration API
 
 services:
   # Neo4j graph database for knowledge graph storage
@@ -13,7 +13,7 @@ services:
       - NEO4J_dbms_memory_pagecache_size=1G
       - NEO4J_dbms_memory_heap_initial__size=1G
       - NEO4J_dbms_memory_heap_max__size=2G
-      - NEO4J_dbms_default__database=ai_research
+      - NEO4J_dbms_default__database=airesearch
       - NEO4J_PLUGINS=["apoc"]
     volumes:
       - neo4j_data:/data
@@ -59,7 +59,7 @@ services:
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USERNAME=neo4j
       - NEO4J_PASSWORD=password
-      - NEO4J_DATABASE=ai_research
+      - NEO4J_DATABASE=airesearch
       - MONGODB_URI=mongodb://admin:password@mongodb:27017/
       - MONGODB_DATABASE=ai_research_docs
       - API_LOG_LEVEL=info
@@ -81,6 +81,11 @@ services:
     networks:
       - ai_research_network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
 volumes:
   neo4j_data:
