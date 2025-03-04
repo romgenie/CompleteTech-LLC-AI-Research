@@ -148,8 +148,13 @@ def demo_combined_extraction() -> None:
     # Extract relationships
     relationships = relationship_extractor.extract_relationships(text, entities)
     
+    # Filter to higher confidence relationships
+    filtered_relationships = relationship_extractor.filter_relationships(
+        relationships, min_confidence=0.75
+    )
+    
     # Print results
-    print_relationships(relationships, "Combined Relationships")
+    print_relationships(filtered_relationships, "Combined Relationships (High Confidence)")
     
     # Print relationship statistics
     stats = relationship_extractor.get_relationship_statistics()
