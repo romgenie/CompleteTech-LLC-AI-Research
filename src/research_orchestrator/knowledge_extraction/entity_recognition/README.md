@@ -6,9 +6,21 @@ The Entity Recognition System is a core component of the Knowledge Extraction Pi
 
 This system identifies various types of entities in research documents, including:
 
-- AI-specific entities (models, algorithms, datasets, metrics, etc.)
-- Scientific entities (concepts, theories, findings, methodologies, etc.)
-- Authors, institutions, and other metadata
+### Core Entity Types
+- **Models**: Neural network architectures, language models, etc.
+- **Algorithms**: Specific algorithms and methods
+- **Datasets**: Benchmark and training datasets
+- **Metrics**: Evaluation metrics and measurements
+- **Papers**: Research publications and articles
+- **Authors**: Researchers and paper authors
+- **Institutions**: Research institutions, universities, labs
+- **Code**: Implementation repositories or source code
+- **Concepts**: AI concepts, methods, techniques
+
+### Additional Entity Types
+- **AI-specific entities**: Architecture, parameters, frameworks, techniques, tasks
+- **Scientific entities**: Theories, methodologies, findings, hypotheses, experiments
+- **Metadata entities**: Fields, domains, problems, solutions, tools
 
 The system uses a combination of pattern matching, dictionary-based recognition, and contextual analysis to identify entities with confidence scoring.
 

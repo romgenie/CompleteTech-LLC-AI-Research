@@ -6,10 +6,29 @@ The Relationship Extraction System is a core component of the Knowledge Extracti
 
 This system identifies various types of relationships between entities, including:
 
-- AI model relationships (trained-on, outperforms, based-on, etc.)
-- Scientific concept relationships (part-of, is-a, studies, etc.)
-- Citation and reference relationships
-- Hierarchical and compositional relationships
+### Core Relationship Types
+- **Hierarchical**: IS_A (subclass/superclass relationship)
+- **Compositional**: PART_OF, COMPOSED_OF, CONTAINS
+- **Purpose**: USED_FOR, APPLIED_TO, OPTIMIZED_FOR
+- **Derivation**: BUILDS_ON, EXTENDS, BASED_ON, BASIS_FOR
+- **Comparison**: OUTPERFORMS, OUTPERFORMED_BY, COMPARED_TO
+- **Implementation**: IMPLEMENTS, IMPLEMENTED_BY, IMPLEMENTED_IN
+- **Attribution**: DEVELOPED_BY, AUTHORED_BY, AFFILIATED_WITH
+- **Association**: RELATED_TO, COMPATIBLE_WITH, BELONGS_TO
+
+### AI Research Relationships
+- **Training**: TRAINED_ON, USES, USED_BY
+- **Evaluation**: EVALUATED_ON, ACHIEVES
+- **Structure**: FEATURE_OF, PARAMETER_OF, HAS_FEATURE, HAS_PARAMETER
+- **Repository**: HAS_CODE
+
+### Scientific & Academic Relationships
+- **Citation**: CITES, CITED_BY
+- **Validation**: CONFIRMS, CONTRADICTS, CONTRADICTED_BY, REPLICATES
+- **Research**: HYPOTHESIZES, PROVES, DISPROVES, STUDIES, ANALYZES
+- **Contribution**: INTRODUCES, PROPOSES, IMPROVES_UPON, EXPLAINS
+- **Collaboration**: COLLABORATES_WITH, AUTHORED_BY, AFFILIATED_WITH
+- **Derivation**: DERIVED_FROM, BASIS_FOR
 
 The system uses pattern matching, entity type analysis, and contextual clues to extract relationships with confidence scoring.
 
