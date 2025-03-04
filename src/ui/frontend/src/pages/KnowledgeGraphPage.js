@@ -1067,12 +1067,41 @@ const KnowledgeGraphPage = () => {
                     )}
                     
                     {analysisSettings.identifyResearchFrontiers && (
-                      <Box position="absolute" top={10} left={10} zIndex={1000} p={1} bgcolor="rgba(255,255,255,0.8)" borderRadius="4px">
-                        <Typography variant="caption" component="div" fontWeight="bold">Research Frontiers</Typography>
-                        <Typography variant="caption" component="div">
-                          <Chip size="small" label="Emerging Field" sx={{ backgroundColor: '#8BC34A', color: 'white', fontSize: '0.7rem', height: 20, mr: 0.5 }} />
-                          <Chip size="small" label="Active Research" sx={{ backgroundColor: '#FFC107', color: 'white', fontSize: '0.7rem', height: 20 }} />
+                      <Box 
+                        position="absolute" 
+                        top={10} 
+                        left={10} 
+                        zIndex={1000} 
+                        p={1.5} 
+                        bgcolor="rgba(255,255,255,0.9)" 
+                        borderRadius="4px"
+                        boxShadow="0 1px 3px rgba(0,0,0,0.12)"
+                        border="1px solid rgba(25, 118, 210, 0.3)"
+                      >
+                        <Typography variant="caption" component="div" fontWeight="bold" color="primary.main">
+                          Research Frontiers
                         </Typography>
+                        <Divider sx={{ my: 0.5 }} />
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 0.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Chip size="small" label="Emerging Field" 
+                              sx={{ backgroundColor: '#8BC34A', color: 'white', fontSize: '0.7rem', height: 20, mr: 1 }} 
+                            />
+                            <Typography variant="caption" color="text.secondary">New direction (25%)</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Chip size="small" label="Active Research" 
+                              sx={{ backgroundColor: '#FFC107', color: 'white', fontSize: '0.7rem', height: 20, mr: 1 }} 
+                            />
+                            <Typography variant="caption" color="text.secondary">High activity (45%)</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Chip size="small" label="Core Knowledge" 
+                              sx={{ backgroundColor: '#9C27B0', color: 'white', fontSize: '0.7rem', height: 20, mr: 1 }} 
+                            />
+                            <Typography variant="caption" color="text.secondary">Foundation (30%)</Typography>
+                          </Box>
+                        </Box>
                       </Box>
                     )}
                     
