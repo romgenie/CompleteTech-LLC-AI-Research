@@ -1109,13 +1109,83 @@ const KnowledgeGraphPage = () => {
                   </Box>
                 ) : (
                   <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100%">
-                    <Typography variant="body1" color="text.secondary">
-                      Select an entity to visualize relationships
+                    <Typography variant="h6" color="primary" gutterBottom>
+                      Knowledge Graph Visualization
                     </Typography>
-                    <Alert severity="info" sx={{ mt: 2, maxWidth: 400 }}>
+                    <Typography variant="body1" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
+                      Select an entity from the search results to visualize its relationships
+                    </Typography>
+                    
+                    <Grid container spacing={2} sx={{ maxWidth: 600, px: 3 }}>
+                      <Grid item xs={4}>
+                        <Paper 
+                          elevation={0} 
+                          sx={{ 
+                            p: 2, 
+                            height: '100%', 
+                            border: '1px solid rgba(0,0,0,0.12)',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <SearchIcon color="action" sx={{ fontSize: 40, mb: 1, opacity: 0.7 }} />
+                          <Typography variant="subtitle2" textAlign="center">
+                            Search for entities
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                      <Grid item xs={4}>
+                        <Paper 
+                          elevation={0} 
+                          sx={{ 
+                            p: 2, 
+                            height: '100%', 
+                            border: '1px solid rgba(0,0,0,0.12)',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <TuneIcon color="action" sx={{ fontSize: 40, mb: 1, opacity: 0.7 }} />
+                          <Typography variant="subtitle2" textAlign="center">
+                            Configure visualization
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                      <Grid item xs={4}>
+                        <Paper 
+                          elevation={0} 
+                          sx={{ 
+                            p: 2, 
+                            height: '100%', 
+                            border: '1px solid rgba(0,0,0,0.12)',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <DownloadIcon color="action" sx={{ fontSize: 40, mb: 1, opacity: 0.7 }} />
+                          <Typography variant="subtitle2" textAlign="center">
+                            Export results
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                    </Grid>
+                    
+                    <Alert severity="info" sx={{ mt: 3, maxWidth: 500 }}>
+                      <Typography variant="subtitle2">Quick Tips</Typography>
                       <Typography variant="body2">
-                        The Knowledge Graph is fully implemented and integrated with the 
-                        Paper Processing Pipeline foundation (Phase 3.5).
+                        • Use the search bar to find entities by name or type<br />
+                        • Try "transformer", "BERT", or "attention" to explore related concepts<br />
+                        • Enable advanced options to customize the visualization<br />
+                        • Use analysis tools to discover research trends and patterns
                       </Typography>
                     </Alert>
                   </Box>
