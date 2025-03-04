@@ -172,11 +172,12 @@ The AI Research Integration frontend provides a UI for interacting with our know
 ## Next Steps
 
 1. **TypeScript Migration** (Priority: High)
-   - Add TypeScript and configuration
-   - Create shared interfaces for API models
+   - Create JSDoc type definitions as preparation (✅ Completed with typeDefs.js)
+   - Add TypeScript and tsconfig.json configuration
    - Convert core contexts and hooks first
    - Convert components incrementally
    - Add comprehensive typing for all props
+   - Ensure all API models have proper interfaces
 
 2. **Performance Optimization** (Priority: Medium)
    - Implement React Query for data fetching and caching
