@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { Container, Box, CircularProgress } from '@mui/material';
 
+import { ErrorBoundary, LoadingFallback } from './components';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth } from './contexts/AuthContext';
@@ -18,77 +18,59 @@ function App() {
   const { loading } = useAuth();
 
   if (loading) {
-    return (
-      <Box 
-        display="flex" 
-        justifyContent="center" 
-        alignItems="center" 
-        minHeight="100vh"
-      >
-        <CircularProgress />
-      </Box>
-    );
+    return <LoadingFallback fullPage message="Loading application..." />;
   }
 
   return (
     <div className="app-container">
-      <Suspense 
-        fallback={
-          <Box 
-            display="flex" 
-            justifyContent="center" 
-            alignItems="center" 
-            minHeight="90vh"
-          >
-            <CircularProgress />
-          </Box>
-        }
-      >
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
-          
-          {/* Protected Routes */}
-          <Route element={<Layout />}>
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/research" 
-              element={
-                <ProtectedRoute>
-                  <ResearchPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/knowledge-graph" 
-              element={
-                <ProtectedRoute>
-                  <KnowledgeGraphPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/implementation" 
-              element={
-                <ProtectedRoute>
-                  <ImplementationPage />
-                </ProtectedRoute>
-              } 
-            />
-          </Route>
+      <ErrorBoundary errorTitle="Application Error">
+        <Suspense fallback={<LoadingFallback fullPage />}>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={<Login />} />
+            
+            {/* Protected Routes */}
+            <Route element={<Layout />}>
+              <Route 
+                path="/" 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/research" 
+                element={
+                  <ProtectedRoute>
+                    <ResearchPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/knowledge-graph" 
+                element={
+                  <ProtectedRoute>
+                    <KnowledgeGraphPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/implementation" 
+                element={
+                  <ProtectedRoute>
+                    <ImplementationPage />
+                  </ProtectedRoute>
+                } 
+              />
+            </Route>
 
-          {/* Not Found and Redirect */}
-          <Route path="/404" element={<NotFound />} />
-          <Route path="*" element={<Navigate to="/404" replace />} />
-        </Routes>
-      </Suspense>
+            {/* Not Found and Redirect */}
+            <Route path="/404" element={<NotFound />} />
+            <Route path="*" element={<Navigate to="/404" replace />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
     </div>
   );
 }
