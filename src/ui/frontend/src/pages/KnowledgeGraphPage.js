@@ -518,6 +518,17 @@ const KnowledgeGraphPage = () => {
       <Typography variant="subtitle1" color="text.secondary" paragraph>
         Search, visualize, and explore relationships between AI research entities.
       </Typography>
+      {!searchResults.length && !selectedEntity && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="subtitle2">Getting Started</Typography>
+          <Typography variant="body2">
+            1. Search for entities like "transformer" or "BERT"<br />
+            2. Select an entity from the results to view details<br />
+            3. Explore the visualization and try different settings<br />
+            4. Use advanced options for research analysis
+          </Typography>
+        </Alert>
+      )}
       <Box mb={4}>
         <Grid container spacing={2}>
           <Grid item xs={12} md={8}>
@@ -579,16 +590,30 @@ const KnowledgeGraphPage = () => {
                 </Button>
               </Grid>
               <Grid item xs={6} md={12} sx={{ mt: { xs: 0, md: 1 } }}>
-                <Tooltip title="Advanced Search Options">
+                <Tooltip title="Advanced Search & Visualization Options">
                   <Button
                     fullWidth
-                    variant="outlined"
-                    color="primary"
+                    variant={advancedSearchOpen ? "contained" : "outlined"}
+                    color="secondary"
                     onClick={() => setAdvancedSearchOpen(!advancedSearchOpen)}
-                    sx={{ height: { xs: '56px', md: '36px' } }}
+                    sx={{ 
+                      height: { xs: '56px', md: '36px' },
+                      position: 'relative',
+                      overflow: 'hidden',
+                      '&::after': advancedSearchOpen ? {
+                        content: '""',
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '3px',
+                        backgroundColor: 'primary.main',
+                        animation: 'pulse 2s infinite'
+                      } : {}
+                    }}
                     startIcon={<TuneIcon />}
                   >
-                    {advancedSearchOpen ? "Hide" : "Advanced"}
+                    {advancedSearchOpen ? "Hide Options" : "Advanced Options"}
                   </Button>
                 </Tooltip>
               </Grid>
@@ -603,168 +628,249 @@ const KnowledgeGraphPage = () => {
           sx={{ mt: 2 }}
         >
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="subtitle1">Advanced Search & Visualization Options</Typography>
+            <Typography variant="subtitle1" fontWeight="medium">Advanced Search & Visualization Options</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" gutterBottom>Visualization Settings</Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <FormControlLabel
-                      control={
-                        <Switch 
-                          checked={visualizationSettings.showLabels}
-                          onChange={(e) => setVisualizationSettings({
+            <Box mb={2}>
+              <Accordion defaultExpanded>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography variant="subtitle2" fontWeight="bold" color="primary">Visualization Settings</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Display node labels in the graph visualization">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={visualizationSettings.showLabels}
+                              onChange={(e) => {
+                                setVisualizationSettings({
+                                  ...visualizationSettings,
+                                  showLabels: e.target.checked
+                                });
+                                if (graphData) renderGraph();
+                              }}
+                              color="primary"
+                            />
+                          }
+                          label="Show Labels"
+                        />
+                      </Tooltip>
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Highlight connections to the selected entity">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={visualizationSettings.highlightConnections}
+                              onChange={(e) => {
+                                setVisualizationSettings({
+                                  ...visualizationSettings,
+                                  highlightConnections: e.target.checked
+                                });
+                                if (graphData) renderGraph();
+                              }}
+                              color="primary"
+                            />
+                          }
+                          label="Highlight Connections"
+                        />
+                      </Tooltip>
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Show labels for relationship types between entities">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={visualizationSettings.showRelationshipLabels}
+                              onChange={(e) => {
+                                setVisualizationSettings({
+                                  ...visualizationSettings,
+                                  showRelationshipLabels: e.target.checked
+                                });
+                                if (graphData) renderGraph();
+                              }}
+                              color="primary"
+                            />
+                          }
+                          label="Relationship Labels"
+                        />
+                      </Tooltip>
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Group entities by type (models, papers, authors, etc.)">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={visualizationSettings.clusterByType}
+                              onChange={(e) => {
+                                setVisualizationSettings({
+                                  ...visualizationSettings,
+                                  clusterByType: e.target.checked
+                                });
+                                if (graphData) renderGraph();
+                              }}
+                              color="primary"
+                            />
+                          }
+                          label="Cluster by Type"
+                        />
+                      </Tooltip>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="body2" gutterBottom>
+                        Node Size: {visualizationSettings.nodeSize}
+                      </Typography>
+                      <Slider
+                        value={visualizationSettings.nodeSize}
+                        onChange={(e, newValue) => {
+                          setVisualizationSettings({
                             ...visualizationSettings,
-                            showLabels: e.target.checked
-                          })}
-                        />
-                      }
-                      label="Show Labels"
-                    />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <FormControlLabel
-                      control={
-                        <Switch 
-                          checked={visualizationSettings.highlightConnections}
-                          onChange={(e) => setVisualizationSettings({
+                            nodeSize: newValue
+                          });
+                          if (graphData) renderGraph();
+                        }}
+                        step={1}
+                        marks
+                        min={3}
+                        max={12}
+                        valueLabelDisplay="auto"
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="body2" gutterBottom>
+                        Relationship Depth: {visualizationSettings.maxRelationshipDepth}
+                      </Typography>
+                      <Tooltip title="Controls how many degrees of separation to show from the selected entity">
+                        <Slider
+                          value={visualizationSettings.maxRelationshipDepth}
+                          onChange={(e, newValue) => setVisualizationSettings({
                             ...visualizationSettings,
-                            highlightConnections: e.target.checked
+                            maxRelationshipDepth: newValue
                           })}
+                          step={1}
+                          marks
+                          min={1}
+                          max={5}
+                          valueLabelDisplay="auto"
                         />
-                      }
-                      label="Highlight Connections"
-                    />
+                      </Tooltip>
+                    </Grid>
                   </Grid>
-                  <Grid item xs={6}>
-                    <FormControlLabel
-                      control={
-                        <Switch 
-                          checked={visualizationSettings.showRelationshipLabels}
-                          onChange={(e) => setVisualizationSettings({
-                            ...visualizationSettings,
-                            showRelationshipLabels: e.target.checked
-                          })}
+                </AccordionDetails>
+              </Accordion>
+            </Box>
+            
+            <Box>
+              <Accordion defaultExpanded>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography variant="subtitle2" fontWeight="bold" color="primary">Analysis Tools</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Show network metrics such as node count and graph density">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={analysisSettings.showCentralityMetrics}
+                              onChange={(e) => setAnalysisSettings({
+                                ...analysisSettings,
+                                showCentralityMetrics: e.target.checked
+                              })}
+                              color="secondary"
+                            />
+                          }
+                          label="Network Metrics"
                         />
-                      }
-                      label="Relationship Labels"
-                    />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <FormControlLabel
-                      control={
-                        <Switch 
-                          checked={visualizationSettings.clusterByType}
-                          onChange={(e) => setVisualizationSettings({
-                            ...visualizationSettings,
-                            clusterByType: e.target.checked
-                          })}
+                      </Tooltip>
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Enable finding paths between entities">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={analysisSettings.pathfindingEnabled}
+                              onChange={(e) => setAnalysisSettings({
+                                ...analysisSettings,
+                                pathfindingEnabled: e.target.checked
+                              })}
+                              color="secondary"
+                            />
+                          }
+                          label="Path Analysis"
                         />
-                      }
-                      label="Cluster by Type"
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="body2" gutterBottom>
-                      Relationship Depth: {visualizationSettings.maxRelationshipDepth}
-                    </Typography>
-                    <Slider
-                      value={visualizationSettings.maxRelationshipDepth}
-                      onChange={(e, newValue) => setVisualizationSettings({
-                        ...visualizationSettings,
-                        maxRelationshipDepth: newValue
-                      })}
-                      step={1}
-                      marks
-                      min={1}
-                      max={5}
-                      valueLabelDisplay="auto"
-                    />
-                  </Grid>
-                </Grid>
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <Typography variant="subtitle2" gutterBottom>Analysis Tools</Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <FormControlLabel
-                      control={
-                        <Switch 
-                          checked={analysisSettings.showCentralityMetrics}
-                          onChange={(e) => setAnalysisSettings({
-                            ...analysisSettings,
-                            showCentralityMetrics: e.target.checked
-                          })}
+                      </Tooltip>
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Detect research communities based on connection patterns">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={analysisSettings.detectCommunities}
+                              onChange={(e) => setAnalysisSettings({
+                                ...analysisSettings,
+                                detectCommunities: e.target.checked
+                              })}
+                              color="secondary"
+                            />
+                          }
+                          label="Communities"
                         />
-                      }
-                      label="Centrality Metrics"
-                    />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <FormControlLabel
-                      control={
-                        <Switch 
-                          checked={analysisSettings.pathfindingEnabled}
-                          onChange={(e) => setAnalysisSettings({
-                            ...analysisSettings,
-                            pathfindingEnabled: e.target.checked
-                          })}
+                      </Tooltip>
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Highlight emerging research areas and active frontiers">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={analysisSettings.identifyResearchFrontiers}
+                              onChange={(e) => setAnalysisSettings({
+                                ...analysisSettings,
+                                identifyResearchFrontiers: e.target.checked
+                              })}
+                              color="secondary"
+                            />
+                          }
+                          label="Research Frontiers"
                         />
-                      }
-                      label="Path Analysis"
-                    />
+                      </Tooltip>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ mr: 2 }}>Export Format:</Typography>
+                        <FormControl size="small" sx={{ minWidth: 150 }}>
+                          <InputLabel id="export-format-label">Export Format</InputLabel>
+                          <Select
+                            labelId="export-format-label"
+                            value={exportFormat}
+                            onChange={(e) => setExportFormat(e.target.value)}
+                            label="Export Format"
+                          >
+                            <MenuItem value="json">JSON (Data)</MenuItem>
+                            <MenuItem value="csv">CSV (Spreadsheet)</MenuItem>
+                            <MenuItem value="svg">SVG (Vector Image)</MenuItem>
+                            <MenuItem value="png">PNG (Image)</MenuItem>
+                            <MenuItem value="neo4j">Neo4j Cypher (Database)</MenuItem>
+                          </Select>
+                        </FormControl>
+                        <Tooltip title="Download knowledge graph in selected format">
+                          <IconButton 
+                            color="primary" 
+                            onClick={handleExportGraph}
+                            disabled={!graphData}
+                            sx={{ ml: 1 }}
+                          >
+                            <DownloadIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </Grid>
                   </Grid>
-                  <Grid item xs={6}>
-                    <FormControlLabel
-                      control={
-                        <Switch 
-                          checked={analysisSettings.detectCommunities}
-                          onChange={(e) => setAnalysisSettings({
-                            ...analysisSettings,
-                            detectCommunities: e.target.checked
-                          })}
-                        />
-                      }
-                      label="Community Detection"
-                    />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <FormControlLabel
-                      control={
-                        <Switch 
-                          checked={analysisSettings.identifyResearchFrontiers}
-                          onChange={(e) => setAnalysisSettings({
-                            ...analysisSettings,
-                            identifyResearchFrontiers: e.target.checked
-                          })}
-                        />
-                      }
-                      label="Research Frontiers"
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel id="export-format-label">Export Format</InputLabel>
-                      <Select
-                        labelId="export-format-label"
-                        value={exportFormat}
-                        onChange={(e) => setExportFormat(e.target.value)}
-                        label="Export Format"
-                      >
-                        <MenuItem value="json">JSON</MenuItem>
-                        <MenuItem value="csv">CSV</MenuItem>
-                        <MenuItem value="svg">SVG</MenuItem>
-                        <MenuItem value="png">PNG</MenuItem>
-                        <MenuItem value="neo4j">Neo4j Cypher</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </Grid>
-              </Grid>
-            </Grid>
+                </AccordionDetails>
+              </Accordion>
+            </Box>
           </AccordionDetails>
         </Accordion>
       </Box>
@@ -888,19 +994,39 @@ const KnowledgeGraphPage = () => {
                   </Box>
                 ) : selectedEntity ? (
                   <Box position="relative" height="100%">
-                    <Box position="absolute" top={10} right={10} zIndex={1000}>
-                      <Tooltip title="Download Visualization">
-                        <IconButton size="small" sx={{ mr: 1 }} onClick={handleExportGraph}>
+                    <Box position="absolute" top={10} right={10} zIndex={1000} bgcolor="rgba(255,255,255,0.7)" borderRadius="4px" p={0.5}>
+                      <Tooltip title={`Download visualization as ${exportFormat.toUpperCase()}`}>
+                        <IconButton 
+                          size="small" 
+                          sx={{ mr: 1 }} 
+                          onClick={handleExportGraph}
+                          color="primary"
+                        >
                           <DownloadIcon />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Share Visualization">
-                        <IconButton size="small" sx={{ mr: 1 }}>
+                      <Tooltip title="Share visualization (copy link to clipboard)">
+                        <IconButton 
+                          size="small" 
+                          sx={{ mr: 1 }}
+                          color="primary"
+                          onClick={() => {
+                            navigator.clipboard.writeText(window.location.href);
+                            // Show toast or notification (simplified here)
+                            alert("Link copied to clipboard");
+                          }}
+                        >
                           <ShareIcon />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Visualization Information">
-                        <IconButton size="small">
+                      <Tooltip title="View visualization help">
+                        <IconButton 
+                          size="small"
+                          color="primary"
+                          onClick={() => {
+                            setAdvancedSearchOpen(true);
+                          }}
+                        >
                           <InfoIcon />
                         </IconButton>
                       </Tooltip>
