@@ -1,370 +1,243 @@
 """
-PDF Processor for handling PDF documents.
+PDF Processor for the Knowledge Extraction Pipeline.
 
-This module provides the PDFProcessor class that extracts text content from
-PDF documents and segments it for knowledge extraction.
+This module provides the PDFProcessor class that handles PDF documents,
+extracting text content and metadata from them.
 """
 
 import logging
-import io
-from typing import Dict, List, Any, Optional, BinaryIO
+from typing import Dict, List, Any, Optional, Tuple, BinaryIO
 import re
+import io
 
 logger = logging.getLogger(__name__)
 
+
 class PDFProcessor:
     """
-    Processor for PDF documents that extracts and segments text content.
+    Processor for PDF documents.
     
-    This class handles the extraction of text from PDF files, including
-    handling document structure, tables, figures, and references.
+    This class handles the processing of PDF documents, extracting text content,
+    metadata, and organizing content into logical sections.
     """
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         """
         Initialize the PDF processor.
         
         Args:
-            config: Configuration dictionary with PDF processing settings.
+            config: Configuration dictionary with processing settings
         """
-        self.config = config
-        self.segment_min_length = config.get('segment_min_length', 100)
-        self.segment_max_length = config.get('segment_max_length', 1000)
+        self.config = config or {}
+        
+        # Default configuration
+        self.extract_metadata = self.config.get("extract_metadata", True)
+        self.segment_by_pages = self.config.get("segment_by_pages", True)
+        self.segment_by_headers = self.config.get("segment_by_headers", False)
+        self.ocr_enabled = self.config.get("ocr_enabled", False)
+        self.tables_enabled = self.config.get("tables_enabled", False)
+        self.page_range = self.config.get("page_range", None)  # (start, end) or None for all
     
-    def process(self, document: Dict[str, Any]) -> Dict[str, Any]:
+    def process(self, content: bytes) -> Tuple[str, Dict[str, Any]]:
         """
         Process a PDF document.
         
         Args:
-            document: The document dictionary containing PDF content.
+            content: PDF content as bytes
             
         Returns:
-            The processed document with extracted text and segments.
-        """
-        logger.info(f"Processing PDF document: {document.get('id', 'unknown')}")
-        
-        # Get PDF content
-        content = document.get('content')
-        if not content:
-            logger.warning("PDF document has no content")
-            return document
-        
-        # Extract text from PDF
-        text = self._extract_text(content)
-        
-        # Extract metadata
-        metadata = self._extract_metadata(content)
-        
-        # Segment the text
-        segments = self._segment_text(text)
-        
-        # Create the processed document
-        processed_doc = document.copy()
-        processed_doc.update({
-            'extracted_text': text,
-            'metadata': metadata,
-            'segments': segments
-        })
-        
-        return processed_doc
-    
-    def _extract_text(self, content: Any) -> str:
-        """
-        Extract text from PDF content.
-        
-        Args:
-            content: The PDF content (bytes or BytesIO).
-            
-        Returns:
-            The extracted text.
+            Tuple of (extracted_text, metadata)
         """
         try:
-            # Try to use PyPDF2 first (simpler, more common)
-            return self._extract_with_pypdf2(content)
+            import PyPDF2
+        except ImportError:
+            logger.error("PyPDF2 library not found. Please install it to process PDF documents.")
+            return "", {"error": "PyPDF2 library not found"}
+        
+        # Open the PDF from binary content
+        pdf_file = io.BytesIO(content)
+        
+        try:
+            # Parse the PDF
+            with PyPDF2.PdfReader(pdf_file) as pdf_reader:
+                # Extract metadata if configured
+                metadata = self._extract_metadata(pdf_reader) if self.extract_metadata else {}
+                
+                # Extract text from pages
+                text, page_texts = self._extract_text(pdf_reader)
+                
+                # Add page segments if configured
+                if self.segment_by_pages:
+                    metadata["segments"] = self._create_page_segments(page_texts)
+                
+                # Add basic statistics
+                char_count = len(text)
+                word_count = len(text.split())
+                metadata.update({
+                    "char_count": char_count,
+                    "word_count": word_count,
+                    "page_count": len(pdf_reader.pages)
+                })
+                
+                return text, metadata
+                
         except Exception as e:
-            logger.warning(f"PyPDF2 extraction failed: {str(e)}")
-            try:
-                # Fall back to pdfplumber
-                return self._extract_with_pdfplumber(content)
-            except Exception as e:
-                logger.error(f"PDF text extraction failed: {str(e)}")
-                # Return empty string on failure
-                return ""
+            logger.error(f"Error processing PDF: {e}")
+            return "", {"error": str(e)}
     
-    def _extract_with_pypdf2(self, content: Any) -> str:
+    def _extract_metadata(self, pdf_reader) -> Dict[str, Any]:
         """
-        Extract text using PyPDF2.
+        Extract metadata from PDF.
         
         Args:
-            content: The PDF content.
+            pdf_reader: PyPDF2 PdfReader object
             
         Returns:
-            The extracted text.
-        """
-        try:
-            from PyPDF2 import PdfReader
-        except ImportError:
-            logger.warning("PyPDF2 not available, skipping this extraction method")
-            raise ImportError("PyPDF2 not installed")
-        
-        # Convert content to BytesIO if it's bytes
-        if isinstance(content, bytes):
-            content = io.BytesIO(content)
-        
-        # Read PDF
-        reader = PdfReader(content)
-        
-        # Extract text from all pages
-        text = ""
-        for page in reader.pages:
-            text += page.extract_text() + "\\n\\n"
-        
-        return text
-    
-    def _extract_with_pdfplumber(self, content: Any) -> str:
-        """
-        Extract text using pdfplumber.
-        
-        Args:
-            content: The PDF content.
-            
-        Returns:
-            The extracted text.
-        """
-        try:
-            import pdfplumber
-        except ImportError:
-            logger.warning("pdfplumber not available, skipping this extraction method")
-            raise ImportError("pdfplumber not installed")
-        
-        # Convert content to BytesIO if it's bytes
-        if isinstance(content, bytes):
-            content = io.BytesIO(content)
-        
-        # Read PDF
-        with pdfplumber.open(content) as pdf:
-            # Extract text from all pages
-            text = ""
-            for page in pdf.pages:
-                text += page.extract_text() + "\\n\\n"
-        
-        return text
-    
-    def _extract_metadata(self, content: Any) -> Dict[str, Any]:
-        """
-        Extract metadata from PDF content.
-        
-        Args:
-            content: The PDF content.
-            
-        Returns:
-            Dictionary with metadata.
+            Dictionary of extracted metadata
         """
         metadata = {}
         
-        try:
-            from PyPDF2 import PdfReader
+        # Extract document information
+        if pdf_reader.metadata:
+            # Convert from PyPDF2's metadata format
+            doc_info = {}
+            for key, value in pdf_reader.metadata.items():
+                # Skip empty values
+                if value:
+                    # Remove the leading '/' from keys
+                    clean_key = key[1:] if key.startswith('/') else key
+                    doc_info[clean_key] = value
             
-            # Convert content to BytesIO if it's bytes
-            if isinstance(content, bytes):
-                content = io.BytesIO(content)
-            
-            # Read PDF
-            reader = PdfReader(content)
-            
-            # Extract metadata
-            info = reader.metadata
-            
-            if info:
-                # Convert metadata to regular dict with string values
-                for key, value in info.items():
-                    if key.startswith('/'):
-                        key = key[1:]
-                    metadata[key] = str(value)
-        except Exception as e:
-            logger.warning(f"Metadata extraction failed: {str(e)}")
+            metadata["document_info"] = doc_info
         
         return metadata
     
-    def _segment_text(self, text: str) -> List[Dict[str, Any]]:
+    def _extract_text(self, pdf_reader) -> Tuple[str, List[str]]:
         """
-        Segment text into meaningful chunks for knowledge extraction.
+        Extract text content from PDF pages.
         
         Args:
-            text: The extracted text.
+            pdf_reader: PyPDF2 PdfReader object
             
         Returns:
-            List of segment dictionaries.
+            Tuple of (full_text, list_of_page_texts)
         """
-        segments = []
+        page_texts = []
         
-        # Skip empty text
-        if not text:
-            return segments
+        # Determine page range
+        start_page, end_page = 0, len(pdf_reader.pages)
+        if self.page_range:
+            start_page = max(0, self.page_range[0])
+            end_page = min(len(pdf_reader.pages), self.page_range[1])
         
-        # First, try to segment by sections
-        section_segments = self._segment_by_sections(text)
-        
-        if section_segments:
-            # If we found sections, use those
-            segments = section_segments
-        else:
-            # Otherwise, segment by paragraphs
-            segments = self._segment_by_paragraphs(text)
-        
-        # Apply length constraints and further segmentation if needed
-        processed_segments = []
-        for segment in segments:
-            content = segment['content']
-            
-            # Skip short segments
-            if len(content) < self.segment_min_length:
-                continue
-            
-            # Further segment long content
-            if len(content) > self.segment_max_length:
-                # Split by sentences while respecting max length
-                sub_segments = self._split_by_length(content, self.segment_max_length)
+        # Extract text from each page
+        for i in range(start_page, end_page):
+            try:
+                page = pdf_reader.pages[i]
+                page_text = page.extract_text()
                 
-                # Add each sub-segment with the same metadata
-                for i, sub_content in enumerate(sub_segments):
-                    if len(sub_content) >= self.segment_min_length:
-                        sub_segment = segment.copy()
-                        sub_segment['content'] = sub_content
-                        sub_segment['segment_id'] = f"{segment.get('segment_id', 'seg')}.{i+1}"
-                        processed_segments.append(sub_segment)
-            else:
-                # Add segment as is
-                processed_segments.append(segment)
+                # Clean up the text
+                page_text = self._clean_text(page_text)
+                
+                page_texts.append(page_text)
+            except Exception as e:
+                logger.warning(f"Error extracting text from page {i}: {e}")
+                page_texts.append("")
         
-        # Ensure all segments have IDs
-        for i, segment in enumerate(processed_segments):
-            if 'segment_id' not in segment:
-                segment['segment_id'] = f"segment_{i+1}"
+        # Combine all pages
+        full_text = "\n\n".join(page_texts)
         
-        return processed_segments
+        return full_text, page_texts
     
-    def _segment_by_sections(self, text: str) -> List[Dict[str, Any]]:
+    def _clean_text(self, text: str) -> str:
         """
-        Segment text by identified sections.
+        Clean and normalize text content from PDF.
         
         Args:
-            text: The text to segment.
+            text: Raw text from PDF
             
         Returns:
-            List of segment dictionaries.
+            Cleaned text
+        """
+        # Remove excessive whitespace
+        cleaned = re.sub(r'\s+', ' ', text).strip()
+        
+        # Fix common OCR issues if needed
+        # ...
+        
+        return cleaned
+    
+    def _create_page_segments(self, page_texts: List[str]) -> List[Dict[str, Any]]:
+        """
+        Create segments from PDF pages.
+        
+        Args:
+            page_texts: List of text content for each page
+            
+        Returns:
+            List of segment dictionaries
         """
         segments = []
         
-        # Pattern for section headers (e.g., "1. Introduction", "II. Methods", etc.)
-        section_patterns = [
-            r'^\s*(\d+\.\s+[A-Z][^\\n]+)',  # Numbered sections (1. Introduction)
-            r'^\s*([IVXLCDM]+\.\s+[A-Z][^\\n]+)',  # Roman numeral sections (II. Methods)
-            r'^\s*([A-Z][A-Z0-9\s]+:)',  # All-caps sections (INTRODUCTION:)
-            r'^\s*(#+\s+[A-Z][^\\n]+)'  # Markdown-style headers (# Introduction)
-        ]
-        
-        # Compile patterns
-        section_regexes = [re.compile(pattern, re.MULTILINE) for pattern in section_patterns]
-        
-        # Find all potential section headers
-        headers = []
-        for regex in section_regexes:
-            headers.extend([(m.group(1), m.start()) for m in regex.finditer(text)])
-        
-        # Sort headers by position in text
-        headers.sort(key=lambda x: x[1])
-        
-        # If no headers found, return empty list
-        if not headers:
-            return []
-        
-        # Extract sections
-        for i, (header, start_pos) in enumerate(headers):
-            # Determine section end
-            if i < len(headers) - 1:
-                end_pos = headers[i+1][1]
-            else:
-                end_pos = len(text)
-            
-            # Extract section content
-            section_text = text[start_pos:end_pos].strip()
-            
-            # Create segment
-            if section_text:
+        for i, page_text in enumerate(page_texts):
+            if page_text.strip():  # Skip empty pages
                 segment = {
-                    'segment_id': f"section_{i+1}",
-                    'segment_type': 'section',
-                    'section_header': header.strip(),
-                    'content': section_text
+                    "id": f"page{i+1}",
+                    "type": "page",
+                    "page_number": i + 1,
+                    "content": page_text,
+                    "word_count": len(page_text.split())
                 }
                 segments.append(segment)
         
         return segments
     
-    def _segment_by_paragraphs(self, text: str) -> List[Dict[str, Any]]:
+    def _detect_headers(self, text: str) -> List[Dict[str, Any]]:
         """
-        Segment text by paragraphs.
+        Detect potential headers in text based on formatting.
         
         Args:
-            text: The text to segment.
+            text: Text to analyze for headers
             
         Returns:
-            List of segment dictionaries.
+            List of header dictionaries
         """
-        segments = []
+        # This is a simplistic approach - in reality, header detection in PDFs
+        # often requires more sophisticated analysis of font sizes, positioning, etc.
         
-        # Split by double newlines (paragraphs)
-        paragraphs = re.split(r'\\n\\s*\\n', text)
+        # Look for lines that might be headers (all caps, short, etc.)
+        headers = []
+        lines = text.split('\n')
         
-        for i, paragraph in enumerate(paragraphs):
-            # Clean and skip empty paragraphs
-            content = paragraph.strip()
-            if not content:
+        for i, line in enumerate(lines):
+            line = line.strip()
+            if not line:
                 continue
             
-            # Create segment
-            segment = {
-                'segment_id': f"paragraph_{i+1}",
-                'segment_type': 'paragraph',
-                'content': content
-            }
-            segments.append(segment)
-        
-        return segments
-    
-    def _split_by_length(self, text: str, max_length: int) -> List[str]:
-        """
-        Split text by sentences while respecting maximum length.
-        
-        Args:
-            text: The text to split.
-            max_length: Maximum length for each segment.
+            # Check if line is potential header (simple heuristics)
+            is_header = False
             
-        Returns:
-            List of text segments.
-        """
-        segments = []
+            # Short line (less than 7 words)
+            if 1 < len(line.split()) < 7:
+                is_header = True
+            
+            # All caps or title case
+            if line.isupper() or line.istitle():
+                is_header = True
+            
+            # Ends with a colon
+            if line.endswith(':'):
+                is_header = True
+            
+            # Numeric prefix like "1. Introduction"
+            if re.match(r'^\d+\.?\d*\s+\w+', line):
+                is_header = True
+            
+            if is_header:
+                headers.append({
+                    "id": f"h{i}",
+                    "text": line,
+                    "line_number": i
+                })
         
-        # Pattern for sentence endings
-        sentence_end = re.compile(r'(?<=[.!?])\\s+')
-        
-        # Split by sentences
-        sentences = sentence_end.split(text)
-        
-        current_segment = ""
-        
-        for sentence in sentences:
-            # If adding this sentence would exceed max length and we already have content,
-            # finalize the current segment and start a new one
-            if current_segment and len(current_segment) + len(sentence) > max_length:
-                segments.append(current_segment.strip())
-                current_segment = sentence
-            else:
-                current_segment += " " + sentence if current_segment else sentence
-        
-        # Add the last segment if it has content
-        if current_segment:
-            segments.append(current_segment.strip())
-        
-        return segments
+        return headers

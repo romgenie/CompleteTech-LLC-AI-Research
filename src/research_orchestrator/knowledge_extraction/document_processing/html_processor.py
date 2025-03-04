@@ -1,435 +1,253 @@
 """
-HTML Processor for handling HTML documents.
+HTML Processor for the Knowledge Extraction Pipeline.
 
-This module provides the HTMLProcessor class that extracts and cleans content from
-HTML documents and segments it for knowledge extraction.
+This module provides the HTMLProcessor class that handles HTML documents,
+extracting text content and metadata from them.
 """
 
 import logging
+from typing import Dict, List, Any, Optional, Tuple
 import re
-from typing import Dict, List, Any, Optional
-from bs4 import BeautifulSoup, NavigableString, Tag
+from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
+
 class HTMLProcessor:
     """
-    Processor for HTML documents that extracts and segments content.
+    Processor for HTML documents.
     
-    This class handles the extraction of text from HTML files, including
-    cleaning, handling document structure, and extracting metadata.
+    This class handles the processing of HTML documents, extracting meaningful text
+    content and metadata like title, headings, and other structured elements.
     """
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         """
         Initialize the HTML processor.
         
         Args:
-            config: Configuration dictionary with HTML processing settings.
+            config: Configuration dictionary with processing settings
         """
-        self.config = config
-        self.segment_min_length = config.get('segment_min_length', 100)
-        self.segment_max_length = config.get('segment_max_length', 1000)
+        self.config = config or {}
         
-        # Default tags to exclude (navigation, scripts, etc.)
-        self.exclude_tags = config.get('exclude_tags', [
-            'script', 'style', 'nav', 'footer', 'header', 'noscript',
-            'iframe', 'svg', 'canvas', 'button', 'form', 'input'
-        ])
-        
-        # Content tags (main content typically found in these)
-        self.content_tags = config.get('content_tags', [
-            'article', 'section', 'main', 'div.content', 'div.main'
-        ])
+        # Default configuration
+        self.extract_title = self.config.get("extract_title", True)
+        self.extract_meta = self.config.get("extract_meta", True)
+        self.extract_headings = self.config.get("extract_headings", True)
+        self.extract_links = self.config.get("extract_links", False)
+        self.extract_images = self.config.get("extract_images", False)
+        self.segment_by_headings = self.config.get("segment_by_headings", True)
+        self.remove_scripts = self.config.get("remove_scripts", True)
+        self.remove_styles = self.config.get("remove_styles", True)
+        self.parser = self.config.get("parser", "html.parser")  # or 'lxml' if installed
     
-    def process(self, document: Dict[str, Any]) -> Dict[str, Any]:
+    def process(self, content: str) -> Tuple[str, Dict[str, Any]]:
         """
         Process an HTML document.
         
         Args:
-            document: The document dictionary containing HTML content.
+            content: HTML content to process
             
         Returns:
-            The processed document with extracted text and segments.
+            Tuple of (extracted_text, metadata)
         """
-        logger.info(f"Processing HTML document: {document.get('id', 'unknown')}")
+        # Parse the HTML
+        soup = BeautifulSoup(content, self.parser)
         
-        # Get HTML content
-        content = document.get('content')
-        if not content:
-            logger.warning("HTML document has no content")
-            return document
+        # Clean up the HTML by removing unwanted elements
+        if self.remove_scripts:
+            for script in soup.find_all("script"):
+                script.decompose()
         
-        # If content is bytes, convert to string
-        if isinstance(content, bytes):
-            content = content.decode('utf-8', errors='replace')
+        if self.remove_styles:
+            for style in soup.find_all("style"):
+                style.decompose()
         
-        # Clean and extract text
-        clean_text, metadata = self._clean_html(content)
+        # Extract metadata
+        metadata = self._extract_metadata(soup)
         
-        # Extract any additional metadata
-        metadata.update(self._extract_metadata(content))
+        # Extract and clean text
+        text = self._extract_text(soup)
         
-        # Segment the text
-        segments = self._segment_content(clean_text)
+        # Extract headings if configured
+        if self.extract_headings:
+            headings = self._extract_headings(soup)
+            metadata["headings"] = headings
         
-        # Create the processed document
-        processed_doc = document.copy()
-        processed_doc.update({
-            'extracted_text': clean_text,
-            'metadata': metadata,
-            'segments': segments
-        })
+        # Extract links if configured
+        if self.extract_links:
+            links = self._extract_links(soup)
+            metadata["links"] = links
         
-        return processed_doc
+        # Extract images if configured
+        if self.extract_images:
+            images = self._extract_images(soup)
+            metadata["images"] = images
+        
+        # Segment the document if configured
+        if self.segment_by_headings and self.extract_headings:
+            segments = self._segment_by_headings(soup)
+            metadata["segments"] = segments
+        
+        return text, metadata
     
-    def _clean_html(self, html_content: str) -> tuple[str, Dict[str, Any]]:
+    def _extract_metadata(self, soup: BeautifulSoup) -> Dict[str, Any]:
         """
-        Clean HTML and extract important text content.
+        Extract metadata from HTML.
         
         Args:
-            html_content: The HTML content as string.
+            soup: BeautifulSoup object of the parsed HTML
             
         Returns:
-            Tuple of (cleaned text, metadata)
+            Dictionary of extracted metadata
         """
         metadata = {}
         
-        try:
-            # Parse HTML
-            soup = BeautifulSoup(html_content, 'html.parser')
-            
-            # Extract title
-            if soup.title:
-                metadata['title'] = soup.title.string.strip() if soup.title.string else ''
-            
-            # Extract meta description
-            meta_desc = soup.find('meta', attrs={'name': 'description'})
-            if meta_desc:
-                metadata['description'] = meta_desc.get('content', '')
-            
-            # Extract meta keywords
-            meta_keywords = soup.find('meta', attrs={'name': 'keywords'})
-            if meta_keywords:
-                metadata['keywords'] = meta_keywords.get('content', '')
-            
-            # Remove excluded tags
-            for tag_name in self.exclude_tags:
-                for tag in soup.find_all(tag_name):
-                    tag.decompose()
-            
-            # Try to find main content
-            main_content = None
-            
-            for selector in self.content_tags:
-                if '.' in selector:
-                    # Class selector (e.g., 'div.content')
-                    tag_name, class_name = selector.split('.')
-                    found = soup.find(tag_name, class_=class_name)
-                else:
-                    # Tag selector (e.g., 'article')
-                    found = soup.find(selector)
-                
-                if found:
-                    main_content = found
-                    break
-            
-            # If main content found, use it; otherwise use the whole body
-            if main_content:
-                text = self._extract_text_from_element(main_content)
-            else:
-                # Use the whole body if available, otherwise the entire document
-                body = soup.body if soup.body else soup
-                text = self._extract_text_from_element(body)
-            
-            # Clean the text
-            clean_text = self._clean_text(text)
-            
-            return clean_text, metadata
-            
-        except Exception as e:
-            logger.error(f"HTML cleaning failed: {str(e)}")
-            return html_content, metadata
-    
-    def _extract_text_from_element(self, element: Tag) -> str:
-        """
-        Extract text from a BeautifulSoup element with proper spacing.
+        # Extract title
+        if self.extract_title and soup.title:
+            metadata["title"] = soup.title.string
         
-        Args:
-            element: The BeautifulSoup element.
+        # Extract meta tags
+        if self.extract_meta:
+            meta_tags = {}
+            for meta in soup.find_all("meta"):
+                name = meta.get("name") or meta.get("property")
+                content = meta.get("content")
+                if name and content:
+                    meta_tags[name] = content
             
-        Returns:
-            The extracted text.
-        """
-        texts = []
-        
-        # Process only elements that have text content
-        for child in element.descendants:
-            if isinstance(child, NavigableString) and child.strip():
-                texts.append(child.strip())
-            elif isinstance(child, Tag) and child.name in ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li']:
-                # Add newlines for block elements
-                if texts and not texts[-1].endswith('\n'):
-                    texts.append('\n')
-        
-        # Join all text pieces with proper spacing
-        return ' '.join(texts)
-    
-    def _clean_text(self, text: str) -> str:
-        """
-        Clean extracted text.
-        
-        Args:
-            text: The extracted text.
-            
-        Returns:
-            Cleaned text.
-        """
-        # Remove multiple spaces
-        cleaned = re.sub(r'\s+', ' ', text)
-        
-        # Remove multiple newlines
-        cleaned = re.sub(r'\n\s*\n', '\n\n', cleaned)
-        
-        # Remove leading/trailing whitespace
-        cleaned = cleaned.strip()
-        
-        return cleaned
-    
-    def _extract_metadata(self, html_content: str) -> Dict[str, Any]:
-        """
-        Extract additional metadata from HTML.
-        
-        Args:
-            html_content: The HTML content.
-            
-        Returns:
-            Dictionary with metadata.
-        """
-        metadata = {}
-        
-        try:
-            soup = BeautifulSoup(html_content, 'html.parser')
-            
-            # Extract Open Graph metadata
-            og_metadata = {}
-            for meta in soup.find_all('meta', property=re.compile(r'^og:')):
-                property_name = meta.get('property', '')[3:]  # Remove 'og:' prefix
-                og_metadata[property_name] = meta.get('content', '')
-            
-            if og_metadata:
-                metadata['open_graph'] = og_metadata
-            
-            # Extract Twitter Card metadata
-            twitter_metadata = {}
-            for meta in soup.find_all('meta', attrs={'name': re.compile(r'^twitter:')}):
-                property_name = meta.get('name', '')[8:]  # Remove 'twitter:' prefix
-                twitter_metadata[property_name] = meta.get('content', '')
-            
-            if twitter_metadata:
-                metadata['twitter_card'] = twitter_metadata
-            
-            # Extract canonical URL
-            canonical = soup.find('link', rel='canonical')
-            if canonical:
-                metadata['canonical_url'] = canonical.get('href', '')
-            
-            # Extract publication date (common patterns)
-            date_meta = soup.find('meta', property='article:published_time')
-            if date_meta:
-                metadata['published_date'] = date_meta.get('content', '')
-            else:
-                # Try other common date patterns
-                date_meta = soup.find('meta', attrs={'name': 'date'})
-                if date_meta:
-                    metadata['published_date'] = date_meta.get('content', '')
-                else:
-                    # Look for time elements
-                    time_elem = soup.find('time')
-                    if time_elem and time_elem.has_attr('datetime'):
-                        metadata['published_date'] = time_elem['datetime']
-            
-            # Extract author information
-            author_meta = soup.find('meta', attrs={'name': 'author'})
-            if author_meta:
-                metadata['author'] = author_meta.get('content', '')
-            else:
-                # Try structured data
-                author_elem = soup.find(attrs={'rel': 'author'})
-                if author_elem:
-                    metadata['author'] = author_elem.get_text().strip()
-            
-        except Exception as e:
-            logger.warning(f"Metadata extraction failed: {str(e)}")
+            if meta_tags:
+                metadata["meta_tags"] = meta_tags
         
         return metadata
     
-    def _segment_content(self, text: str) -> List[Dict[str, Any]]:
+    def _extract_text(self, soup: BeautifulSoup) -> str:
         """
-        Segment content into meaningful chunks for knowledge extraction.
+        Extract clean text from HTML.
         
         Args:
-            text: The extracted text.
+            soup: BeautifulSoup object of the parsed HTML
             
         Returns:
-            List of segment dictionaries.
+            Extracted text content
+        """
+        # Get the text with some spacing for readability
+        text = soup.get_text(separator=" ", strip=True)
+        
+        # Clean up the text
+        text = re.sub(r'\s+', ' ', text)  # Replace multiple spaces with single space
+        text = re.sub(r'\n\s*\n', '\n\n', text)  # Normalize newlines
+        
+        return text
+    
+    def _extract_headings(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:
+        """
+        Extract headings from HTML.
+        
+        Args:
+            soup: BeautifulSoup object of the parsed HTML
+            
+        Returns:
+            List of heading dictionaries
+        """
+        headings = []
+        for i, heading in enumerate(soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])):
+            if heading.string:  # Skip empty headings
+                headings.append({
+                    "id": f"h{i}",
+                    "type": heading.name,  # h1, h2, etc.
+                    "text": heading.get_text(strip=True),
+                    "level": int(heading.name[1])  # Extract heading level (1-6)
+                })
+        
+        return headings
+    
+    def _extract_links(self, soup: BeautifulSoup) -> List[Dict[str, str]]:
+        """
+        Extract links from HTML.
+        
+        Args:
+            soup: BeautifulSoup object of the parsed HTML
+            
+        Returns:
+            List of link dictionaries
+        """
+        links = []
+        for link in soup.find_all("a"):
+            href = link.get("href")
+            text = link.get_text(strip=True)
+            if href and text:
+                links.append({
+                    "url": href,
+                    "text": text
+                })
+        
+        return links
+    
+    def _extract_images(self, soup: BeautifulSoup) -> List[Dict[str, str]]:
+        """
+        Extract images from HTML.
+        
+        Args:
+            soup: BeautifulSoup object of the parsed HTML
+            
+        Returns:
+            List of image dictionaries
+        """
+        images = []
+        for img in soup.find_all("img"):
+            src = img.get("src")
+            alt = img.get("alt", "")
+            if src:
+                images.append({
+                    "src": src,
+                    "alt": alt
+                })
+        
+        return images
+    
+    def _segment_by_headings(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:
+        """
+        Segment HTML document by headings.
+        
+        Args:
+            soup: BeautifulSoup object of the parsed HTML
+            
+        Returns:
+            List of segment dictionaries
         """
         segments = []
+        headings = soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
         
-        # Skip empty text
-        if not text:
+        # If no headings found, return empty segments
+        if not headings:
             return segments
         
-        # Segment by sections (headers)
-        section_segments = self._segment_by_headers(text)
-        
-        if section_segments:
-            # If we found headers, use those segments
-            segments = section_segments
-        else:
-            # Otherwise, segment by paragraphs
-            segments = self._segment_by_paragraphs(text)
-        
-        # Apply length constraints and further segmentation if needed
-        processed_segments = []
-        for segment in segments:
-            content = segment['content']
+        # Process each heading and its content until the next heading
+        for i, heading in enumerate(headings):
+            # Get heading text
+            heading_text = heading.get_text(strip=True)
             
-            # Skip short segments
-            if len(content) < self.segment_min_length:
-                continue
+            # Get content until the next heading
+            content = []
+            current = heading.next_sibling
             
-            # Further segment long content
-            if len(content) > self.segment_max_length:
-                # Split by sentences while respecting max length
-                sub_segments = self._split_by_length(content, self.segment_max_length)
-                
-                # Add each sub-segment with the same metadata
-                for i, sub_content in enumerate(sub_segments):
-                    if len(sub_content) >= self.segment_min_length:
-                        sub_segment = segment.copy()
-                        sub_segment['content'] = sub_content
-                        sub_segment['segment_id'] = f"{segment.get('segment_id', 'seg')}.{i+1}"
-                        processed_segments.append(sub_segment)
-            else:
-                # Add segment as is
-                processed_segments.append(segment)
-        
-        # Ensure all segments have IDs
-        for i, segment in enumerate(processed_segments):
-            if 'segment_id' not in segment:
-                segment['segment_id'] = f"segment_{i+1}"
-        
-        return processed_segments
-    
-    def _segment_by_headers(self, text: str) -> List[Dict[str, Any]]:
-        """
-        Segment text by headers (# Header, ## Subheader, etc.).
-        
-        Args:
-            text: The text to segment.
-            
-        Returns:
-            List of segment dictionaries.
-        """
-        segments = []
-        
-        # Pattern for Markdown-style headers
-        header_pattern = re.compile(r'(#+\s+[^\n]+)', re.MULTILINE)
-        
-        # Find all headers
-        headers = [(m.group(1), m.start()) for m in header_pattern.finditer(text)]
-        
-        # If no headers found, return empty list
-        if not headers:
-            return []
-        
-        # Extract sections
-        for i, (header, start_pos) in enumerate(headers):
-            # Determine section end
-            if i < len(headers) - 1:
-                end_pos = headers[i+1][1]
-            else:
-                end_pos = len(text)
-            
-            # Extract section content
-            section_text = text[start_pos:end_pos].strip()
+            while current and current not in headings:
+                if current.name and current.get_text(strip=True):
+                    content.append(current.get_text(strip=True))
+                current = current.next_sibling
             
             # Create segment
-            if section_text:
+            if content:
+                segment_text = " ".join(content)
                 segment = {
-                    'segment_id': f"section_{i+1}",
-                    'segment_type': 'section',
-                    'section_header': header.strip('#').strip(),
-                    'content': section_text
+                    "id": f"seg{i}",
+                    "type": "heading_section",
+                    "heading": heading_text,
+                    "heading_level": int(heading.name[1]),
+                    "content": segment_text,
+                    "word_count": len(segment_text.split())
                 }
                 segments.append(segment)
-        
-        return segments
-    
-    def _segment_by_paragraphs(self, text: str) -> List[Dict[str, Any]]:
-        """
-        Segment text by paragraphs.
-        
-        Args:
-            text: The text to segment.
-            
-        Returns:
-            List of segment dictionaries.
-        """
-        segments = []
-        
-        # Split by double newlines (paragraphs)
-        paragraphs = re.split(r'\n\s*\n', text)
-        
-        for i, paragraph in enumerate(paragraphs):
-            # Clean and skip empty paragraphs
-            content = paragraph.strip()
-            if not content:
-                continue
-            
-            # Create segment
-            segment = {
-                'segment_id': f"paragraph_{i+1}",
-                'segment_type': 'paragraph',
-                'content': content
-            }
-            segments.append(segment)
-        
-        return segments
-    
-    def _split_by_length(self, text: str, max_length: int) -> List[str]:
-        """
-        Split text by sentences while respecting maximum length.
-        
-        Args:
-            text: The text to split.
-            max_length: Maximum length for each segment.
-            
-        Returns:
-            List of text segments.
-        """
-        segments = []
-        
-        # Pattern for sentence endings
-        sentence_end = re.compile(r'(?<=[.!?])\s+')
-        
-        # Split by sentences
-        sentences = sentence_end.split(text)
-        
-        current_segment = ""
-        
-        for sentence in sentences:
-            # If adding this sentence would exceed max length and we already have content,
-            # finalize the current segment and start a new one
-            if current_segment and len(current_segment) + len(sentence) > max_length:
-                segments.append(current_segment.strip())
-                current_segment = sentence
-            else:
-                current_segment += " " + sentence if current_segment else sentence
-        
-        # Add the last segment if it has content
-        if current_segment:
-            segments.append(current_segment.strip())
         
         return segments
