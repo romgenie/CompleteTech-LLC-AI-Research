@@ -11,6 +11,7 @@ services:
     environment:
       - REACT_APP_API_URL=http://localhost:8001
       - REACT_APP_WEBSOCKET_URL=ws://localhost:8001/ws
+      - DANGEROUSLY_DISABLE_HOST_CHECK=true
       - CHOKIDAR_USEPOLLING=true
     volumes:
       - ../:/app
