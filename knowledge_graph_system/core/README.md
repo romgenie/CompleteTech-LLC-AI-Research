@@ -1,72 +1,159 @@
-# Core Module - Knowledge Graph System
+# Knowledge Graph System Core
 
-This module contains the core components of the Dynamic Knowledge Graph System for AI Research. It handles system initialization, coordination, global settings, and common utilities.
+This module provides the core functionality for the Knowledge Graph System, which builds and maintains comprehensive knowledge graphs of AI research.
 
-## Components
+## Overview
 
-- **system.py**: Main controller that initializes and coordinates system components
-- **settings.py**: Global settings management and configuration handling
-- **utils.py**: Common utility functions used throughout the system
+The Knowledge Graph System Core includes three main components:
 
-## Responsibilities
+1. **Database Management**: Connects to and manages the Neo4j graph database
+2. **Data Models**: Defines the structure of entities and relationships in the knowledge graph
+3. **Knowledge Graph Management**: Provides high-level operations for adding, querying, and managing the knowledge graph
 
-The core module is responsible for:
+## Key Components
 
-1. System initialization and component registration
-2. Configuration loading and management
-3. Coordinating interaction between system components
-4. Providing common utilities and helpers
-5. Error handling and recovery mechanisms
+### Database Management
 
-## Usage
+- **Neo4jManager**: Manages connections to Neo4j, handles queries, and provides utility methods for database operations
+
+### Data Models
+
+- **GraphEntity**: Base class for all graph nodes, with common attributes like ID, label, properties, etc.
+- **GraphRelationship**: Base class for all graph relationships, with common attributes like ID, type, source/target IDs, etc.
+- **AI-specific Models**: Specialized entity and relationship classes for AI research, including:
+  - AIModel: Represents AI models like GPT-4, BERT, etc.
+  - Dataset: Represents datasets like ImageNet, MNIST, etc.
+  - Algorithm: Represents algorithms like transformers, reinforcement learning, etc.
+  - Paper: Represents research papers
+  - And various relationship types like TRAINED_ON, OUTPERFORMS, etc.
+
+### Knowledge Graph Management
+
+- **KnowledgeGraphManager**: High-level manager for knowledge graph operations, including:
+  - Adding/updating entities and relationships
+  - Querying and searching the graph
+  - Finding paths and relationships between entities
+  - Detecting contradictions and inconsistencies
+  - Computing graph statistics
+
+### Utilities
+
+- **SchemaDefinition**: Defines and validates the knowledge graph schema
+- **Schema Utils**: Utilities for schema management and validation
+
+## Usage Examples
+
+### Connecting to Neo4j
 
 ```python
-from knowledge_graph_system.core.system import KnowledgeGraphSystem
+from knowledge_graph_system.core.db.neo4j_manager import Neo4jManager
 
-# Initialize the system with configuration
-system = KnowledgeGraphSystem(config_path="config/default_config.yaml")
+# Connect using direct parameters
+neo4j_manager = Neo4jManager(
+    uri="bolt://localhost:7687",
+    username="neo4j",
+    password="password",
+    database="ai_research"
+)
 
-# Start system components
-system.start()
+# Or connect using config file
+neo4j_manager = Neo4jManager.from_config("config/db_config.json")
 
-# Get references to major subsystems
-extractor = system.get_component("knowledge_extractor")
-graph = system.get_component("knowledge_graph")
-agent_network = system.get_component("agent_network")
+# Or connect using environment variables
+neo4j_manager = Neo4jManager.from_env()
+```
 
-# Shutdown the system
-system.shutdown()
+### Creating and Adding Entities
+
+```python
+from knowledge_graph_system.core.models.ai_models import AIModel
+from knowledge_graph_system.core.knowledge_graph_manager import KnowledgeGraphManager
+
+# Create knowledge graph manager
+kg_manager = KnowledgeGraphManager(neo4j_manager)
+
+# Create an AI model entity
+gpt4 = AIModel(
+    name="GPT-4",
+    organization="OpenAI",
+    release_date="2023-03-14",
+    model_type="language model",
+    parameters=1500000000000,  # 1.5 trillion
+    architecture="Transformer",
+    capabilities=["text generation", "reasoning", "translation"],
+    limitations=["hallucinations", "knowledge cutoff"],
+    confidence=0.95,
+    source="openai.com"
+)
+
+# Add the entity to the graph
+result = kg_manager.add_entity(gpt4)
+```
+
+### Creating and Adding Relationships
+
+```python
+from knowledge_graph_system.core.models.ai_models import Dataset, TrainedOn
+
+# Create a dataset entity
+common_crawl = Dataset(
+    name="Common Crawl",
+    description="Web archive of billions of pages",
+    domain="general",
+    size="multi-petabyte",
+    confidence=0.9,
+    source="commoncrawl.org"
+)
+
+# Add the dataset to the graph
+kg_manager.add_entity(common_crawl)
+
+# Create a relationship
+trained_on = TrainedOn(
+    source_id=gpt4.id,
+    target_id=common_crawl.id,
+    confidence=0.85,
+    source="inferred"
+)
+
+# Add the relationship to the graph
+kg_manager.add_relationship(trained_on)
+```
+
+### Querying the Graph
+
+```python
+# Get an entity by ID
+entity = kg_manager.get_entity_by_id("entity-id")
+
+# Find entities by label
+models = kg_manager.get_entities_by_label("AIModel", limit=10)
+
+# Search for entities
+search_results = kg_manager.search_entities("transformer", limit=20)
+
+# Find relationships between entities
+paths = kg_manager.find_paths("entity-id-1", "entity-id-2", max_depth=3)
+
+# Find related entities
+related = kg_manager.find_related_entities("entity-id", 
+                                         relationship_types=["TRAINED_ON", "USES_ALGORITHM"],
+                                         entity_labels=["Dataset", "Algorithm"])
 ```
 
 ## Configuration
 
-The system uses YAML configuration files with the following structure:
+The core module supports configuration through:
 
-```yaml
-system:
-  name: "Knowledge Graph System"
-  version: "1.0.0"
-  log_level: "INFO"
+1. **Config Files**: JSON files specifying database connection parameters, schema definitions, etc.
+2. **Environment Variables**: E.g., NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD, etc.
+3. **Direct Parameters**: Passed to constructors when creating objects
 
-components:
-  knowledge_extractor:
-    enabled: true
-    # Component-specific configuration...
-  
-  knowledge_graph:
-    enabled: true
-    database:
-      type: "neo4j"
-      uri: "bolt://localhost:7687"
-      # Database-specific configuration...
-  
-  # Other component configurations...
-```
+## Integration
 
-## Development Guidelines
+The Knowledge Graph System Core is designed to integrate with:
 
-1. Keep the core module focused on system coordination
-2. Use dependency injection for component coupling
-3. Maintain clean separation of concerns
-4. Implement proper error handling and logging
-5. Write comprehensive tests for all functionality
+- **KARMA**: For knowledge extraction and triple generation
+- **Research Orchestrator**: For connecting to research planning and information gathering
+- **Web APIs**: For fetching additional information about entities
+- **Visualization Tools**: For visualizing the knowledge graph
