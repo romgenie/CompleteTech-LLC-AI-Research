@@ -2,6 +2,8 @@
 
 The Knowledge Extraction Pipeline is a comprehensive system for extracting structured knowledge from research documents. It integrates document processing, entity recognition, and relationship extraction into a cohesive workflow that produces a knowledge graph from unstructured text.
 
+> **Note on Paper Processing Status:** While all components of the knowledge extraction pipeline are fully implemented, the automated paper processing workflow is planned for future implementation. Currently, papers can be uploaded but will remain in the "uploaded" status until the processing pipeline is implemented in a future release.
+
 ## Overview
 
 The Knowledge Extraction Pipeline consists of three main components:
@@ -156,6 +158,25 @@ The Knowledge Extraction Pipeline integrates with other components of the Resear
 - **Research Planning**: Provides knowledge for research planning decisions
 - **Knowledge Graph System**: Feeds extracted knowledge into the larger knowledge graph
 - **Research Generation**: Supplies information for report generation
+
+## Planned Enhancements
+
+The following enhancements are planned for the Knowledge Extraction Pipeline:
+
+1. **Paper Processing Pipeline**
+   - Asynchronous task processing system using Celery and Redis
+   - Paper lifecycle state management with detailed status tracking
+   - Real-time status updates via WebSockets
+   - Manual processing endpoints with batch capability
+   - Integration with existing DocumentProcessor components
+   - Enhanced metadata extraction and knowledge graph integration
+   - Citation network analysis and concept-based paper interconnection
+
+2. **Additional Document Format Support**
+   - LaTeX document processing
+   - Word document processing
+   - Markdown document processing
+   - Jupyter notebook processing
 
 ## Running the Example
 
