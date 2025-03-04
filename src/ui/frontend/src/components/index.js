@@ -6,6 +6,7 @@ import LoadingFallback from './LoadingFallback';
 import StatusIndicator from './StatusIndicator';
 import PaperStatusCard from './PaperStatusCard';
 import NotificationCenter from './NotificationCenter';
+import KnowledgeGraphFilter from './KnowledgeGraphFilter';
 
 export {
   Layout,
@@ -15,5 +16,6 @@ export {
   LoadingFallback,
   StatusIndicator,
   PaperStatusCard,
-  NotificationCenter
+  NotificationCenter,
+  KnowledgeGraphFilter
 };
