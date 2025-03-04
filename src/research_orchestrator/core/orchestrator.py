@@ -214,35 +214,110 @@ class ResearchOrchestrator:
             for section_id, section in project.plan.get("sections", {}).items():
                 logger.info(f"Processing section {section_id}: {section.get('title')}")
                 
-                # Gather information
-                information = self._get_information_gathering().gather_information(
-                    query=section.get("query", ""),
-                    scope=section.get("scope", {}),
-                )
-                
-                # Extract knowledge
-                knowledge = self._get_knowledge_extraction().extract_knowledge(
-                    information=information,
-                    query=section.get("query", ""),
-                )
-                
-                # Integrate knowledge
-                integrated_knowledge = self._get_knowledge_integration().integrate_knowledge(
-                    knowledge=knowledge,
-                    context=project.plan,
-                )
-                
-                # Generate research content
-                result = self._get_research_generation().generate_content(
-                    knowledge=integrated_knowledge,
-                    section=section,
-                    format=project.plan.get("format", "markdown"),
-                )
-                
-                # Add result to project
-                project.add_result(section_id, result)
-                self.state_manager.save_project(project)
+                try:
+                    # Gather information with error handling
+                    try:
+                        information = self._get_information_gathering().gather_information(
+                            query=section.get("query", ""),
+                            scope=section.get("scope", {}),
+                        )
+                    except Exception as info_error:
+                        logger.error(f"Error gathering information for section {section_id}: {info_error}")
+                        information = {"error": str(info_error), "content": f"Failed to gather information: {info_error}"}
+                    
+                    # Extract knowledge with error handling
+                    try:
+                        knowledge = self._get_knowledge_extraction().extract_knowledge(
+                            information=information,
+                            query=section.get("query", ""),
+                        )
+                    except Exception as extract_error:
+                        logger.error(f"Error extracting knowledge for section {section_id}: {extract_error}")
+                        knowledge = {
+                            "error": str(extract_error),
+                            "topic": section.get("query", ""),
+                            "summary": f"Failed to extract knowledge: {extract_error}"
+                        }
+                    
+                    # Integrate knowledge with error handling
+                    try:
+                        integrated_knowledge = self._get_knowledge_integration().integrate_knowledge(
+                            knowledge=knowledge,
+                            context=project.plan,
+                        )
+                    except Exception as integrate_error:
+                        logger.error(f"Error integrating knowledge for section {section_id}: {integrate_error}")
+                        integrated_knowledge = knowledge
+                        integrated_knowledge["error"] = str(integrate_error)
+                    
+                    # Generate research content with error handling
+                    try:
+                        result = self._get_research_generation().generate_content(
+                            knowledge=integrated_knowledge,
+                            section=section,
+                            format=project.plan.get("format", "markdown"),
+                        )
+                    except Exception as generate_error:
+                        logger.error(f"Error generating content for section {section_id}: {generate_error}")
+                        result = {
+                            "content": f"# {section.get('title', 'Section')}\n\nError generating content: {generate_error}",
+                            "format": project.plan.get("format", "markdown"),
+                            "section_id": section_id,
+                            "section_title": section.get("title", "Section"),
+                            "error": str(generate_error)
+                        }
+                    
+                    # Store knowledge in section for later use in report generation
+                    if "sections" in project.plan and section_id in project.plan["sections"]:
+                        if "knowledge" not in project.plan["sections"][section_id]:
+                            project.plan["sections"][section_id]["knowledge"] = {}
+                        
+                        # Store the integrated knowledge
+                        project.plan["sections"][section_id]["knowledge"] = integrated_knowledge
+                    
+                    # Add result to project
+                    project.add_result(section_id, result)
+                    self.state_manager.save_project(project)
+                    
+                except Exception as section_error:
+                    logger.error(f"Error processing section {section_id}: {section_error}")
+                    # Create a minimal error result for this section
+                    error_result = {
+                        "content": f"# {section.get('title', 'Section')}\n\nError processing section: {section_error}",
+                        "format": project.plan.get("format", "markdown"),
+                        "section_id": section_id,
+                        "section_title": section.get("title", "Section"),
+                        "error": str(section_error)
+                    }
+                    project.add_result(section_id, error_result)
+                    self.state_manager.save_project(project)
+                    
+                    # Continue processing other sections instead of failing the whole workflow
+                    continue
             
+            # Generate the full research report
+            try:
+                logger.info(f"Generating complete research report for project {project_id}")
+                report = self._get_research_generation().generate_report(
+                    project=project,
+                    format=project.plan.get("format", "markdown")
+                )
+                
+                # Add the full report as a special result
+                project.add_result("full_report", {
+                    "content": report,
+                    "format": project.plan.get("format", "markdown"),
+                    "section_id": "full_report",
+                    "section_title": "Complete Research Report",
+                    "metadata": {
+                        "generator": "ContentGenerator",
+                        "timestamp": self.state_manager.timestamp()
+                    }
+                })
+            except Exception as report_error:
+                logger.error(f"Error generating complete report: {report_error}")
+                # The workflow can still be considered completed even if the report generation fails
+                
             # Update project status to completed
             project.update_status("completed")
             self.state_manager.save_project(project)
