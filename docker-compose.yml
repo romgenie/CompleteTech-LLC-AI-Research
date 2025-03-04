@@ -62,17 +62,20 @@ services:
       - NEO4J_DATABASE=airesearch
       - MONGODB_URI=mongodb://admin:password@mongodb:27017/
       - MONGODB_DATABASE=ai_research_docs
+      - MONGODB_DB=ai_research_docs
       - API_LOG_LEVEL=info
       - API_WORKERS=4
       - JWT_SECRET=your_secret_key_here  # Change in production
       - JWT_ALGORITHM=HS256
       - CORS_ORIGINS=["http://localhost:3000"]
       - ENVIRONMENT=development
+      - UPLOAD_DIR=/app/uploads
     volumes:
       - ./src:/app/src
       - ./knowledge_graph_system:/app/knowledge_graph_system
       - ./research_orchestrator:/app/research_orchestrator
       - ./research_implementation:/app/research_implementation
+      - uploads_data:/app/uploads
     depends_on:
       neo4j:
         condition: service_healthy
@@ -92,6 +95,7 @@ volumes:
   neo4j_logs:
   neo4j_import:
   mongodb_data:
+  uploads_data:
 
 networks:
   ai_research_network:
