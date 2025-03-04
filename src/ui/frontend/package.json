@@ -49,5 +49,5 @@
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2"
   },
-  "proxy": "http://localhost:8000"
+  "proxy": "http://mock-api:8000"
 }
