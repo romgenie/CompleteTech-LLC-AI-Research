@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create an axios instance for auth
 const authApi = axios.create({
-  baseURL: '/api/auth',
+  baseURL: '/auth',
 });
 
 // Mock data for testing
