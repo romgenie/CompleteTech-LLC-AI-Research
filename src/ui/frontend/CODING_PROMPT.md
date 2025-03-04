@@ -25,52 +25,83 @@ The AI Research Integration frontend provides a UI for interacting with our know
    - Follow atomic design principles
    - Extract complex logic to custom hooks
    - Implement proper prop validation
+   - Use lazy loading for routes and heavy components
 
 2. **State Management**
    - Use React Context for global state
    - React Query for server state (future implementation)
    - Local component state for UI-specific state
+   - Keep state management consistent across components
 
 3. **API Interaction**
    - All API calls through service modules
    - Include error handling and loading states
    - Implement graceful fallbacks to mock data
+   - Use the useFetch hook for consistent API access
 
 4. **Code Style**
    - Follow ESLint configuration
    - Document with JSDoc comments
    - Use descriptive variable/function names
-   - Keep components focused and small
+   - Keep components focused and small (<200 lines)
+   - Follow the principle of single responsibility
 
 5. **Performance**
-   - Memoize expensive calculations
+   - Memoize expensive calculations with useMemo
    - Use React.memo for pure components
-   - Implement virtualization for long lists
-   - Optimize D3 rendering with useCallback
+   - Implement virtualization for lists with 100+ items
+   - Optimize D3 rendering with useCallback and useD3 hook
+   - Avoid unnecessary re-renders (React DevTools profiler)
 
 ## Testing Strategy
 - Unit tests for utilities and hooks
 - Component tests with React Testing Library
 - Mock API responses for offline testing
 - Focus on critical user flows
+- Add E2E tests for main user journeys
+
+## Error Handling
+- Implement error boundaries for critical components
+- Provide user-friendly error messages
+- Log errors to console in development
+- Add retry mechanism for transient failures
+- Gracefully degrade when services are unavailable
+
+## Accessibility
+- Use semantic HTML elements
+- Maintain proper heading hierarchy
+- Ensure keyboard navigation works
+- Add ARIA attributes where needed
+- Maintain sufficient color contrast (WCAG 2.1 AA)
+- Test with screen readers
+
+## Paper Processing Integration
+- Use WebSockets for real-time status updates
+- Show processing stages with progress indicators
+- Implement graceful fallbacks for disconnected state
+- Cache paper status locally for quick loading
+- Add retry mechanisms for failed operations
 
 ## Common Development Tasks
 - **Adding a new page**:
   1. Create component in `/pages` directory
   2. Add route in App.js
   3. Update navigation in Layout component
+  4. Implement lazy loading
 
 - **Creating a new component**:
   1. Create component file in `/components` directory
   2. Export component in appropriate index file
   3. Implement prop validation
   4. Add JSDoc comments
+  5. Consider memoization for expensive components
 
 - **Adding an API service**:
   1. Create service file in `/services` directory
   2. Implement API methods with error handling
   3. Add mock data fallback
   4. Update relevant context providers
+  5. Add appropriate retry mechanisms
 
 ## Backend Integration
 - API base URL: http://localhost:8000
@@ -85,6 +116,21 @@ The AI Research Integration frontend provides a UI for interacting with our know
   - Authentication errors: Redirect to login
   - Server errors: Display appropriate UI message
   - Default to mock data when backend unavailable
+
+## Knowledge Graph Visualization
+- Use the useD3 hook for all D3 integrations
+- Implement node and edge filtering
+- Add zooming and panning controls
+- Use color coding for entity and relationship types
+- Optimize rendering for graphs with 100+ nodes
+- Implement selection and focus mechanisms
+
+## Research Query Interface
+- Show loading indicators during queries
+- Implement typeahead suggestions
+- Add query history and favorites
+- Support structured and natural language queries
+- Format results with proper citations
 
 ## Next Steps
 1. **TypeScript Migration**
