@@ -50,10 +50,16 @@ frontend/
 ├── src/
 │   ├── components/         # Reusable UI components
 │   ├── contexts/           # React context providers
-│   ├── hooks/              # Custom React hooks (planned)
+│   ├── hooks/              # Custom React hooks 
+│   │   ├── useD3.js        # Hook for D3.js integration
+│   │   ├── useFetch.js     # Hook for API requests with error handling
+│   │   ├── useLocalStorage.js # Hook for localStorage state
+│   │   ├── useWebSocket.js # Hook for WebSocket connections
+│   │   └── useErrorBoundary.js # Error boundary hook
 │   ├── pages/              # Main application pages
 │   ├── services/           # API client services
 │   └── utils/              # Utility functions
+│   │   └── mockData.js     # Mock data for offline development
 │   ├── App.js              # Main App component with routing
 │   ├── index.js            # Entry point
 │   └── theme.js            # Theme configuration
@@ -61,6 +67,16 @@ frontend/
 ├── PROJECT_PLAN.md         # Project roadmap
 └── package.json            # Dependencies and scripts
 ```
+
+### Custom Hooks
+
+The project uses several custom hooks to abstract common functionality:
+
+- **useD3**: Integrates D3.js with React for knowledge graph visualization
+- **useFetch**: Handles API requests with loading states, error handling, and mock data fallbacks
+- **useLocalStorage**: Manages state that persists in localStorage
+- **useWebSocket**: Manages WebSocket connections with reconnection capability
+- **useErrorBoundary**: Provides error boundary components for graceful error handling
 
 ### Available Scripts
 
@@ -72,7 +88,15 @@ frontend/
 
 ### Development Guidelines
 
-See [CODING_PROMPT.md](./CODING_PROMPT.md) for detailed development guidelines.
+See [CODING_PROMPT.md](./CODING_PROMPT.md) for detailed development guidelines, which cover:
+
+- Component structure and best practices
+- State management strategies
+- API interaction patterns
+- Error handling approaches
+- Performance optimization techniques
+- Accessibility requirements
+- Testing strategies
 
 ### Testing Credentials
 
@@ -88,11 +112,27 @@ The frontend interfaces with the following backend services:
 - **Research API**: `/api/research` for research queries
 - **Knowledge Graph API**: `/api/knowledge-graph` for graph operations
 - **Implementation API**: `/api/implementation` for paper implementation
-- **WebSocket Server**: Real-time updates (planned)
+- **WebSocket Server**: Real-time updates for paper processing
+
+### Mock Data
+
+When backend services are unavailable, the application falls back to mock data defined in `/src/utils/mockData.js`. This includes:
+
+- Knowledge graph entities and relationships
+- Research query results
+- Paper implementation code
+- Paper processing status
 
 ## Project Roadmap
 
-See [PROJECT_PLAN.md](./PROJECT_PLAN.md) for the detailed project roadmap.
+See [PROJECT_PLAN.md](./PROJECT_PLAN.md) for the detailed project roadmap, which outlines:
+
+- Current implementation status
+- Phase 1: Optimization & Developer Experience (in progress)
+- Phase 2: Real-time Features
+- Phase 3: Advanced Features
+- Technical debt management
+- Timeline and success metrics
 
 ## License
 
