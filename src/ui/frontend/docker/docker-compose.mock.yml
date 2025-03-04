@@ -9,8 +9,8 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - REACT_APP_API_URL=http://localhost:8000
-      - REACT_APP_WEBSOCKET_URL=ws://localhost:8000/ws
+      - REACT_APP_API_URL=http://localhost:8001
+      - REACT_APP_WEBSOCKET_URL=ws://localhost:8001/ws
       - CHOKIDAR_USEPOLLING=true
     volumes:
       - ../:/app
@@ -26,9 +26,11 @@ services:
       context: ./development-mock
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - ./development-mock:/app
-      - ../src/utils/mockData.js:/app/mockData.js
+      - ./development-mock/node_modules:/app/node_modules
     environment:
       - NODE_ENV=development
+    command: >
+      sh -c "npm install && node api.js"
