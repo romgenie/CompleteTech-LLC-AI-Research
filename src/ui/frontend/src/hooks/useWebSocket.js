@@ -110,13 +110,13 @@ function useWebSocket(url, options = {}) {
   
   // Send message to WebSocket
   const sendMessage = useCallback((data) => {
-    if (socketRef.current && isConnected) {
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       const message = typeof data === 'object' ? JSON.stringify(data) : data;
       socketRef.current.send(message);
       return true;
     }
     return false;
-  }, [isConnected]);
+  }, []);
   
   // Connect on mount if autoConnect is true
   useEffect(() => {

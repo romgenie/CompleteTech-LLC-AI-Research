@@ -19,13 +19,27 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert
+  Alert,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Switch,
+  FormControlLabel,
+  Slider,
+  Tooltip,
+  IconButton
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import TuneIcon from '@mui/icons-material/Tune';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import InfoIcon from '@mui/icons-material/Info';
+import DownloadIcon from '@mui/icons-material/Download';
+import ShareIcon from '@mui/icons-material/Share';
 import * as d3 from 'd3';
 import knowledgeGraphService from '../services/knowledgeGraphService';
 
 const KnowledgeGraphPage = () => {
+  // Search state
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedEntity, setSelectedEntity] = useState(null);
@@ -36,6 +50,34 @@ const KnowledgeGraphPage = () => {
   const [error, setError] = useState(null);
   const [entityType, setEntityType] = useState('all');
   const [graphData, setGraphData] = useState(null);
+  
+  // Visualization settings
+  const [advancedSearchOpen, setAdvancedSearchOpen] = useState(false);
+  const [visualizationSettings, setVisualizationSettings] = useState({
+    showLabels: true,
+    highlightConnections: true,
+    nodeSize: 7,
+    forceStrength: 500,
+    clusterByType: false,
+    maxRelationshipDepth: 2,
+    showRelationshipLabels: false,
+    timeBasedLayout: false,
+    darkMode: false,
+  });
+  
+  // Analysis settings
+  const [analysisSettings, setAnalysisSettings] = useState({
+    showCentralityMetrics: false,
+    pathfindingEnabled: false,
+    showDomainClusters: false,
+    highlightTrendingEntities: false,
+    showPublicationTimeline: false,
+    detectCommunities: false,
+    identifyResearchFrontiers: false,
+  });
+  
+  // Export options
+  const [exportFormat, setExportFormat] = useState('json');
 
   const svgRef = useRef(null);
   const graphContainerRef = useRef(null);
@@ -65,7 +107,7 @@ const KnowledgeGraphPage = () => {
     if (graphData) {
       renderGraph();
     }
-  }, [graphData]);
+  }, [graphData, visualizationSettings]);
 
   const fetchEntityDetails = async (entityId) => {
     setLoading(true);
@@ -221,6 +263,116 @@ const KnowledgeGraphPage = () => {
   const handleSelectEntity = (entity) => {
     setSelectedEntity(entity);
   };
+  
+  // Handle export graph data
+  const handleExportGraph = () => {
+    if (!graphData) return;
+    
+    let exportData;
+    let mimeType;
+    let fileExtension;
+    
+    switch (exportFormat) {
+      case 'json':
+        exportData = JSON.stringify(graphData, null, 2);
+        mimeType = 'application/json';
+        fileExtension = 'json';
+        break;
+      case 'csv':
+        // Simple CSV format for nodes
+        const nodeHeader = 'id,name,type\n';
+        const nodeRows = graphData.nodes.map(node => 
+          `${node.id},"${node.name}",${node.type}`
+        ).join('\n');
+        
+        // Simple CSV format for links
+        const linkHeader = 'source,target,type\n';
+        const linkRows = graphData.links.map(link => 
+          `${link.source.id || link.source},${link.target.id || link.target},${link.type}`
+        ).join('\n');
+        
+        exportData = `# Nodes\n${nodeHeader}${nodeRows}\n\n# Links\n${linkHeader}${linkRows}`;
+        mimeType = 'text/csv';
+        fileExtension = 'csv';
+        break;
+      case 'neo4j':
+        // Generate Cypher queries for Neo4j
+        const nodeQueries = graphData.nodes.map(node => 
+          `CREATE (n:${node.type} {id: "${node.id}", name: "${node.name}"})`
+        ).join('\n');
+        
+        const linkQueries = graphData.links.map(link => {
+          const sourceId = link.source.id || link.source;
+          const targetId = link.target.id || link.target;
+          return `MATCH (a), (b) WHERE a.id = "${sourceId}" AND b.id = "${targetId}" CREATE (a)-[:${link.type}]->(b)`;
+        }).join('\n');
+        
+        exportData = `// Nodes\n${nodeQueries}\n\n// Relationships\n${linkQueries}`;
+        mimeType = 'text/plain';
+        fileExtension = 'cypher';
+        break;
+      default:
+        exportData = JSON.stringify(graphData, null, 2);
+        mimeType = 'application/json';
+        fileExtension = 'json';
+    }
+    
+    // Create blob and download link
+    const blob = new Blob([exportData], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `knowledge_graph_${selectedEntity.id}.${fileExtension}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Force cluster function for type-based clustering
+  const forceCluster = () => {
+    const strength = 0.15;
+    let nodes;
+
+    function force(alpha) {
+      // Group nodes by type
+      const centroids = {};
+      const typeGroups = {};
+      
+      nodes.forEach(d => {
+        if (!typeGroups[d.type]) {
+          typeGroups[d.type] = [];
+        }
+        typeGroups[d.type].push(d);
+      });
+      
+      // Calculate centroid for each group
+      Object.keys(typeGroups).forEach(type => {
+        const group = typeGroups[type];
+        let x = 0, y = 0;
+        
+        group.forEach(node => {
+          x += node.x;
+          y += node.y;
+        });
+        
+        centroids[type] = {
+          x: x / group.length,
+          y: y / group.length
+        };
+      });
+      
+      // Apply forces toward centroids
+      nodes.forEach(d => {
+        const centroid = centroids[d.type];
+        d.vx += (centroid.x - d.x) * strength * alpha;
+        d.vy += (centroid.y - d.y) * strength * alpha;
+      });
+    }
+    
+    force.initialize = (_) => nodes = _;
+    
+    return force;
+  };
 
   const renderGraph = () => {
     if (!svgRef.current || !graphData) return;
@@ -230,16 +382,30 @@ const KnowledgeGraphPage = () => {
 
     const width = graphContainerRef.current.clientWidth;
     const height = Math.max(500, graphContainerRef.current.clientHeight);
+    
+    // Apply dark mode if enabled
+    if (visualizationSettings.darkMode) {
+      d3.select(svgRef.current).style("background-color", "#1a1a1a");
+    } else {
+      d3.select(svgRef.current).style("background-color", "transparent");
+    }
 
     const svg = d3.select(svgRef.current)
       .attr("width", width)
       .attr("height", height);
 
-    // Define simulation
+    // Define simulation with settings from visualization options
     const simulation = d3.forceSimulation(graphData.nodes)
       .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(100))
-      .force("charge", d3.forceManyBody().strength(-500))
+      .force("charge", d3.forceManyBody().strength(-visualizationSettings.forceStrength))
       .force("center", d3.forceCenter(width / 2, height / 2));
+      
+    // Add cluster force if enabled
+    if (visualizationSettings.clusterByType) {
+      simulation.force("x", d3.forceX(width / 2).strength(0.1))
+               .force("y", d3.forceY(height / 2).strength(0.1))
+               .force("cluster", forceCluster())
+    }
 
     // Create links
     const link = svg.append("g")
@@ -255,19 +421,39 @@ const KnowledgeGraphPage = () => {
       .selectAll("circle")
       .data(graphData.nodes)
       .join("circle")
-      .attr("r", d => d.id === selectedEntity.id ? 10 : 7)
+      .attr("r", d => d.id === selectedEntity.id ? visualizationSettings.nodeSize + 3 : visualizationSettings.nodeSize)
       .attr("fill", d => entityColors[d.type] || entityColors.default)
+      .attr("stroke", d => visualizationSettings.highlightConnections && d.id === selectedEntity.id ? "#000" : "none")
+      .attr("stroke-width", 2)
       .call(drag(simulation));
 
-    // Add labels
-    const label = svg.append("g")
+    // Add labels if enabled
+    const label = visualizationSettings.showLabels ? svg.append("g")
       .selectAll("text")
       .data(graphData.nodes)
       .join("text")
       .text(d => d.name)
       .attr("font-size", 10)
       .attr("dx", 12)
-      .attr("dy", 4);
+      .attr("dy", 4)
+      .attr("opacity", 0.9)
+      .attr("fill", visualizationSettings.darkMode ? "#fff" : "#000")
+      .attr("stroke", visualizationSettings.darkMode ? "#000" : "#fff")
+      .attr("stroke-width", 0.3)
+      .attr("stroke-opacity", 0.8) : null;
+      
+    // Add relationship labels if enabled
+    if (visualizationSettings.showRelationshipLabels) {
+      svg.append("g")
+        .selectAll("text")
+        .data(graphData.links)
+        .join("text")
+        .text(d => d.type)
+        .attr("font-size", 8)
+        .attr("fill", "#666")
+        .attr("text-anchor", "middle")
+        .attr("dy", -3);
+    }
 
     // Add titles for hover
     node.append("title")
@@ -285,9 +471,17 @@ const KnowledgeGraphPage = () => {
         .attr("cx", d => d.x)
         .attr("cy", d => d.y);
 
-      label
-        .attr("x", d => d.x)
-        .attr("y", d => d.y);
+      if (visualizationSettings.showLabels && label) {
+        label
+          .attr("x", d => d.x)
+          .attr("y", d => d.y);
+      }
+      
+      if (visualizationSettings.showRelationshipLabels) {
+        svg.selectAll("text:not(.node-label)")
+          .attr("x", d => (d.source.x + d.target.x) / 2)
+          .attr("y", d => (d.source.y + d.target.y) / 2);
+      }
     });
 
     // Define drag behavior
@@ -371,18 +565,208 @@ const KnowledgeGraphPage = () => {
             </FormControl>
           </Grid>
           <Grid item xs={12} md={1}>
-            <Button
-              fullWidth
-              variant="contained"
-              color="primary"
-              onClick={handleSearch}
-              sx={{ height: '56px' }}
-              startIcon={<SearchIcon />}
-            >
-              Search
-            </Button>
+            <Grid container spacing={1}>
+              <Grid item xs={6} md={12}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSearch}
+                  sx={{ height: '56px' }}
+                  startIcon={<SearchIcon />}
+                >
+                  Search
+                </Button>
+              </Grid>
+              <Grid item xs={6} md={12} sx={{ mt: { xs: 0, md: 1 } }}>
+                <Tooltip title="Advanced Search Options">
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => setAdvancedSearchOpen(!advancedSearchOpen)}
+                    sx={{ height: { xs: '56px', md: '36px' } }}
+                    startIcon={<TuneIcon />}
+                  >
+                    {advancedSearchOpen ? "Hide" : "Advanced"}
+                  </Button>
+                </Tooltip>
+              </Grid>
+            </Grid>
           </Grid>
         </Grid>
+        
+        {/* Advanced Search Options */}
+        <Accordion 
+          expanded={advancedSearchOpen} 
+          onChange={() => setAdvancedSearchOpen(!advancedSearchOpen)}
+          sx={{ mt: 2 }}
+        >
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography variant="subtitle1">Advanced Search & Visualization Options</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle2" gutterBottom>Visualization Settings</Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <FormControlLabel
+                      control={
+                        <Switch 
+                          checked={visualizationSettings.showLabels}
+                          onChange={(e) => setVisualizationSettings({
+                            ...visualizationSettings,
+                            showLabels: e.target.checked
+                          })}
+                        />
+                      }
+                      label="Show Labels"
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <FormControlLabel
+                      control={
+                        <Switch 
+                          checked={visualizationSettings.highlightConnections}
+                          onChange={(e) => setVisualizationSettings({
+                            ...visualizationSettings,
+                            highlightConnections: e.target.checked
+                          })}
+                        />
+                      }
+                      label="Highlight Connections"
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <FormControlLabel
+                      control={
+                        <Switch 
+                          checked={visualizationSettings.showRelationshipLabels}
+                          onChange={(e) => setVisualizationSettings({
+                            ...visualizationSettings,
+                            showRelationshipLabels: e.target.checked
+                          })}
+                        />
+                      }
+                      label="Relationship Labels"
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <FormControlLabel
+                      control={
+                        <Switch 
+                          checked={visualizationSettings.clusterByType}
+                          onChange={(e) => setVisualizationSettings({
+                            ...visualizationSettings,
+                            clusterByType: e.target.checked
+                          })}
+                        />
+                      }
+                      label="Cluster by Type"
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" gutterBottom>
+                      Relationship Depth: {visualizationSettings.maxRelationshipDepth}
+                    </Typography>
+                    <Slider
+                      value={visualizationSettings.maxRelationshipDepth}
+                      onChange={(e, newValue) => setVisualizationSettings({
+                        ...visualizationSettings,
+                        maxRelationshipDepth: newValue
+                      })}
+                      step={1}
+                      marks
+                      min={1}
+                      max={5}
+                      valueLabelDisplay="auto"
+                    />
+                  </Grid>
+                </Grid>
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <Typography variant="subtitle2" gutterBottom>Analysis Tools</Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <FormControlLabel
+                      control={
+                        <Switch 
+                          checked={analysisSettings.showCentralityMetrics}
+                          onChange={(e) => setAnalysisSettings({
+                            ...analysisSettings,
+                            showCentralityMetrics: e.target.checked
+                          })}
+                        />
+                      }
+                      label="Centrality Metrics"
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <FormControlLabel
+                      control={
+                        <Switch 
+                          checked={analysisSettings.pathfindingEnabled}
+                          onChange={(e) => setAnalysisSettings({
+                            ...analysisSettings,
+                            pathfindingEnabled: e.target.checked
+                          })}
+                        />
+                      }
+                      label="Path Analysis"
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <FormControlLabel
+                      control={
+                        <Switch 
+                          checked={analysisSettings.detectCommunities}
+                          onChange={(e) => setAnalysisSettings({
+                            ...analysisSettings,
+                            detectCommunities: e.target.checked
+                          })}
+                        />
+                      }
+                      label="Community Detection"
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <FormControlLabel
+                      control={
+                        <Switch 
+                          checked={analysisSettings.identifyResearchFrontiers}
+                          onChange={(e) => setAnalysisSettings({
+                            ...analysisSettings,
+                            identifyResearchFrontiers: e.target.checked
+                          })}
+                        />
+                      }
+                      label="Research Frontiers"
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel id="export-format-label">Export Format</InputLabel>
+                      <Select
+                        labelId="export-format-label"
+                        value={exportFormat}
+                        onChange={(e) => setExportFormat(e.target.value)}
+                        label="Export Format"
+                      >
+                        <MenuItem value="json">JSON</MenuItem>
+                        <MenuItem value="csv">CSV</MenuItem>
+                        <MenuItem value="svg">SVG</MenuItem>
+                        <MenuItem value="png">PNG</MenuItem>
+                        <MenuItem value="neo4j">Neo4j Cypher</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </Grid>
+            </Grid>
+          </AccordionDetails>
+        </Accordion>
       </Box>
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
@@ -503,7 +887,46 @@ const KnowledgeGraphPage = () => {
                     <CircularProgress />
                   </Box>
                 ) : selectedEntity ? (
-                  <svg ref={svgRef} width="100%" height="100%"></svg>
+                  <Box position="relative" height="100%">
+                    <Box position="absolute" top={10} right={10} zIndex={1000}>
+                      <Tooltip title="Download Visualization">
+                        <IconButton size="small" sx={{ mr: 1 }} onClick={handleExportGraph}>
+                          <DownloadIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Share Visualization">
+                        <IconButton size="small" sx={{ mr: 1 }}>
+                          <ShareIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Visualization Information">
+                        <IconButton size="small">
+                          <InfoIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                    
+                    {analysisSettings.showCentralityMetrics && (
+                      <Box position="absolute" bottom={10} left={10} zIndex={1000} p={1} bgcolor="rgba(255,255,255,0.8)" borderRadius="4px">
+                        <Typography variant="caption" component="div" fontWeight="bold">Network Metrics</Typography>
+                        <Typography variant="caption" component="div">Nodes: {graphData?.nodes.length || 0}</Typography>
+                        <Typography variant="caption" component="div">Relationships: {graphData?.links.length || 0}</Typography>
+                        <Typography variant="caption" component="div">Density: {((graphData?.links.length || 0) / ((graphData?.nodes.length || 0) * ((graphData?.nodes.length || 0) - 1) / 2)).toFixed(3)}</Typography>
+                      </Box>
+                    )}
+                    
+                    {analysisSettings.identifyResearchFrontiers && (
+                      <Box position="absolute" top={10} left={10} zIndex={1000} p={1} bgcolor="rgba(255,255,255,0.8)" borderRadius="4px">
+                        <Typography variant="caption" component="div" fontWeight="bold">Research Frontiers</Typography>
+                        <Typography variant="caption" component="div">
+                          <Chip size="small" label="Emerging Field" sx={{ backgroundColor: '#8BC34A', color: 'white', fontSize: '0.7rem', height: 20, mr: 0.5 }} />
+                          <Chip size="small" label="Active Research" sx={{ backgroundColor: '#FFC107', color: 'white', fontSize: '0.7rem', height: 20 }} />
+                        </Typography>
+                      </Box>
+                    )}
+                    
+                    <svg ref={svgRef} width="100%" height="100%"></svg>
+                  </Box>
                 ) : (
                   <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100%">
                     <Typography variant="body1" color="text.secondary">

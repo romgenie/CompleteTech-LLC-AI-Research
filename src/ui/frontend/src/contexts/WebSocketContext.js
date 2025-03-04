@@ -44,11 +44,6 @@ export const WebSocketProvider = ({ children }) => {
     if (isAuthenticated && token) {
       // Add token to connection for authentication
       connect();
-      
-      // Send authentication message
-      if (isConnected) {
-        sendMessage({ type: 'auth', token });
-      }
     } else {
       disconnect();
     }
@@ -56,7 +51,14 @@ export const WebSocketProvider = ({ children }) => {
     return () => {
       disconnect();
     };
-  }, [isAuthenticated, token, connect, disconnect, isConnected, sendMessage]);
+  }, [isAuthenticated, token, connect, disconnect]);
+  
+  // Send authentication message after connection is established
+  useEffect(() => {
+    if (isAuthenticated && token && isConnected) {
+      sendMessage({ type: 'auth', token });
+    }
+  }, [isAuthenticated, token, isConnected, sendMessage]);
   
   // Handle paper status updates
   const subscribeToPaperUpdates = (paperId) => {

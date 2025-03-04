@@ -17,7 +17,7 @@ const mockData = require('./mockData.js');
 
 // Create Express app
 const app = express();
-const port = 8000;
+const port = 8000; // This will be mapped to port 8001 in Docker
 
 // Create HTTP server
 const server = http.createServer(app);
