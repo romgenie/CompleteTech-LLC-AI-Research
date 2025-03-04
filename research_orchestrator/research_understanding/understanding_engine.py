@@ -15,6 +15,9 @@ from .paper_processing import PaperProcessor, StructuredPaper, PaperFormat
 from .algorithm_extraction import (
     AlgorithmExtractor, ExtractedAlgorithm, AlgorithmImplementationGenerator
 )
+from .implementation_details import (
+    ImplementationDetailCollector, ImplementationDetail
+)
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -47,14 +50,17 @@ class ResearchUnderstandingEngine:
             self.paper_cache_dir = os.path.join(self.cache_dir, "papers")
             self.algorithm_cache_dir = os.path.join(self.cache_dir, "algorithms")
             self.implementation_cache_dir = os.path.join(self.cache_dir, "implementations")
+            self.detail_cache_dir = os.path.join(self.cache_dir, "implementation_details")
             
             os.makedirs(self.paper_cache_dir, exist_ok=True)
             os.makedirs(self.algorithm_cache_dir, exist_ok=True)
             os.makedirs(self.implementation_cache_dir, exist_ok=True)
+            os.makedirs(self.detail_cache_dir, exist_ok=True)
         else:
             self.paper_cache_dir = None
             self.algorithm_cache_dir = None
             self.implementation_cache_dir = None
+            self.detail_cache_dir = None
         
         # Initialize components
         self.paper_processor = PaperProcessor(
@@ -68,6 +74,11 @@ class ResearchUnderstandingEngine:
             cache_dir=self.algorithm_cache_dir
         )
         
+        self.detail_collector = ImplementationDetailCollector(
+            language_model_config=self.config.get("language_model_config"),
+            cache_dir=self.detail_cache_dir
+        )
+        
         self.implementation_generator = AlgorithmImplementationGenerator(
             language_model_config=self.config.get("language_model_config"),
             template_dir=self.config.get("implementation_templates_dir")
@@ -78,6 +89,7 @@ class ResearchUnderstandingEngine:
                      paper_format: Optional[PaperFormat] = None,
                      metadata: Optional[Dict[str, Any]] = None,
                      extract_algorithms: bool = True,
+                     collect_implementation_details: bool = True,
                      force_reprocess: bool = False) -> Dict[str, Any]:
         """
         Process a research paper end-to-end.
@@ -87,6 +99,7 @@ class ResearchUnderstandingEngine:
             paper_format: Format of the paper (autodetected if None)
             metadata: Optional metadata about the paper
             extract_algorithms: Whether to extract algorithms
+            collect_implementation_details: Whether to collect implementation details
             force_reprocess: If True, force reprocessing even if cached
             
         Returns:
@@ -104,10 +117,12 @@ class ResearchUnderstandingEngine:
         result = {
             "paper": paper,
             "algorithms": [],
+            "implementation_details": None,
             "implementations": {}
         }
         
         # Extract algorithms if requested
+        algorithms = []
         if extract_algorithms:
             logger.info(f"Extracting algorithms from paper: {paper.paper_id}")
             algorithms = self.algorithm_extractor.extract_algorithms(
@@ -115,6 +130,16 @@ class ResearchUnderstandingEngine:
                 force_reextract=force_reprocess
             )
             result["algorithms"] = algorithms
+        
+        # Collect implementation details if requested
+        if collect_implementation_details:
+            logger.info(f"Collecting implementation details from paper: {paper.paper_id}")
+            implementation_details = self.detail_collector.collect_details(
+                paper=paper,
+                algorithms=algorithms,
+                force_recollect=force_reprocess
+            )
+            result["implementation_details"] = implementation_details
         
         return result
     
@@ -185,6 +210,59 @@ class ResearchUnderstandingEngine:
         )
         
         return enriched_algorithm
+    
+    def enhance_algorithm_with_details(self,
+                                      algorithm: ExtractedAlgorithm,
+                                      paper: StructuredPaper) -> ExtractedAlgorithm:
+        """
+        Enhance an algorithm with comprehensive implementation details.
+        
+        This method combines the algorithm extractor's capabilities with the 
+        implementation detail collector to create a rich algorithm representation.
+        
+        Args:
+            algorithm: Algorithm to enhance
+            paper: Source paper
+            
+        Returns:
+            Enhanced algorithm with comprehensive implementation details
+        """
+        # First use the algorithm extractor to get basic implementation details
+        logger.info(f"Enhancing algorithm with implementation details: {algorithm.name}")
+        enhanced_algorithm = self.algorithm_extractor.extract_implementation_details(
+            algorithm=algorithm,
+            paper=paper
+        )
+        
+        # Then use the implementation detail collector for richer information
+        enhanced_algorithm = self.detail_collector.enhance_algorithm(
+            algorithm=enhanced_algorithm,
+            paper=paper
+        )
+        
+        return enhanced_algorithm
+    
+    def collect_implementation_details(self,
+                                     paper: StructuredPaper,
+                                     algorithms: Optional[List[ExtractedAlgorithm]] = None,
+                                     force_recollect: bool = False) -> ImplementationDetail:
+        """
+        Collect comprehensive implementation details from a paper.
+        
+        Args:
+            paper: Source paper
+            algorithms: Pre-extracted algorithms (will be extracted if None)
+            force_recollect: If True, force re-collection even if cached
+            
+        Returns:
+            Implementation details object
+        """
+        logger.info(f"Collecting comprehensive implementation details from paper: {paper.paper_id}")
+        return self.detail_collector.collect_details(
+            paper=paper,
+            algorithms=algorithms,
+            force_recollect=force_recollect
+        )
     
     def _cache_implementation(self,
                             algorithm_id: str,
