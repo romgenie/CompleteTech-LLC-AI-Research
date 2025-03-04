@@ -1,0 +1,44 @@
+[
+  {
+    "algorithm_id": "algo_quickmergesort",
+    "name": "QuickMergeSort",
+    "description": "",
+    "purpose": "QuickMergeSort aims to combine the strengths of QuickSort and MergeSort, achieving good average-case performance while maintaining good worst-case bounds.",
+    "pseudocode": null,
+    "parameters": [
+      {
+        "name": "arr",
+        "description": "The array to be sorted",
+        "type_hint": null,
+        "default_value": null,
+        "is_required": true
+      },
+      {
+        "name": "low",
+        "description": "The starting index of the array segment to sort",
+        "type_hint": null,
+        "default_value": "0",
+        "is_required": false
+      },
+      {
+        "name": "high",
+        "description": "The ending index of the array segment to sort",
+        "type_hint": null,
+        "default_value": "None",
+        "is_required": false
+      }
+    ],
+    "variables": [],
+    "subroutines": [],
+    "complexity": {},
+    "optimization_notes": null,
+    "implementation_notes": null,
+    "usage_examples": [],
+    "limitations": null,
+    "alternative_approaches": [],
+    "paper_section_references": [
+      "2. The QuickMergeSort Algorithm"
+    ],
+    "source_paper_id": "paper_-8535333864746349218"
+  }
+]
