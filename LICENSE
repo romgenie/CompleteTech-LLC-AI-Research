@@ -1,0 +1,51 @@
+MIT License
+
+Copyright (c) 2025 Complete Tech
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-------------------------------------------------------------------------------
+THIRD-PARTY COMPONENTS
+-------------------------------------------------------------------------------
+
+This project incorporates and adapts code from the following open source projects:
+
+1. AutoCodeAgent2.0
+   - Licensed under the Apache License, Version 2.0
+   - Copyright [original copyright holder]
+   - License: http://www.apache.org/licenses/LICENSE-2.0
+
+2. TDAG (Task Decomposition Agent Generation)
+   - [License information to be determined]
+
+3. GDesigner
+   - [License information to be determined]
+
+4. KARMA
+   - [License information to be determined]
+
+5. open_deep_research
+   - [License information to be determined]
+
+The full license text for these components is included in the respective
+subdirectories under /external_repo/.
+
+This project is independent of and not endorsed by the original authors of
+the incorporated projects. All adaptations and modifications are provided
+under the terms of the MIT License as stated above.
