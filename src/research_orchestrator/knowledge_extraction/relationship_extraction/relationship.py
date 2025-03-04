@@ -57,6 +57,15 @@ class RelationType(Enum):
     ANALYZES = auto()
     INTRODUCES = auto()
     IMPROVES_UPON = auto()
+    EXPLAINS = auto()
+    PRODUCES = auto()
+    USED_BY = auto()
+    BASIS_FOR = auto()
+    OUTPERFORMED_BY = auto()
+    IMPLEMENTED_BY = auto()
+    CONTAINS = auto()
+    HAS_FEATURE = auto()
+    HAS_PARAMETER = auto()
     
     # Other/generic types
     UNKNOWN = auto()
