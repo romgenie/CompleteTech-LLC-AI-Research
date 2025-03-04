@@ -88,6 +88,8 @@ Common UI components with standardized APIs:
 - **ErrorFallback**: Component for displaying error states with customizable UI
 - **LoadingFallback**: Component for displaying loading indicators and states
 - **StatusIndicator**: Component for displaying paper processing status with visual indicators
+- **PaperStatusCard**: Card component for displaying paper information with real-time status updates
+- **NotificationCenter**: Component for displaying and managing WebSocket notifications
 
 ### Available Scripts
 
@@ -131,7 +133,9 @@ The application uses WebSockets for real-time updates:
 
 - WebSocketContext provides a global WebSocket connection
 - Status updates for paper processing are received in real-time
-- Notifications system for alerting users about status changes
+- NotificationCenter component for displaying system notifications
+- PaperStatusCard components subscribe to individual paper updates
+- Progress visualization with real-time status transitions
 - Auto-reconnection with exponential backoff for connection stability
 - Authentication integration with JWT tokens
 
