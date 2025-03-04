@@ -1033,11 +1033,36 @@ const KnowledgeGraphPage = () => {
                     </Box>
                     
                     {analysisSettings.showCentralityMetrics && (
-                      <Box position="absolute" bottom={10} left={10} zIndex={1000} p={1} bgcolor="rgba(255,255,255,0.8)" borderRadius="4px">
-                        <Typography variant="caption" component="div" fontWeight="bold">Network Metrics</Typography>
-                        <Typography variant="caption" component="div">Nodes: {graphData?.nodes.length || 0}</Typography>
-                        <Typography variant="caption" component="div">Relationships: {graphData?.links.length || 0}</Typography>
-                        <Typography variant="caption" component="div">Density: {((graphData?.links.length || 0) / ((graphData?.nodes.length || 0) * ((graphData?.nodes.length || 0) - 1) / 2)).toFixed(3)}</Typography>
+                      <Box 
+                        position="absolute" 
+                        bottom={10} 
+                        left={10} 
+                        zIndex={1000} 
+                        p={1.5} 
+                        bgcolor="rgba(255,255,255,0.9)" 
+                        borderRadius="4px"
+                        boxShadow="0 1px 3px rgba(0,0,0,0.12)"
+                        border="1px solid rgba(25, 118, 210, 0.3)"
+                      >
+                        <Typography variant="caption" component="div" fontWeight="bold" color="primary.main">
+                          Network Metrics
+                        </Typography>
+                        <Divider sx={{ my: 0.5 }} />
+                        <Box display="grid" gridTemplateColumns="repeat(2, 1fr)" gap={1}>
+                          <Typography variant="caption" component="div" fontWeight="medium">Nodes:</Typography>
+                          <Typography variant="caption" component="div" color="text.secondary">{graphData?.nodes.length || 0}</Typography>
+                          
+                          <Typography variant="caption" component="div" fontWeight="medium">Relationships:</Typography>
+                          <Typography variant="caption" component="div" color="text.secondary">{graphData?.links.length || 0}</Typography>
+                          
+                          <Typography variant="caption" component="div" fontWeight="medium">Density:</Typography>
+                          <Typography variant="caption" component="div" color="text.secondary">
+                            {((graphData?.links.length || 0) / ((graphData?.nodes.length || 0) * ((graphData?.nodes.length || 0) - 1) / 2)).toFixed(3)}
+                          </Typography>
+                          
+                          <Typography variant="caption" component="div" fontWeight="medium">Key Node:</Typography>
+                          <Typography variant="caption" component="div" color="text.secondary">{selectedEntity?.name}</Typography>
+                        </Box>
                       </Box>
                     )}
                     
