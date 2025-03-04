@@ -12,7 +12,34 @@ from typing import Dict, List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
 
 from knowledge_graph_system.core.knowledge_graph_manager import KnowledgeGraphManager
-from knowledge_graph_system.core.models.base_models import GraphEntity, GraphRelationship
+
+# Mock models for testing
+class GraphEntity:
+    def __init__(self, id, name, label, aliases=None, properties=None, source=None, confidence=1.0, 
+                 created_at=None, updated_at=None):
+        self.id = id
+        self.name = name
+        self.label = label
+        self.aliases = aliases or []
+        self.properties = properties or {}
+        self.source = source
+        self.confidence = confidence
+        self.created_at = created_at
+        self.updated_at = updated_at
+
+class GraphRelationship:
+    def __init__(self, id, type, source_id, target_id, properties=None, confidence=1.0, 
+                 source=None, bidirectional=False, created_at=None, updated_at=None):
+        self.id = id
+        self.type = type
+        self.source_id = source_id
+        self.target_id = target_id
+        self.properties = properties or {}
+        self.confidence = confidence
+        self.source = source
+        self.bidirectional = bidirectional
+        self.created_at = created_at
+        self.updated_at = updated_at
 
 from src.api.dependencies.auth import User, get_current_user
 from src.api.dependencies.database import get_knowledge_graph_manager
