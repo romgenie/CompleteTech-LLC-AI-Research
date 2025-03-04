@@ -3,9 +3,9 @@
 This file contains key information about the repositories in this workspace and their functionalities.
 
 > **Development Statistics:**  
-> Total cost: $18.35  
-> Total duration (API): 1h 35m 7.7s  
-> Total duration (wall): 2h 55m 3.9s  
+> Total cost: $21.50  
+> Total duration (API): 1h 58m 12.3s  
+> Total duration (wall): 3h 20m 45.1s  
 
 ## Project Implementation Status
 
@@ -84,25 +84,30 @@ We have implemented the following components for the AI Research Integration Pro
 ### Next Implementation Steps
 
 1. **Knowledge Extraction Pipeline (Continued)**
-   - Performance result aggregator for extracting performance metrics
-   - Concept definition builder for formalizing conceptual definitions
+   - Performance result aggregator for extracting performance metrics from papers
+   - Concept definition builder for formalizing AI concept definitions
 
-2. **Graph-based Knowledge Integration**
-   - Connection discovery engine
-   - Contradiction resolution system 
-   - Temporal evolution tracker
-   - Knowledge gap identification
+2. **Knowledge Graph Integration**
+   - Connection discovery engine for finding relationships between entities
+   - Contradiction resolution system for handling conflicting information
+   - Temporal evolution tracker for tracking changes over time
+   - Knowledge gap identification for research opportunities
 
-3. **Research Implementation System**
-   - Research Understanding Engine
-   - Implementation Planning System
-   - Code Generation Pipeline
+3. **Research Understanding Engine**
+   - Paper parsing and processing systems for extracting structured information
+   - Algorithm and architecture extraction for implementation details
+   - Implementation detail collection for code generation
 
-4. **Research Generation System**
-   - Report structure planning
-   - Content synthesis engine
-   - Citation management system
-   - Visualization generation tools
+4. **External Repository Adapters**
+   - GDesigner adapter for graph-based agent communication
+   - open_deep_research adapter for information gathering and research
+   - AutoCodeAgent2.0 adapter for code generation and implementation
+
+5. **Research Generation System**
+   - Report structure planning for organized output
+   - Content synthesis engine for coherent text
+   - Citation management system for proper attribution
+   - Visualization generation tools for data representation
    - Code example generation
 
 ## External Repositories
