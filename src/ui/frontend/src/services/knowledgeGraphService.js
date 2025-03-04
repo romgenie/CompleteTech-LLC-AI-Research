@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance for knowledge graph API
 const knowledgeGraphApi = axios.create({
-  baseURL: '/api/knowledge-graph',
+  baseURL: '/knowledge',
 });
 
 // Add request interceptor to add authentication token
