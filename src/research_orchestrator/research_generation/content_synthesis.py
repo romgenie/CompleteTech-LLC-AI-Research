@@ -7,14 +7,28 @@ research documents based on extracted knowledge and document structure.
 
 import logging
 from enum import Enum, auto
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional, Union, Tuple, Set
 import json
 import os
 from pathlib import Path
 import re
 import random
+import asyncio
+from functools import lru_cache
 
 from .report_structure import DocumentStructure, Section, SectionType, DocumentType
+
+# Try to import LLM-related modules
+try:
+    from langchain.llms import BaseLLM
+    from langchain.prompts import PromptTemplate
+    from langchain.schema import AIMessage, HumanMessage, SystemMessage
+    from langchain.chat_models import ChatAnthropic, ChatOpenAI
+    from langchain.chains import LLMChain
+    from langchain.callbacks import get_openai_callback
+    LANGCHAIN_AVAILABLE = True
+except ImportError:
+    LANGCHAIN_AVAILABLE = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -357,18 +371,29 @@ class ContentSynthesisEngine:
     research documents based on extracted knowledge and document structure.
     """
     
-    def __init__(self, config: Optional[ContentGenerationConfig] = None):
+    def __init__(self, 
+                 config: Optional[ContentGenerationConfig] = None,
+                 llm: Optional[Any] = None,
+                 knowledge_graph_adapter = None):
         """
         Initialize the Content Synthesis Engine.
         
         Args:
             config: Configuration for content generation
+            llm: Language model to use for content generation (optional)
+            knowledge_graph_adapter: Adapter for accessing knowledge graph (optional)
         """
         self.config = config or ContentGenerationConfig()
         self.logger = logging.getLogger(__name__)
+        self.llm = llm
+        self.knowledge_graph_adapter = knowledge_graph_adapter
         
         # Initialize default templates
         self._initialize_templates()
+        
+        # Initialize language model if not provided
+        if self.llm is None and LANGCHAIN_AVAILABLE:
+            self._initialize_llm()
     
     def _initialize_templates(self) -> None:
         """Initialize content templates."""
@@ -377,6 +402,26 @@ class ContentSynthesisEngine:
         # Create default templates if none exist
         if not os.listdir(self.config.template_dir):
             self._create_default_templates()
+            
+    def _initialize_llm(self) -> None:
+        """Initialize language model for content generation."""
+        if not LANGCHAIN_AVAILABLE:
+            self.logger.warning("LangChain is not available. Content will be generated using templates only.")
+            return
+        
+        try:
+            # Default to OpenAI if no model is specified
+            model_name = self.config.llm_model or "gpt-4"
+            
+            if "claude" in model_name.lower():
+                self.llm = ChatAnthropic(model=model_name, temperature=0.7)
+                self.logger.info(f"Initialized Claude model: {model_name}")
+            else:
+                self.llm = ChatOpenAI(model=model_name, temperature=0.7)
+                self.logger.info(f"Initialized OpenAI model: {model_name}")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize language model: {e}")
+            self.logger.warning("Content will be generated using templates only.")
     
     def _create_default_templates(self) -> None:
         """Create default content templates."""
@@ -744,6 +789,19 @@ In conclusion, this work advances the state of the art in {topic} by {final_conc
             replacements["future_work_directions"] = self._generate_future_work_directions(research_data)
             replacements["final_conclusion"] = self._generate_final_conclusion(research_data)
         
+        # Try to use LLM to fill placeholders if available
+        if self.llm and LANGCHAIN_AVAILABLE:
+            # First try to fill placeholders with LLM
+            missing_placeholders = [p for p in placeholders if p not in replacements]
+            if missing_placeholders:
+                llm_replacements = self._generate_content_with_llm(
+                    missing_placeholders, 
+                    section, 
+                    research_data, 
+                    template
+                )
+                replacements.update(llm_replacements)
+        
         # Fill any remaining placeholders with dummy text
         for placeholder in placeholders:
             if placeholder not in replacements:
@@ -754,6 +812,337 @@ In conclusion, this work advances the state of the art in {topic} by {final_conc
             template_text = template_text.replace(f"{{{placeholder}}}", replacement)
         
         return template_text
+    
+    def _generate_content_with_llm(self,
+                                  placeholders: List[str],
+                                  section: Section,
+                                  research_data: ResearchData,
+                                  template: ContentTemplate) -> Dict[str, str]:
+        """
+        Generate content for placeholders using a language model.
+        
+        Args:
+            placeholders: List of placeholders to fill
+            section: Section information
+            research_data: Research data to use
+            template: Content template
+            
+        Returns:
+            Dictionary of placeholder replacements
+        """
+        if not self.llm or not LANGCHAIN_AVAILABLE:
+            return {}
+        
+        replacements = {}
+        
+        try:
+            # Create context for LLM
+            context = self._create_llm_context(section, research_data, template)
+            
+            # Create prompt for batch generation of placeholders
+            prompt = self._create_llm_prompt(placeholders, context, section, research_data)
+            
+            # Generate content
+            messages = [
+                SystemMessage(content=f"You are a research content generator specialized in {research_data.topic}. "
+                                    f"Generate content for a {section.section_type.name.lower()} section of a "
+                                    f"{template.document_type.name.lower().replace('_', ' ')} with a "
+                                    f"{template.technical_level.name.lower()} technical level and "
+                                    f"{template.style.name.lower()} style."),
+                HumanMessage(content=prompt)
+            ]
+            
+            # Get response from LLM
+            response = self.llm(messages)
+            content = response.content if hasattr(response, 'content') else str(response)
+            
+            # Parse response to extract content for each placeholder
+            for placeholder in placeholders:
+                pattern = rf"{placeholder}:\s*(.+?)(?=\n\n|\n[A-Z_]+:|\Z)"
+                match = re.search(pattern, content, re.DOTALL)
+                if match:
+                    replacements[placeholder] = match.group(1).strip()
+                else:
+                    self.logger.warning(f"Could not extract content for placeholder: {placeholder}")
+            
+            # If parsing failed, try a different approach
+            if not replacements and placeholders:
+                # If we couldn't extract structured content, we'll use the whole response
+                # for the first placeholder, which is better than nothing
+                replacements[placeholders[0]] = content.strip()
+                
+            return replacements
+        
+        except Exception as e:
+            self.logger.error(f"Error generating content with LLM: {e}")
+            return {}
+    
+    def _create_llm_context(self, 
+                           section: Section, 
+                           research_data: ResearchData, 
+                           template: ContentTemplate) -> str:
+        """
+        Create context information for LLM content generation.
+        
+        Args:
+            section: Section information
+            research_data: Research data to use
+            template: Content template
+            
+        Returns:
+            Context information as string
+        """
+        context = f"Topic: {research_data.topic}\n"
+        context += f"Section: {section.title} ({section.section_type.name})\n"
+        context += f"Document Type: {template.document_type.name.replace('_', ' ').title()}\n"
+        context += f"Style: {template.style.name.title()}\n"
+        context += f"Technical Level: {template.technical_level.name.title()}\n\n"
+        
+        # Add facts
+        if research_data.facts and len(research_data.facts) > 0:
+            context += "Key Facts:\n"
+            for i, fact in enumerate(research_data.facts[:5]):  # Limit to 5 facts
+                context += f"- {fact}\n"
+            context += "\n"
+        
+        # Add entities
+        if research_data.entities and len(research_data.entities) > 0:
+            context += "Key Entities:\n"
+            entities_by_type = {}
+            for entity in research_data.entities:
+                entity_type = entity.get("type", "UNKNOWN")
+                if entity_type not in entities_by_type:
+                    entities_by_type[entity_type] = []
+                entities_by_type[entity_type].append(entity)
+            
+            for entity_type, entities in entities_by_type.items():
+                context += f"- {entity_type}: "
+                entity_names = [e.get("name", "") or e.get("text", "") for e in entities[:3]]
+                context += ", ".join(filter(None, entity_names)) + "\n"
+            
+            context += "\n"
+        
+        # Add papers
+        if research_data.papers and len(research_data.papers) > 0:
+            context += "Related Papers:\n"
+            for i, paper in enumerate(research_data.papers[:3]):  # Limit to 3 papers
+                title = paper.get("title", "Untitled")
+                authors = paper.get("authors", [])
+                if isinstance(authors, list) and authors:
+                    author_text = authors[0] + (" et al." if len(authors) > 1 else "")
+                else:
+                    author_text = "Unknown"
+                year = paper.get("year", "")
+                
+                context += f"- {title} ({author_text}, {year})\n"
+            
+            context += "\n"
+        
+        # Add metadata
+        if research_data.metadata:
+            context += "Additional Information:\n"
+            for key, value in list(research_data.metadata.items())[:5]:  # Limit to 5 metadata items
+                if isinstance(value, (list, tuple)):
+                    value_text = ", ".join(str(v) for v in value)
+                else:
+                    value_text = str(value)
+                context += f"- {key}: {value_text}\n"
+        
+        # Add knowledge graph context if available
+        if self.knowledge_graph_adapter:
+            try:
+                kg_context = self._get_knowledge_graph_context(research_data.topic)
+                if kg_context:
+                    context += "\nKnowledge Graph Context:\n" + kg_context + "\n"
+            except Exception as e:
+                self.logger.error(f"Error getting knowledge graph context: {e}")
+        
+        return context
+    
+    def _create_llm_prompt(self, 
+                          placeholders: List[str], 
+                          context: str, 
+                          section: Section, 
+                          research_data: ResearchData) -> str:
+        """
+        Create a prompt for LLM content generation.
+        
+        Args:
+            placeholders: List of placeholders to fill
+            context: Context information
+            section: Section information
+            research_data: Research data to use
+            
+        Returns:
+            Prompt for LLM
+        """
+        prompt = f"Please generate content for the following placeholders in a {section.section_type.name.lower()} section "
+        prompt += f"about {research_data.topic}. Use the provided context information to inform your response.\n\n"
+        prompt += f"CONTEXT INFORMATION:\n{context}\n\n"
+        
+        prompt += "PLACEHOLDERS TO FILL:\n"
+        for placeholder in placeholders:
+            # Convert placeholder from snake_case to a more readable format
+            readable_placeholder = placeholder.replace("_", " ").title()
+            prompt += f"- {readable_placeholder} ({placeholder})\n"
+        
+        prompt += "\nPlease provide content for each placeholder in the following format:\n"
+        prompt += "PLACEHOLDER_NAME: Your generated content here.\n\n"
+        prompt += "Make sure your generated content is appropriate for the specified section type, document type, style, and technical level.\n"
+        prompt += "Keep each placeholder's content concise (2-3 paragraphs maximum) but informative and substantive.\n"
+        
+        return prompt
+    
+    def _get_knowledge_graph_context(self, topic: str) -> str:
+        """
+        Get relevant context information from the knowledge graph.
+        
+        Args:
+            topic: Research topic
+            
+        Returns:
+            Context information from knowledge graph
+        """
+        if not self.knowledge_graph_adapter:
+            return ""
+        
+        try:
+            # Query the knowledge graph for relevant entities and relationships
+            entities = self.knowledge_graph_adapter.query_entities_by_keyword(topic, limit=5)
+            relationships = self.knowledge_graph_adapter.query_relationships_by_entities(
+                [e.get("id") for e in entities if "id" in e], limit=10
+            )
+            
+            # Format the information
+            context = ""
+            
+            if entities:
+                context += "Related Entities:\n"
+                for entity in entities:
+                    name = entity.get("name", entity.get("id", "Unknown"))
+                    type_name = entity.get("type", "Unknown")
+                    properties = ", ".join([f"{k}: {v}" for k, v in entity.items() 
+                                          if k not in ["id", "name", "type"] and len(str(v)) < 50][:3])
+                    
+                    context += f"- {name} ({type_name}): {properties}\n"
+                
+                context += "\n"
+            
+            if relationships:
+                context += "Key Relationships:\n"
+                for rel in relationships:
+                    source = rel.get("source_name", rel.get("source_id", "Unknown"))
+                    target = rel.get("target_name", rel.get("target_id", "Unknown"))
+                    rel_type = rel.get("type", "related_to")
+                    
+                    context += f"- {source} {rel_type.replace('_', ' ')} {target}\n"
+            
+            return context
+        
+        except Exception as e:
+            self.logger.error(f"Error querying knowledge graph: {e}")
+            return ""
+    
+    def _generate_section_with_llm(self,
+                                 section: Section,
+                                 document_structure: DocumentStructure,
+                                 research_data: ResearchData) -> str:
+        """
+        Generate content for a section directly using a language model.
+        
+        Args:
+            section: Section to generate content for
+            document_structure: Overall document structure
+            research_data: Research data to use
+            
+        Returns:
+            Generated content for the section
+        """
+        if not self.llm or not LANGCHAIN_AVAILABLE:
+            return ""
+        
+        try:
+            # Create context for LLM
+            template = ContentTemplate(
+                section_type=section.section_type,
+                document_type=document_structure.document_type,
+                template_text="",
+                style=self.config.style,
+                technical_level=self.config.technical_level
+            )
+            context = self._create_llm_context(section, research_data, template)
+            
+            # Create system message
+            system_message = (
+                f"You are a research content generator specialized in {research_data.topic}. "
+                f"Generate content for a {section.section_type.name.lower()} section titled '{section.title}' "
+                f"of a {document_structure.document_type.name.lower().replace('_', ' ')}. "
+                f"Use a {self.config.technical_level.name.lower()} technical level and "
+                f"{self.config.style.name.lower()} style. "
+                f"The content should be comprehensive, well-structured, and include appropriate "
+                f"headings, paragraphs, and formatting using Markdown syntax."
+            )
+            
+            # Create user message
+            user_message = (
+                f"Please generate the complete content for the '{section.title}' section "
+                f"of our {document_structure.document_type.name.lower().replace('_', ' ')} about {research_data.topic}.\n\n"
+                f"CONTEXT INFORMATION:\n{context}\n\n"
+                f"The section should cover all relevant aspects expected in a {section.section_type.name.lower()} "
+                f"section of a {document_structure.document_type.name.lower().replace('_', ' ')}. "
+                f"Use appropriate headings, paragraphs, and formatting with Markdown syntax. "
+                f"If applicable, include references to papers, models, datasets, and methods from the context information."
+            )
+            
+            # Add section-specific instructions
+            if section.section_type == SectionType.INTRODUCTION:
+                user_message += (
+                    "\n\nThis introduction should include background context, problem statement, "
+                    "proposed approach, and main contributions."
+                )
+            elif section.section_type == SectionType.METHODOLOGY:
+                user_message += (
+                    "\n\nThis methodology section should describe the approach, algorithms, "
+                    "experimental setup, evaluation metrics, and implementation details."
+                )
+            elif section.section_type == SectionType.RESULTS:
+                user_message += (
+                    "\n\nThis results section should present main findings, comparisons with baseline methods, "
+                    "performance metrics, and interpretation of results."
+                )
+            elif section.section_type == SectionType.DISCUSSION:
+                user_message += (
+                    "\n\nThis discussion section should cover implications of the results, comparison with prior work, "
+                    "limitations of the approach, and future directions."
+                )
+            elif section.section_type == SectionType.CONCLUSION:
+                user_message += (
+                    "\n\nThis conclusion should summarize the approach, main contributions, results, "
+                    "and suggest future work directions."
+                )
+            
+            # Generate content
+            messages = [
+                SystemMessage(content=system_message),
+                HumanMessage(content=user_message)
+            ]
+            
+            # Set max tokens based on section length
+            max_tokens = self.config.max_section_length * 4  # Approximate word-to-token ratio
+            
+            # Get response from LLM
+            response = self.llm(messages)
+            content = response.content if hasattr(response, 'content') else str(response)
+            
+            # Ensure section title is at the beginning
+            if not content.startswith(f"# {section.title}") and not content.startswith(f"## {section.title}"):
+                content = f"## {section.title}\n\n{content}"
+            
+            return content
+            
+        except Exception as e:
+            self.logger.error(f"Error generating section with LLM: {e}")
+            return ""
     
     def generate_content_for_section(self, 
                                     section: Section,
@@ -789,8 +1178,19 @@ In conclusion, this work advances the state of the art in {topic} by {final_conc
                 technical_level=self.config.technical_level
             )
         
-        # Fill the template with research data
-        content = self._fill_template_with_research_data(template, research_data, section)
+        # Try direct LLM generation if available
+        content = ""
+        if self.llm and LANGCHAIN_AVAILABLE and self.config.llm_model:
+            try:
+                content = self._generate_section_with_llm(section, document_structure, research_data)
+            except Exception as e:
+                self.logger.error(f"Error generating section with LLM: {e}")
+                content = ""
+        
+        # Fall back to template-based generation if LLM generation failed or was not available
+        if not content:
+            # Fill the template with research data
+            content = self._fill_template_with_research_data(template, research_data, section)
         
         # Generate content for subsections recursively
         if section.subsections:
@@ -846,6 +1246,16 @@ In conclusion, this work advances the state of the art in {topic} by {final_conc
         """
         document = f"# {document_structure.title}\n\n"
         
+        # Try to generate the entire document with LLM if available
+        if self.llm and LANGCHAIN_AVAILABLE and self.config.llm_model:
+            try:
+                llm_document = self._generate_document_with_llm(document_structure, research_data)
+                if llm_document:
+                    return llm_document
+            except Exception as e:
+                self.logger.error(f"Error generating document with LLM: {e}")
+        
+        # Fall back to section-by-section generation
         for section in document_structure.sections:
             # Skip title section since we already added it
             if section.section_type == SectionType.TITLE:
@@ -873,6 +1283,93 @@ In conclusion, this work advances the state of the art in {topic} by {final_conc
                 document += f"## {section.title}\n\n" + content + "\n\n"
         
         return document
+        
+    def _generate_document_with_llm(self,
+                                  document_structure: DocumentStructure,
+                                  research_data: ResearchData) -> str:
+        """
+        Generate an entire document using a language model.
+        
+        Args:
+            document_structure: Document structure
+            research_data: Research data to use
+            
+        Returns:
+            Complete document as a string
+        """
+        if not self.llm or not LANGCHAIN_AVAILABLE:
+            return ""
+        
+        try:
+            # Create template
+            template = ContentTemplate(
+                section_type=SectionType.TITLE,  # Placeholder
+                document_type=document_structure.document_type,
+                template_text="",
+                style=self.config.style,
+                technical_level=self.config.technical_level
+            )
+            
+            # Create context
+            context = self._create_llm_context(
+                Section(title=document_structure.title, section_type=SectionType.TITLE),
+                research_data,
+                template
+            )
+            
+            # Create document structure information
+            structure_info = f"Document Title: {document_structure.title}\n"
+            structure_info += f"Document Type: {document_structure.document_type.name.replace('_', ' ').title()}\n"
+            structure_info += "Document Sections:\n"
+            
+            for section in document_structure.sections:
+                structure_info += f"- {section.title} ({section.section_type.name})\n"
+                if section.subsections:
+                    for subsection in section.subsections:
+                        structure_info += f"  - {subsection.title} ({subsection.section_type.name})\n"
+            
+            # Create system message
+            system_message = (
+                f"You are a research document generator specialized in {research_data.topic}. "
+                f"Generate a complete {document_structure.document_type.name.lower().replace('_', ' ')} "
+                f"with the specified structure. Use a {self.config.technical_level.name.lower()} technical level "
+                f"and {self.config.style.name.lower()} style. "
+                f"The document should be comprehensive, well-structured, and include appropriate "
+                f"headings, paragraphs, and formatting using Markdown syntax."
+            )
+            
+            # Create user message
+            user_message = (
+                f"Please generate a complete {document_structure.document_type.name.lower().replace('_', ' ')} "
+                f"titled '{document_structure.title}' about {research_data.topic}.\n\n"
+                f"DOCUMENT STRUCTURE:\n{structure_info}\n\n"
+                f"CONTEXT INFORMATION:\n{context}\n\n"
+                f"Generate the complete document with all sections specified in the structure. "
+                f"Use Markdown formatting with appropriate headings (# for title, ## for main sections, ### for subsections). "
+                f"Include all typical content expected in each section of a {document_structure.document_type.name.lower().replace('_', ' ')}. "
+                f"If applicable, include references to papers, models, datasets, and methods from the context information. "
+                f"Make sure to include all specified sections and maintain the correct heading structure."
+            )
+            
+            # Generate content
+            messages = [
+                SystemMessage(content=system_message),
+                HumanMessage(content=user_message)
+            ]
+            
+            # Get response from LLM
+            response = self.llm(messages)
+            content = response.content if hasattr(response, 'content') else str(response)
+            
+            # Ensure document title is at the beginning if not already
+            if not content.startswith(f"# {document_structure.title}"):
+                content = f"# {document_structure.title}\n\n{content}"
+            
+            return content
+            
+        except Exception as e:
+            self.logger.error(f"Error generating document with LLM: {e}")
+            return ""
     
     # Helper methods for generating section content
     
@@ -1133,15 +1630,66 @@ This represents a significant advancement over existing methods and provides a f
                 title = paper.get("title", "Paper Title")
                 venue = paper.get("venue", "Conference/Journal")
                 year = paper.get("year", "2023")
+                doi = paper.get("doi", "")
+                url = paper.get("url", "")
                 
+                # Format reference based on available information
                 reference = f"[{i+1}] {authors_text}. \"{title}.\" {venue}, {year}."
+                
+                # Add DOI or URL if available
+                if doi:
+                    reference += f" DOI: {doi}"
+                elif url:
+                    reference += f" Available at: {url}"
+                
                 references.append(reference)
             
             return "\n\n".join(references)
         
-        # Generate dummy references if no papers are available
+        # Try to generate references with LLM if available
+        if self.llm and LANGCHAIN_AVAILABLE:
+            try:
+                references = self._generate_references_with_llm(research_data)
+                if references:
+                    return references
+            except Exception as e:
+                self.logger.error(f"Error generating references with LLM: {e}")
+        
+        # Generate dummy references if no papers are available and LLM generation failed
         return """[1] Smith, J. and Johnson, A. "A Novel Approach to Machine Learning." Journal of Artificial Intelligence, 2022.
 
 [2] Brown, R., Davis, M., Wilson, E., and Thompson, K. "Advances in Neural Networks." Conference on Neural Information Processing Systems, 2021.
 
 [3] Lee, S. "Deep Learning for Computer Vision: A Comprehensive Survey." IEEE Transactions on Pattern Analysis and Machine Intelligence, 2023."""
+        
+    def _generate_references_with_llm(self, research_data: ResearchData) -> str:
+        """Generate references using a language model."""
+        if not self.llm or not LANGCHAIN_AVAILABLE:
+            return ""
+        
+        try:
+            # Create prompt
+            prompt = (
+                f"Generate a list of 5-7 realistic academic references for a research paper on {research_data.topic}. "
+                f"Include influential papers, recent developments, and seminal works in this field. "
+                f"Format the references according to APA style. Each reference should include authors, year, "
+                f"title, journal/conference name, and DOI (when applicable). Include real papers that exist in the literature "
+                f"with accurate publication details.\n\n"
+                f"Return the references as a numbered list, with one blank line between each reference."
+            )
+            
+            # Create messages
+            messages = [
+                SystemMessage(content="You are an academic reference generator with extensive knowledge of research literature."),
+                HumanMessage(content=prompt)
+            ]
+            
+            # Get response
+            response = self.llm(messages)
+            references = response.content if hasattr(response, 'content') else str(response)
+            
+            return references
+            
+        except Exception as e:
+            self.logger.error(f"Error generating references with LLM: {e}")
+            return ""
