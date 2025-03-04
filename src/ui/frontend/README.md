@@ -199,28 +199,47 @@ See [PROJECT_PLAN.md](./PROJECT_PLAN.md) for the detailed project roadmap, which
 
 We are focusing on the following priorities:
 
-1. **Knowledge Graph UX Optimization**: Building on recent improvements
-   - ✅ Added comprehensive user onboarding experience
-   - ✅ Implemented progressive disclosure for advanced features
-   - ✅ Enhanced visualization with tooltips and contextual guidance
-   - ✅ Improved information hierarchy and visual feedback
-   - 🔄 Adding keyboard navigation and accessibility features (In progress)
+### Immediate Development Focus (Next 4 Weeks)
 
-2. **TypeScript Migration**: Continuing the TypeScript migration with full interfaces and type safety
-   - ✅ Added JSDoc type definitions as interim solution
-   - ✅ Configured TypeScript with tsconfig.json
-   - 🔄 Converting core contexts and hooks (In progress)
+1. **Knowledge Graph Performance & Accessibility** (Weeks 1-2)
+   - 🔄 **Performance Optimization for Large Graphs**
+     - Optimizing D3 force simulation parameters
+     - Implementing level-of-detail rendering with zoom control
+     - Adding node aggregation for dense clusters
+   - 🔄 **Accessibility Improvements**
+     - Adding keyboard navigation for graph interaction
+     - Implementing screen reader support
+     - Creating text alternatives for visualization data
 
-3. **Performance Optimization for Large Graphs**: 
-   - 🔄 Optimizing D3 force simulation parameters
-   - 🔄 Adding level-of-detail rendering based on zoom level
-   - 🔄 Implementing progressive loading for large datasets
-   
-4. **Research Enhancement**: Building on Knowledge Graph UX improvements
-   - ✅ Added preliminary export capabilities
-   - ✅ Implemented basic sharing functionality
-   - 🔄 Working on citation and reference management
-   - 🔄 Developing research history and favorites
+2. **TypeScript Migration** (Weeks 1-2)
+   - 🔄 **Core System Migration**
+     - Converting AuthContext to TypeScript
+     - Migrating WebSocketContext with proper typing
+     - Adding TypeScript to critical hooks (useD3, useFetch, useWebSocket)
+   - 🔄 **Type Definitions**
+     - Creating comprehensive interface definitions
+     - Adding proper documentation for all types
+     - Implementing type validation for API interactions
+
+3. **Research Enhancement** (Weeks 3-4)
+   - 🔄 **Citation Management**
+     - Completing citation export in multiple formats
+     - Enhancing reference management interface
+     - Adding citation validation and enrichment
+   - 🔄 **Research Organization**
+     - Implementing research history with local storage
+     - Creating favorites and saved queries functionality
+     - Applying Knowledge Graph UX standards to research interface
+
+4. **Developer Experience Improvements** (Ongoing)
+   - 🔄 **Testing Infrastructure**
+     - Setting up Jest with React Testing Library
+     - Adding visual regression testing
+     - Configuring CI/CD pipeline with GitHub Actions
+   - 🔄 **Code Quality**
+     - Adding Prettier for consistent formatting
+     - Implementing ESLint with TypeScript rules
+     - Creating standardized component templates
 
 See the following documents for more details:
 - [CODING_PROMPT.md](./CODING_PROMPT.md): Development guidelines and standards
