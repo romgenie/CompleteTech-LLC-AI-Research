@@ -1,0 +1,12 @@
+{
+  "section_type": "INTRODUCTION",
+  "document_type": "RESEARCH_PAPER",
+  "template_text": "# Introduction\n\nIn recent years, {topic} has emerged as a crucial area of research in {field}. \n{background_context}\n\nDespite significant progress in this domain, several challenges remain unresolved. \n{problem_statement}\n\nThis paper addresses these challenges by {proposed_approach}. \nOur work makes the following contributions:\n\n{contributions}\n\nThe remainder of this paper is organized as follows. Section 2 discusses related work in {topic}. \nSection 3 describes our methodology. Section 4 presents the results of our experiments. \nSection 5 discusses the implications of our findings, and Section 6 concludes the paper with \na summary of our contributions and directions for future work.",
+  "style": "ACADEMIC",
+  "technical_level": "INTERMEDIATE",
+  "metadata": {
+    "version": "1.0",
+    "description": "Academic introduction template for research papers",
+    "author": "AI Research Integration Project"
+  }
+}
