@@ -23,7 +23,7 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import * as d3 from 'd3';
-import { knowledgeGraphService } from '../services/knowledgeGraphService';
+import knowledgeGraphService from '../services/knowledgeGraphService';
 
 const KnowledgeGraphPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,6 +57,7 @@ const KnowledgeGraphPage = () => {
       fetchEntityDetails(selectedEntity.id);
       fetchRelatedEntities(selectedEntity.id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEntity]);
 
   useEffect(() => {
@@ -73,7 +74,29 @@ const KnowledgeGraphPage = () => {
       setEntityDetails(data);
     } catch (err) {
       console.error('Error fetching entity details:', err);
-      setError('Failed to load entity details');
+      
+      // Use mock graph to get entity details
+      const mockGraph = knowledgeGraphService.getMockGraph();
+      const entity = mockGraph.nodes.find(node => node.id === entityId);
+      
+      if (entity) {
+        // Create mock entity details
+        const mockEntityDetails = {
+          ...entity,
+          description: `This is a ${entity.type.toLowerCase()} related to AI research.`,
+          properties: {
+            created: "2025-02-10",
+            updated: "2025-03-01",
+            citations: Math.floor(Math.random() * 1000),
+            complexity: ["Low", "Medium", "High"][Math.floor(Math.random() * 3)],
+            domain: ["Computer Vision", "NLP", "Reinforcement Learning"][Math.floor(Math.random() * 3)]
+          }
+        };
+        
+        setEntityDetails(mockEntityDetails);
+      } else {
+        setError('Entity not found in mock data');
+      }
     } finally {
       setLoading(false);
     }
@@ -104,7 +127,44 @@ const KnowledgeGraphPage = () => {
       setGraphData({ nodes, links });
     } catch (err) {
       console.error('Error fetching related entities:', err);
-      setError('Failed to load related entities');
+      
+      // Use mock graph data
+      const mockGraph = knowledgeGraphService.getMockGraph();
+      
+      // Find relationships for the selected entity
+      const relatedLinks = mockGraph.links.filter(link => 
+        link.source === entityId || link.target === entityId
+      );
+      
+      // Get related entity IDs
+      const relatedEntityIds = new Set();
+      relatedLinks.forEach(link => {
+        if (link.source === entityId) {
+          relatedEntityIds.add(link.target);
+        } else {
+          relatedEntityIds.add(link.source);
+        }
+      });
+      
+      // Get related entity nodes
+      const relatedEntities = mockGraph.nodes.filter(node => 
+        relatedEntityIds.has(node.id)
+      );
+      
+      setRelatedEntities(relatedEntities);
+      
+      // Prepare graph data for visualization
+      const nodes = [
+        selectedEntity,
+        ...relatedEntities
+      ];
+      
+      setGraphData({ 
+        nodes: nodes,
+        links: relatedLinks
+      });
+      
+      setError('Using mock data for graph visualization');
     } finally {
       setGraphLoading(false);
     }
@@ -123,8 +183,36 @@ const KnowledgeGraphPage = () => {
       setRelatedEntities([]);
       setGraphData(null);
     } catch (err) {
-      setError('Search failed. Please try again.');
       console.error('Search error:', err);
+      
+      // Use mock data for demonstration
+      const mockGraph = knowledgeGraphService.getMockGraph();
+      
+      // Filter nodes based on search term (case insensitive)
+      const filteredNodes = mockGraph.nodes.filter(node => 
+        node.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        node.type.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      
+      // If entityType is specified, filter further
+      const results = entityType !== 'all' 
+        ? filteredNodes.filter(node => node.type === entityType)
+        : filteredNodes;
+        
+      // Add relevance scores for UI display
+      const searchResults = results.map(node => ({
+        ...node,
+        relevance: (9 + Math.random()).toFixed(1)
+      }));
+      
+      setSearchResults(searchResults);
+      setSelectedEntity(null);
+      setEntityDetails(null);
+      setRelatedEntities([]);
+      setGraphData(null);
+      
+      // Show message about using mock data
+      setError('Using mock data for demonstration. In production, this would call the actual API.');
     } finally {
       setLoading(false);
     }
@@ -229,197 +317,206 @@ const KnowledgeGraphPage = () => {
   };
 
   return (
-    <Container maxWidth="xl">
-      <Box py={4}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Knowledge Graph Explorer
-        </Typography>
-        <Typography variant="subtitle1" color="text.secondary" paragraph>
-          Search, visualize, and explore relationships between AI research entities.
-        </Typography>
-
-        <Box mb={4}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={8}>
-              <TextField
-                fullWidth
-                label="Search Knowledge Graph"
-                variant="outlined"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search for models, datasets, papers, authors, algorithms..."
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth variant="outlined">
-                <InputLabel id="entity-type-label">Entity Type</InputLabel>
-                <Select
-                  labelId="entity-type-label"
-                  value={entityType}
-                  onChange={(e) => setEntityType(e.target.value)}
-                  label="Entity Type"
-                >
-                  <MenuItem value="all">All Types</MenuItem>
-                  <MenuItem value="MODEL">AI Models</MenuItem>
-                  <MenuItem value="DATASET">Datasets</MenuItem>
-                  <MenuItem value="ALGORITHM">Algorithms</MenuItem>
-                  <MenuItem value="PAPER">Research Papers</MenuItem>
-                  <MenuItem value="AUTHOR">Authors</MenuItem>
-                  <MenuItem value="CODE">Code Repositories</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={1}>
-              <Button
-                fullWidth
-                variant="contained"
-                color="primary"
-                onClick={handleSearch}
-                sx={{ height: '56px' }}
-                startIcon={<SearchIcon />}
-              >
-                Search
-              </Button>
-            </Grid>
-          </Grid>
-        </Box>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
-            <Paper variant="outlined" sx={{ height: '75vh', overflowY: 'auto' }}>
-              {loading ? (
-                <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-                  <CircularProgress />
-                </Box>
-              ) : searchResults.length > 0 ? (
-                <List>
-                  {searchResults.map((entity) => (
-                    <React.Fragment key={entity.id}>
-                      <ListItem 
-                        button 
-                        onClick={() => handleSelectEntity(entity)}
-                        selected={selectedEntity && selectedEntity.id === entity.id}
-                      >
-                        <ListItemText 
-                          primary={entity.name} 
-                          secondary={
-                            <Box display="flex" alignItems="center" mt={0.5}>
-                              <Chip 
-                                label={entity.type} 
-                                size="small" 
-                                sx={{ 
-                                  backgroundColor: entityColors[entity.type] || entityColors.default,
-                                  color: 'white',
-                                  mr: 1
-                                }} 
-                              />
-                              <Typography variant="caption" color="text.secondary">
-                                Relevance: {entity.relevance || 'N/A'}
-                              </Typography>
-                            </Box>
-                          } 
-                        />
-                      </ListItem>
-                      <Divider />
-                    </React.Fragment>
-                  ))}
-                </List>
-              ) : (
-                <Box p={3} textAlign="center">
-                  <Typography variant="body1" color="text.secondary">
-                    {searchTerm ? 'No results found. Try a different search term.' : 'Search for entities to begin exploring.'}
-                  </Typography>
-                </Box>
-              )}
-            </Paper>
-          </Grid>
+    <Box>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Knowledge Graph Explorer
+      </Typography>
+      <Typography variant="subtitle1" color="text.secondary" paragraph>
+        Search, visualize, and explore relationships between AI research entities.
+      </Typography>
+      <Box mb={4}>
+        <Grid container spacing={2}>
           <Grid item xs={12} md={8}>
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <Paper variant="outlined" sx={{ height: '25vh', overflowY: 'auto', p: 2 }}>
-                  {selectedEntity ? (
-                    loading ? (
-                      <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-                        <CircularProgress />
-                      </Box>
-                    ) : entityDetails ? (
-                      <Box>
-                        <Box display="flex" justifyContent="space-between">
-                          <Typography variant="h5">{entityDetails.name}</Typography>
-                          <Chip 
-                            label={entityDetails.type} 
-                            size="medium" 
-                            sx={{
-                              backgroundColor: entityColors[entityDetails.type] || entityColors.default,
-                              color: 'white'
-                            }}
-                          />
-                        </Box>
-                        <Divider sx={{ my: 2 }} />
-                        <Grid container spacing={2}>
-                          {entityDetails.properties && Object.entries(entityDetails.properties).map(([key, value]) => (
-                            <Grid item xs={6} key={key}>
-                              <Typography variant="body2" color="text.secondary" component="span">
-                                {key}:
-                              </Typography>
-                              <Typography variant="body2" component="span" sx={{ ml: 1 }}>
-                                {value}
-                              </Typography>
-                            </Grid>
-                          ))}
-                        </Grid>
-                        {entityDetails.description && (
-                          <>
-                            <Divider sx={{ my: 2 }} />
-                            <Typography variant="body1">{entityDetails.description}</Typography>
-                          </>
-                        )}
-                      </Box>
-                    ) : (
-                      <Typography variant="body1" align="center">No details available</Typography>
-                    )
-                  ) : (
-                    <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-                      <Typography variant="body1" color="text.secondary">
-                        Select an entity to view details
-                      </Typography>
-                    </Box>
-                  )}
-                </Paper>
-              </Grid>
-              <Grid item xs={12}>
-                <Paper 
-                  variant="outlined" 
-                  sx={{ height: '48vh', p: 2 }}
-                  ref={graphContainerRef}
-                >
-                  {graphLoading ? (
-                    <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-                      <CircularProgress />
-                    </Box>
-                  ) : selectedEntity ? (
-                    <svg ref={svgRef} width="100%" height="100%"></svg>
-                  ) : (
-                    <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-                      <Typography variant="body1" color="text.secondary">
-                        Select an entity to visualize relationships
-                      </Typography>
-                    </Box>
-                  )}
-                </Paper>
-              </Grid>
-            </Grid>
+            <TextField
+              fullWidth
+              label="Search Knowledge Graph"
+              variant="outlined"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search for models, datasets, papers, authors, algorithms..."
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth variant="outlined">
+              <InputLabel id="entity-type-label">Entity Type</InputLabel>
+              <Select
+                labelId="entity-type-label"
+                value={entityType}
+                onChange={(e) => setEntityType(e.target.value)}
+                label="Entity Type"
+              >
+                <MenuItem value="all">All Types</MenuItem>
+                
+                {/* Core Entity Types */}
+                <MenuItem value="MODEL">AI Models</MenuItem>
+                <MenuItem value="DATASET">Datasets</MenuItem>
+                <MenuItem value="ALGORITHM">Algorithms</MenuItem>
+                <MenuItem value="PAPER">Research Papers</MenuItem>
+                <MenuItem value="AUTHOR">Authors</MenuItem>
+                <MenuItem value="CODE">Code Repositories</MenuItem>
+                
+                {/* AI Entity Types */}
+                <MenuItem value="ARCHITECTURE">Model Architectures</MenuItem>
+                <MenuItem value="FRAMEWORK">Frameworks</MenuItem>
+                <MenuItem value="PARAMETER">Parameters</MenuItem>
+                <MenuItem value="METRIC">Evaluation Metrics</MenuItem>
+                
+                {/* Scientific Entity Types */}
+                <MenuItem value="THEORY">Theories</MenuItem>
+                <MenuItem value="METHODOLOGY">Methodologies</MenuItem>
+                <MenuItem value="FINDING">Research Findings</MenuItem>
+                <MenuItem value="HYPOTHESIS">Hypotheses</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={1}>
+            <Button
+              fullWidth
+              variant="contained"
+              color="primary"
+              onClick={handleSearch}
+              sx={{ height: '56px' }}
+              startIcon={<SearchIcon />}
+            >
+              Search
+            </Button>
           </Grid>
         </Grid>
       </Box>
-    </Container>
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={4}>
+          <Paper variant="outlined" sx={{ height: '75vh', overflowY: 'auto' }}>
+            {loading ? (
+              <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+                <CircularProgress />
+              </Box>
+            ) : searchResults.length > 0 ? (
+              <List>
+                {searchResults.map((entity) => (
+                  <React.Fragment key={entity.id}>
+                    <ListItem 
+                      button 
+                      onClick={() => handleSelectEntity(entity)}
+                      selected={selectedEntity && selectedEntity.id === entity.id}
+                    >
+                      <ListItemText 
+                        primary={entity.name} 
+                        secondary={
+                          <Box display="flex" alignItems="center" mt={0.5}>
+                            <Chip 
+                              label={entity.type} 
+                              size="small" 
+                              sx={{ 
+                                backgroundColor: entityColors[entity.type] || entityColors.default,
+                                color: 'white',
+                                mr: 1
+                              }} 
+                            />
+                            <Typography variant="caption" color="text.secondary">
+                              Relevance: {entity.relevance || 'N/A'}
+                            </Typography>
+                          </Box>
+                        } 
+                      />
+                    </ListItem>
+                    <Divider />
+                  </React.Fragment>
+                ))}
+              </List>
+            ) : (
+              <Box p={3} textAlign="center">
+                <Typography variant="body1" color="text.secondary">
+                  {searchTerm ? 'No results found. Try a different search term.' : 'Search for entities to begin exploring.'}
+                </Typography>
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={8}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Paper variant="outlined" sx={{ height: '25vh', overflowY: 'auto', p: 2 }}>
+                {selectedEntity ? (
+                  loading ? (
+                    <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+                      <CircularProgress />
+                    </Box>
+                  ) : entityDetails ? (
+                    <Box>
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography variant="h5">{entityDetails.name}</Typography>
+                        <Chip 
+                          label={entityDetails.type} 
+                          size="medium" 
+                          sx={{
+                            backgroundColor: entityColors[entityDetails.type] || entityColors.default,
+                            color: 'white'
+                          }}
+                        />
+                      </Box>
+                      <Divider sx={{ my: 2 }} />
+                      <Grid container spacing={2}>
+                        {entityDetails.properties && Object.entries(entityDetails.properties).map(([key, value]) => (
+                          <Grid item xs={6} key={key}>
+                            <Typography variant="body2" color="text.secondary" component="span">
+                              {key}:
+                            </Typography>
+                            <Typography variant="body2" component="span" sx={{ ml: 1 }}>
+                              {value}
+                            </Typography>
+                          </Grid>
+                        ))}
+                      </Grid>
+                      {entityDetails.description && (
+                        <>
+                          <Divider sx={{ my: 2 }} />
+                          <Typography variant="body1">{entityDetails.description}</Typography>
+                        </>
+                      )}
+                    </Box>
+                  ) : (
+                    <Typography variant="body1" align="center">No details available</Typography>
+                  )
+                ) : (
+                  <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+                    <Typography variant="body1" color="text.secondary">
+                      Select an entity to view details
+                    </Typography>
+                  </Box>
+                )}
+              </Paper>
+            </Grid>
+            <Grid item xs={12}>
+              <Paper 
+                variant="outlined" 
+                sx={{ height: '48vh', p: 2 }}
+                ref={graphContainerRef}
+              >
+                {graphLoading ? (
+                  <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+                    <CircularProgress />
+                  </Box>
+                ) : selectedEntity ? (
+                  <svg ref={svgRef} width="100%" height="100%"></svg>
+                ) : (
+                  <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+                    <Typography variant="body1" color="text.secondary">
+                      Select an entity to visualize relationships
+                    </Typography>
+                  </Box>
+                )}
+              </Paper>
+            </Grid>
+          </Grid>
+        </Grid>
+      </Grid>
+    </Box>
   );
 };
 
