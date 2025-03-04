@@ -1,0 +1,104 @@
+{
+  "document_type": "RESEARCH_PAPER",
+  "title": "Research Paper Template",
+  "description": "Standard structure for academic research papers",
+  "sections": [
+    {
+      "title": "Title",
+      "section_type": "TITLE",
+      "required": true
+    },
+    {
+      "title": "Abstract",
+      "section_type": "ABSTRACT",
+      "required": true
+    },
+    {
+      "title": "Introduction",
+      "section_type": "INTRODUCTION",
+      "required": true
+    },
+    {
+      "title": "Related Work",
+      "section_type": "RELATED_WORK",
+      "required": true
+    },
+    {
+      "title": "Methodology",
+      "section_type": "METHODOLOGY",
+      "required": true,
+      "subsections": [
+        {
+          "title": "Proposed Approach",
+          "section_type": "METHODOLOGY_APPROACH",
+          "required": true
+        },
+        {
+          "title": "Algorithm Details",
+          "section_type": "METHODOLOGY_ALGORITHM",
+          "required": true
+        },
+        {
+          "title": "Experimental Setup",
+          "section_type": "METHODOLOGY_EXPERIMENT",
+          "required": true
+        }
+      ]
+    },
+    {
+      "title": "Results",
+      "section_type": "RESULTS",
+      "required": true,
+      "subsections": [
+        {
+          "title": "Main Results",
+          "section_type": "RESULTS_MAIN",
+          "required": true
+        },
+        {
+          "title": "Ablation Studies",
+          "section_type": "RESULTS_ABLATION",
+          "required": false
+        },
+        {
+          "title": "Comparative Analysis",
+          "section_type": "RESULTS_COMPARISON",
+          "required": true
+        }
+      ]
+    },
+    {
+      "title": "Discussion",
+      "section_type": "DISCUSSION",
+      "required": true,
+      "subsections": [
+        {
+          "title": "Implications",
+          "section_type": "DISCUSSION_IMPLICATIONS",
+          "required": true
+        },
+        {
+          "title": "Limitations",
+          "section_type": "DISCUSSION_LIMITATIONS",
+          "required": true
+        }
+      ]
+    },
+    {
+      "title": "Conclusion",
+      "section_type": "CONCLUSION",
+      "required": true
+    },
+    {
+      "title": "References",
+      "section_type": "REFERENCES",
+      "required": true
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "field": "Computer Science",
+    "suitable_for": ["Conferences", "Journals"],
+    "typical_length": "8-12 pages"
+  }
+}
