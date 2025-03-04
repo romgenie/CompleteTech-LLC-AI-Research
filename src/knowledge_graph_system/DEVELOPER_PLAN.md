@@ -1,193 +1,151 @@
-# Developer Plan for Dynamic Knowledge Graph System
+# Knowledge Graph System - Developer Plan
 
-This document outlines the development plan for the Dynamic Knowledge Graph System for AI Research. It provides guidance for developers on implementation priorities, technical decisions, and integration approaches.
+## Overview
 
-## Development Phases
+The Knowledge Graph System is designed for building and maintaining comprehensive knowledge graphs of AI research to identify patterns, trends, and knowledge gaps. This plan outlines the development approach, architecture, and integration with the Paper Processing Pipeline.
 
-### Phase 1: Core System and Knowledge Extraction (Weeks 1-4)
+## Core Components
 
-1. **Core System Architecture**
-   - Set up system initialization and coordination
-   - Implement configuration management
-   - Create containerized development environment
-   - Set up Neo4j database integration
-   - Define system-wide interfaces
+### Graph Database Management
 
-2. **Knowledge Extractor Development**
-   - Implement source connector framework for academic APIs
-   - Develop document processing pipeline
-   - Create entity recognition system for AI concepts
-   - Build relationship extraction engine
-   - Implement quality assessment module
+- **Neo4jManager**: Handles connection and query management
+- **SchemaManager**: Manages graph constraints and indexes
+- **QueryOptimizer**: Optimizes queries for performance
 
-### Phase 2: Knowledge Graph and Agent Network (Weeks 5-8)
+### Knowledge Graph Models
 
-1. **Evolving Knowledge Graph**
-   - Develop graph database management layer
-   - Implement ontology management system
-   - Create dynamic update engine
-   - Build conflict resolution system
-   - Implement provenance tracking
+- **GraphEntity**: Base class for graph entities
+- **GraphRelationship**: Base class for graph relationships
+- **AIModel**, **Dataset**, **Paper**, etc.: Specialized entity models
+- **TrainedOn**, **Outperforms**, etc.: Specialized relationship models
 
-2. **Graph-based Agent Network**
-   - Develop agent registry system
-   - Implement graph topology optimization
-   - Create communication protocol manager
-   - Build execution scheduler
-   - Implement feedback learning system
+### Knowledge Graph Manager
 
-### Phase 3: Insight Generation and Research Guidance (Weeks 9-12)
+- **KnowledgeGraphManager**: High-level manager for graph operations
+- **ConnectionDiscovery**: Finds potential connections between entities
+- **ContradictionResolution**: Handles conflicting information
 
-1. **Insight Generation System**
-   - Implement pattern discovery engine
-   - Develop trend analysis module
-   - Create contradiction detection system
-   - Build knowledge gap analyzer
-   - Implement cross-domain connection finder
+### Knowledge Graph Adapter
 
-2. **Research Guidance Interface**
-   - Develop query understanding system
-   - Implement recommendation engine
-   - Create visualization generator
-   - Build research question generator
-   - Implement hypothesis formation assistant
+- **KnowledgeGraphAdapter**: Interface for Research Orchestrator
+- **EntityConverter**: Converts between formats
+- **RelationshipConverter**: Converts between formats
 
-### Phase 4: API Development, Integration, and Testing (Weeks 13-16)
+## Development Approach
 
-1. **API Development**
-   - Implement REST API
-   - Develop GraphQL API
-   - Create WebSocket connections
-   - Build authentication system
-   - Implement rate limiting and caching
+1. **Phase 1**: Core database connectivity and models
+   - Neo4j connection management
+   - Base entity and relationship models
+   - Schema definition and validation
 
-2. **Integration and Testing**
-   - Connect all components
-   - Implement end-to-end workflows
-   - Create comprehensive test suite
-   - Perform performance benchmarking
-   - Conduct security review
+2. **Phase 2**: Knowledge graph operations
+   - Entity and relationship management
+   - Query utilities and optimization
+   - Basic statistics and monitoring
 
-## Integration Priorities
+3. **Phase 3**: Advanced features
+   - Connection discovery
+   - Contradiction resolution
+   - Temporal tracking
 
-### External Repository Integration
-
-1. **KARMA Integration** (Highest Priority)
-   - Leverage knowledge extraction capabilities
-   - Adapt knowledge graph construction methods
-   - Integrate quality scoring mechanisms
-
-2. **GDesigner Integration** (High Priority)
-   - Implement graph-based agent communication
-   - Adapt dynamic topology optimization
-   - Integrate GNN-based agent coordination
-
-3. **TDAG Integration** (Medium Priority)
-   - Adapt dynamic task decomposition
-   - Integrate specialized agent generation
-
-4. **open_deep_research Integration** (Medium Priority)
-   - Leverage information gathering capabilities
-   - Integrate source-specific extraction methods
-
-5. **AutoCodeAgent2.0 Integration** (Lower Priority)
-   - Add code generation for validation
-   - Implement experimental verification
+4. **Phase 3.5**: Paper Processing Integration
+   - Connect with Paper Processing Pipeline
+   - Add paper-specific entity and relationship types
+   - Implement citation network analysis
 
 ## Technical Decisions
 
-### Programming Language and Framework
-- Python 3.9+ as primary language
-- FastAPI and GraphQL for API layers
-- React with Apollo Client for web interface
+1. **Neo4j as Graph Database**
+   - Native graph database with powerful query language
+   - Support for complex graph algorithms
+   - Scalable and well-documented
 
-### Graph Database
-- Neo4j as primary graph database
-- Cypher as query language
-- neo4j-python-driver for database access
-- Consider neo4j-graphql-js for GraphQL integration
+2. **Modular Design** for extensibility
+   - Abstract base classes with clear interfaces
+   - Inheritance for specialized entities and relationships
+   - Adapter pattern for external integrations
 
-### Knowledge Extraction
-- spaCy and Hugging Face Transformers for NLP
-- PyTorch for custom extraction models
-- PDFMiner and BeautifulSoup for document processing
+3. **Schema Design**
+   - Comprehensive schema for AI research entities and relationships
+   - Constraints for data integrity
+   - Indexes for query performance
 
-### Agent Communication
-- gRPC for high-performance agent communication
-- Protocol Buffers for message serialization
-- Redis for message queuing and pub/sub
+## Integration with Paper Processing Pipeline
 
-### Visualization
-- D3.js for custom graph visualizations
-- Neo4j Bloom for exploratory visualization
-- Plotly for trend and statistical visualizations
+### Current State
+Currently, the Knowledge Graph System can store entities and relationships extracted from papers, but lacks automated integration with the paper upload process. Papers are not automatically processed and added to the knowledge graph.
 
-### Deployment
-- Docker containers and Docker Compose for development
-- Kubernetes for production deployment
-- Helm charts for deployment configuration
-- GitHub Actions for CI/CD pipeline
+### Future Integration (Phase 3.5)
 
-## Coding Standards
+1. **Knowledge Graph Storage for Processed Papers**:
+   - Create Paper node type with all metadata
+   - Link paper nodes to all extracted entities and relationships
+   - Implement paper version tracking for evolving research
+   - Build source attribution for all knowledge
 
-1. **Code Structure**
-   - Follow domain-driven design principles
-   - Use clean architecture patterns
-   - Implement dependency injection
-   - Follow single responsibility principle
+2. **Citation Network Analysis**:
+   - Extract and represent paper citations as graph relationships
+   - Identify citation patterns and influential papers
+   - Calculate citation-based metrics
+   - Visualize citation networks and research influence
 
-2. **Code Style**
-   - Follow PEP 8 for Python code
-   - Use Black for automatic formatting
-   - Apply type hints throughout the codebase
-   - Use pre-commit hooks for linting and formatting
+3. **Cross-Paper Knowledge Integration**:
+   - Connect entities across multiple papers
+   - Identify confirmations and contradictions in research
+   - Track concept evolution across publications over time
+   - Generate research timelines and evolution paths
 
-3. **Testing Strategy**
-   - Implement unit tests with pytest
-   - Create integration tests for component interactions
-   - Develop system tests for end-to-end flows
-   - Establish performance benchmarks
-   - Aim for 80%+ code coverage
+4. **Knowledge Gap Identification**:
+   - Analyze graph structure to identify missing connections
+   - Highlight areas with limited research
+   - Suggest potential research directions
+   - Quantify research coverage across topics
 
-4. **Documentation**
-   - Use Google-style docstrings
-   - Generate API documentation with Sphinx
-   - Create architectural documentation with C4 model
-   - Maintain up-to-date README and developer guides
+5. **Paper-Specific Queries and Analytics**:
+   - Find papers discussing specific entities or relationships
+   - Identify papers with contradicting findings
+   - Analyze methodology differences between related papers
+   - Track research trends and emerging topics
 
-## Database Schema
+## Testing Strategy
 
-### Core Entity Types
-- Concept (AI concepts, methods, techniques)
-- Algorithm (specific algorithms)
-- Model (neural network architectures)
-- Dataset (benchmark and training datasets)
-- Metric (evaluation metrics)
-- Paper (research publications)
-- Author (researchers)
-- Institution (research institutions)
+1. **Unit Tests** for individual components
+   - Test database connectivity
+   - Test entity and relationship management
+   - Test query utilities
 
-### Core Relationship Types
-- IMPLEMENTS (Paper -> Algorithm/Model)
-- PROPOSES (Paper -> Concept)
-- EVALUATES_ON (Paper -> Dataset)
-- OUTPERFORMS (Algorithm -> Algorithm)
-- BUILDS_ON (Paper -> Paper)
-- CONTRADICTS (Paper -> Paper)
-- IS_VARIANT_OF (Algorithm -> Algorithm)
-- AUTHORED_BY (Paper -> Author)
+2. **Integration Tests** for component interactions
+   - Test the knowledge graph workflow
+   - Test adapter integration
 
-## Risk Management
+3. **System Tests** for full knowledge graph functionality
+   - Test with real research papers
+   - Test advanced features
 
-1. **Technical Risks**
-   - Graph database performance at scale
-   - Knowledge extraction accuracy
-   - Integration compatibility issues
-   - Security concerns with external APIs
+## Implementation Timeline
 
-2. **Mitigation Strategies**
-   - Implement database sharding and optimization for scale
-   - Human-in-the-loop verification for critical knowledge
-   - Design robust adapter interfaces for external systems
-   - Comprehensive security review and penetration testing
-   - Implement thorough error handling and fallback mechanisms
+1. **Month 1**: Core database connectivity and models
+2. **Month 2**: Knowledge graph operations
+3. **Month 3**: Advanced features
+4. **Month 4+**: Integration with Paper Processing Pipeline (Phase 3.5)
+
+## Dependencies
+
+- **External**: Neo4j, KARMA
+- **Internal**: Research Orchestrator, Research Implementation
+
+## Risk Assessment
+
+1. **Graph Scalability**
+   - Mitigation: Proper indexing, query optimization, chunking large operations
+
+2. **Data Quality and Consistency**
+   - Mitigation: Schema constraints, validation checks, contradiction resolution
+
+3. **Query Performance**
+   - Mitigation: Query optimization, caching, indexes
+
+4. **Integration Complexity**
+   - Mitigation: Clear interfaces, adapter pattern, comprehensive testing
+
+This plan adheres to the project architecture and implementation priorities outlined in CODING_PROMPT.md, with special attention to the integration with the Paper Processing Pipeline planned for Phase 3.5.
