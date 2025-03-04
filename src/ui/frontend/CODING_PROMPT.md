@@ -1,5 +1,12 @@
 # Frontend Development Guide
 
+## Recent Achievements
+- ✅ Enhanced Knowledge Graph Explorer with advanced visualization settings
+- ✅ Implemented comprehensive UX improvements for better information hierarchy
+- ✅ Added research-focused analysis tools for AI scientists
+- ✅ Created intuitive onboarding experience with step-by-step guidance
+- ✅ Improved export capabilities with multiple format options
+
 ## Project Overview
 The AI Research Integration frontend provides a UI for interacting with our knowledge graph, research, and paper implementation systems. It's built with React, MUI, and integrates with our FastAPI backend.
 
@@ -136,6 +143,14 @@ The AI Research Integration frontend provides a UI for interacting with our know
 - Use color coding for entity and relationship types
 - Optimize rendering for graphs with 100+ nodes
 - Implement selection and focus mechanisms
+- Use tooltips to explain visualization features
+- Provide progressive disclosure of advanced features
+- Ensure visualization controls have clear visual feedback
+- Implement keyboard navigation for accessibility
+- Follow consistent visual hierarchy for visualization options
+- Include contextual help for complex features
+- Always provide empty states with clear user guidance
+- Consider visual information density for different screen sizes
 
 ## Research Query Interface
 - Show loading indicators during queries
@@ -176,6 +191,40 @@ The AI Research Integration frontend provides a UI for interacting with our know
    - Upload progress visualization
    - Status tracking and error handling
 
+## New UX Standards
+
+Following our Knowledge Graph Explorer redesign, all components should follow these standards:
+
+1. **Empty States**
+   - Every component should have a meaningful empty state
+   - Include step-by-step guidance for first-time users
+   - Provide examples and suggested actions
+   - Use visual elements to increase clarity
+
+2. **Progressive Disclosure**
+   - Start with simplified interface, reveal complexity progressively
+   - Use accordions for grouping related settings
+   - Organize options from most common to most advanced
+   - Employ visual hierarchy to guide users
+
+3. **Contextual Help**
+   - Add tooltips to explain functionality
+   - Include help icons for advanced features
+   - Provide meaningful labels for all controls
+   - Use inline illustrations for complex concepts
+
+4. **Visual Feedback**
+   - Every user action should receive immediate visual feedback
+   - Highlight active states and selections
+   - Show progress indicators for asynchronous operations
+   - Use animations sparingly to guide attention
+
+5. **Information Architecture**
+   - Group related information in cards or panels
+   - Use consistent layouts across similar components
+   - Employ typography to create clear hierarchies
+   - Balance information density with readability
+
 ## Current Development Priorities
 
 1. **TypeScript Migration** (Priority: High)
@@ -193,18 +242,22 @@ The AI Research Integration frontend provides a UI for interacting with our know
    - Add proper memoization for expensive computations
    - Implement lazy loading for less critical components
 
-3. **Knowledge Graph Enhancements** (Priority: Medium-High) ✅ Phase 1 Completed
+3. **Knowledge Graph Enhancements** (Priority: High) ✅ Phase 1 Completed ✅ Phase 2 Started
    - ✅ Implement dynamic rendering options and visualization settings
    - ✅ Create specialized visualization modes (clustering, relationship focus)
    - ✅ Add node clustering for complex graphs
    - ✅ Implement export capabilities (JSON, CSV, Neo4j, SVG, PNG)
    - ✅ Add research-focused analysis tools (metrics, frontiers)
+   - ✅ Enhance user experience with tooltips and contextual guidance
+   - ✅ Improve information hierarchy with collapsible sections
+   - ✅ Add intuitive empty state with step-by-step guidance
    
-   **Phase 2 (Upcoming):**
-   - Optimize performance for graphs with 1000+ nodes
-   - Add advanced filtering based on graph algorithms
-   - Implement URL state encoding for sharing specific views
-   - Create hierarchical and radial layout options
+   **Phase 2 (In Progress):**
+   - Optimize performance for graphs with 1000+ nodes (Priority: High)
+   - Add WebGL rendering for very large graphs (Priority: Medium)
+   - Implement URL state encoding for sharing specific views (Priority: Medium)
+   - Add keyboard navigation and accessibility features (Priority: High)
+   - Create additional layout options (hierarchical and radial) (Priority: Low)
 
 4. **Paper Dashboard** (Priority: High) ✅ Completed
    - Create comprehensive paper management dashboard with PaperDashboard component
@@ -213,10 +266,14 @@ The AI Research Integration frontend provides a UI for interacting with our know
    - Provide paper statistics and analytics
    - Create tabs for different paper status groups
 
-5. **Developer Experience** (Priority: Low)
+5. **Developer Experience** (Priority: Medium)
    - Add Storybook for component documentation
    - Implement comprehensive Jest test suites
    - Set up GitHub Actions for CI/CD
+   - Create component templates to ensure consistency
+   - Add detailed JSDoc comments for all components
+   - Implement Prettier for consistent code formatting
+   - Create visual regression testing for UI components
    - Add accessibility testing with axe-core
    - Create comprehensive API documentation
    - Add JSDoc for all components and functions
