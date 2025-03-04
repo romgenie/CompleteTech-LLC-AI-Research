@@ -8,6 +8,7 @@ import PaperStatusCard from './PaperStatusCard';
 import NotificationCenter from './NotificationCenter';
 import KnowledgeGraphFilter from './KnowledgeGraphFilter';
 import PaperUploadDialog from './PaperUploadDialog';
+import PaperDashboard from './PaperDashboard';
 
 export {
   Layout,
@@ -19,5 +20,6 @@ export {
   PaperStatusCard,
   NotificationCenter,
   KnowledgeGraphFilter,
-  PaperUploadDialog
+  PaperUploadDialog,
+  PaperDashboard
 };
