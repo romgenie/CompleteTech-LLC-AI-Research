@@ -1,0 +1,55 @@
+# Core dependencies
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+loguru>=0.7.0
+typer>=0.9.0
+
+# API and Web
+fastapi>=0.100.0
+uvicorn>=0.22.0
+httpx>=0.24.0
+jinja2>=3.1.2
+
+# Database
+neo4j>=5.8.0
+redis>=4.6.0
+pymongo>=4.4.0
+
+# Machine Learning & NLP
+transformers>=4.31.0
+sentence-transformers>=2.2.2
+spacy>=3.6.0
+langchain>=0.0.267
+llama-index>=0.8.4
+torch>=2.0.1
+tensorflow>=2.13.0
+jax>=0.4.13
+openai>=0.27.8
+anthropic>=0.3.6
+
+# Document Processing
+pypdf2>=3.0.1
+pdfminer.six>=20221105
+beautifulsoup4>=4.12.2
+markdown>=3.4.3
+
+# Visualization
+plotly>=5.15.0
+networkx>=3.1
+matplotlib>=3.7.2
+d3graph>=0.1.14
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+hypothesis>=6.82.0
+
+# Development
+black>=23.7.0
+isort>=5.12.0
+mypy>=1.4.1
+flake8>=6.0.0
+pre-commit>=3.3.3
+
+# Containerization
+docker>=6.1.3

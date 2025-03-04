@@ -1,0 +1,94 @@
+# Default configuration for the Research Orchestration Framework
+
+# Storage configuration
+storage_dir: "data/projects"
+
+# Logging configuration
+log_level: "INFO"
+log_file: "logs/research_orchestrator_{time}.log"
+
+# Resource limits
+max_cpu_count: 8
+max_memory_mb: 16384
+max_gpu_count: 1
+max_storage_mb: 102400
+max_tokens_per_request: 16000
+max_api_calls_per_hour: 100
+max_parallel_tasks: 4
+
+# Query analyzer configuration
+query_analyzer:
+  default_complexity: "standard"
+  default_domain: "ai"
+  
+# Research plan configuration
+research_plan:
+  default_depth: "standard"
+  default_format: "markdown"
+  template_path: "templates/research_plans"
+  
+# Model configuration
+models:
+  planner:
+    provider: "anthropic"
+    model: "claude-3-5-sonnet"
+    temperature: 0.5
+    max_tokens: 8000
+  
+  researcher:
+    provider: "anthropic"
+    model: "claude-3-5-sonnet"
+    temperature: 0.2
+    max_tokens: 16000
+  
+  writer:
+    provider: "anthropic"
+    model: "claude-3-5-sonnet"
+    temperature: 0.7
+    max_tokens: 16000
+
+# External APIs
+apis:
+  # Academic APIs
+  arxiv:
+    enabled: true
+    max_results: 50
+    
+  pubmed:
+    enabled: true
+    max_results: 50
+    
+  ieee:
+    enabled: false
+    max_results: 20
+    
+  # Web search APIs
+  tavily:
+    enabled: true
+    max_results: 10
+    
+  perplexity:
+    enabled: false
+    max_results: 5
+
+# Integration with external repositories
+integrations:
+  tdag:
+    enabled: true
+    path: "../external_repo/TDAG"
+    
+  gdesigner:
+    enabled: true
+    path: "../external_repo/GDesigner"
+    
+  karma:
+    enabled: true
+    path: "../external_repo/KARMA"
+    
+  open_deep_research:
+    enabled: true
+    path: "../external_repo/open_deep_research"
+    
+  autocodeagent:
+    enabled: true
+    path: "../external_repo/AutoCodeAgent2.0"

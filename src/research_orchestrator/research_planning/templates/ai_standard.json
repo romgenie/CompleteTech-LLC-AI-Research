@@ -1,0 +1,116 @@
+{
+  "sections": [
+    {
+      "title": "AI Fundamentals",
+      "description": "Overview of fundamental AI concepts relevant to the research topic",
+      "query_suffix": "fundamental AI concepts, principles, and terminology related to",
+      "scope": {"depth": "detailed", "focus": "fundamentals"},
+      "subsections": [
+        {
+          "title": "Key Concepts",
+          "description": "Definitions and explanations of key AI concepts"
+        },
+        {
+          "title": "Historical Development",
+          "description": "Brief history of AI development relevant to the topic"
+        }
+      ]
+    },
+    {
+      "title": "Current AI Approaches",
+      "description": "Analysis of current AI approaches and methodologies",
+      "query_suffix": "current AI approaches, methods, and techniques for",
+      "scope": {"depth": "detailed", "focus": "approaches"},
+      "subsections": [
+        {
+          "title": "Leading Methodologies",
+          "description": "Overview of the leading AI methodologies"
+        },
+        {
+          "title": "Comparative Analysis",
+          "description": "Comparison of different AI approaches"
+        }
+      ]
+    },
+    {
+      "title": "AI Models and Architectures",
+      "description": "Overview of AI models and architectures relevant to the topic",
+      "query_suffix": "AI models, neural network architectures, and design patterns for",
+      "scope": {"depth": "detailed", "focus": "models"},
+      "subsections": [
+        {
+          "title": "Model Types",
+          "description": "Types of AI models used in this domain"
+        },
+        {
+          "title": "Architecture Design",
+          "description": "Design considerations for AI architectures"
+        },
+        {
+          "title": "Implementation Strategies",
+          "description": "Strategies for implementing these models"
+        }
+      ]
+    },
+    {
+      "title": "AI Applications",
+      "description": "Analysis of AI applications in the domain",
+      "query_suffix": "AI applications, use cases, and real-world implementations in",
+      "scope": {"depth": "detailed", "focus": "applications"},
+      "subsections": [
+        {
+          "title": "Industry Applications",
+          "description": "Applications in industry and business"
+        },
+        {
+          "title": "Research Applications",
+          "description": "Applications in research and academia"
+        },
+        {
+          "title": "Case Studies",
+          "description": "Specific case studies of successful implementations"
+        }
+      ]
+    },
+    {
+      "title": "AI Challenges and Limitations",
+      "description": "Discussion of AI challenges and limitations in the domain",
+      "query_suffix": "AI challenges, limitations, and open problems in",
+      "scope": {"depth": "detailed", "focus": "challenges"},
+      "subsections": [
+        {
+          "title": "Technical Challenges",
+          "description": "Technical and implementation challenges"
+        },
+        {
+          "title": "Ethical Considerations",
+          "description": "Ethical issues and considerations"
+        },
+        {
+          "title": "Performance Limitations",
+          "description": "Current performance limitations and bottlenecks"
+        }
+      ]
+    },
+    {
+      "title": "Future of AI",
+      "description": "Analysis of future AI directions in the domain",
+      "query_suffix": "future directions, trends, and research opportunities for AI in",
+      "scope": {"depth": "detailed", "focus": "future"},
+      "subsections": [
+        {
+          "title": "Emerging Trends",
+          "description": "Emerging trends and developments"
+        },
+        {
+          "title": "Research Opportunities",
+          "description": "Promising research opportunities"
+        },
+        {
+          "title": "Long-term Outlook",
+          "description": "Long-term outlook and predictions"
+        }
+      ]
+    }
+  ]
+}
