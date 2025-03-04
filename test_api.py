@@ -37,6 +37,14 @@ def test_health_endpoint():
     print(f"Response: {response.json()}")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+    
+def test_docs_endpoint():
+    """Test the docs endpoint."""
+    response = client.get("/docs")
+    print(f"Status Code: {response.status_code}")
+    print(f"Response Length: {len(response.text)} characters")
+    assert response.status_code == 200
+    assert "swagger" in response.text.lower()
 
 def main():
     """Run the tests."""
@@ -45,6 +53,8 @@ def main():
     test_root_endpoint()
     print("\n=== Health Endpoint ===")
     test_health_endpoint()
+    print("\n=== Docs Endpoint ===")
+    test_docs_endpoint()
     print("\nAll tests passed!")
 
 if __name__ == "__main__":
