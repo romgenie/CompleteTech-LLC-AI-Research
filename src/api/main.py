@@ -7,6 +7,7 @@ middleware, and dependencies for the AI Research Integration Project.
 
 import logging
 import os
+import datetime
 from typing import Dict, List
 
 from fastapi import Depends, FastAPI, Request
@@ -28,6 +29,8 @@ app = FastAPI(
     title="AI Research Integration API",
     description="API for AI Research Integration Project",
     version="0.1.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 # Configure CORS
@@ -43,14 +46,23 @@ app.add_middleware(
 @app.get("/")
 async def root():
     """Root endpoint for testing."""
-    return {"message": "AI Research Integration API is running"}
+    return {
+        "message": "AI Research Integration API is running",
+        "version": app.version,
+        "documentation": "/docs",
+        "redoc": "/redoc"
+    }
 
 
 # Health check endpoint
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "timestamp": str(datetime.datetime.now()),
+        "service": "AI Research Integration API"
+    }
 
 
 # Main entry point
