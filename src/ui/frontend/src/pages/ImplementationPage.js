@@ -732,6 +732,11 @@ predictions = model(images)
                     <Box display="flex" justifyContent="center" alignItems="center" height="100%">
                       <Typography variant="body1" color="text.secondary">
                         Paper analysis will be available once the paper is processed.
+                        {/* Note: Paper processing functionality is currently under development (Phase 3.5) */}
+                        <Alert severity="info" sx={{ mt: 2 }}>
+                          Paper processing pipeline is in active development (Phase 3.5). 
+                          This functionality will be fully implemented in the next release.
+                        </Alert>
                       </Typography>
                     </Box>
                   )}
@@ -811,6 +816,12 @@ predictions = model(images)
                 <Typography variant="body1" color="text.secondary">
                   Select an existing project from the list or create a new one.
                 </Typography>
+                <Alert severity="info" sx={{ mt: 3, maxWidth: 500, mx: 'auto', textAlign: 'left' }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Development Status:</Typography>
+                  The Paper Processing Pipeline (Phase 3.5) is currently in active development.
+                  While the foundation infrastructure has been implemented, the complete
+                  processing functionality will be available in the next release.
+                </Alert>
               </Box>
             </Paper>
           )}
