@@ -101,11 +101,13 @@ The AI Research Integration Project consists of three main systems:
    - ✅ Visualization Generation Tools for data representation
    - ✅ Code Example Generation with multi-language support
    
-3. **Knowledge Graph Integration** (in progress)
-   - Entity and relationship conversion to graph format
-   - Connection discovery engine
-   - Contradiction resolution mechanisms
-   - Temporal evolution tracking
+3. **Knowledge Graph Integration** ✅ (completed)
+   - ✅ Entity and relationship conversion to graph format
+   - ✅ Connection discovery engine
+   - ✅ Contradiction resolution mechanisms
+   - ✅ Temporal evolution tracking
+   - ✅ Query optimization and caching system
+   - ✅ Database performance monitoring
    
 4. **Research Understanding Engine** ✅ (completed)
    - ✅ Paper parsing and processing systems
@@ -176,6 +178,89 @@ The project follows a modular architecture with well-defined interfaces between 
 3. Configure environment variables using .env (based on .env.example)
 4. Run tests to verify the installation
 
+## Usage Guide
+
+### Research Orchestration
+
+The Research Orchestration Framework allows you to conduct AI research and generate comprehensive reports:
+
+```python
+from research_orchestrator.core import ResearchOrchestrator
+
+# Initialize the orchestrator
+orchestrator = ResearchOrchestrator()
+
+# Process a research query
+result = orchestrator.process_query("How do Vision Transformers work?")
+
+# Generate a report
+report = orchestrator.generate_report(result)
+
+# Export the report to markdown
+orchestrator.export_report(report, "vision_transformers_report.md")
+```
+
+### Knowledge Graph
+
+The Knowledge Graph System allows you to store and query AI research knowledge:
+
+```python
+from knowledge_graph_system.core import KnowledgeGraphManager
+from knowledge_graph_system.utils.query_optimizer import QueryOptimizer
+
+# Connect to Neo4j
+kg_manager = KnowledgeGraphManager()
+
+# Add entities and relationships
+model_id = kg_manager.add_entity({"type": "MODEL", "name": "Vision Transformer"})
+dataset_id = kg_manager.add_entity({"type": "DATASET", "name": "ImageNet"})
+kg_manager.add_relationship(model_id, dataset_id, "EVALUATED_ON", {"accuracy": 0.885})
+
+# Optimize queries
+optimizer = QueryOptimizer(kg_manager.neo4j)
+optimizer.enable_query_caching()
+
+# Get implementation context for a model
+context = kg_manager.get_implementation_context("Vision Transformer")
+```
+
+### Research Implementation
+
+The Research Implementation System allows you to generate code from research papers:
+
+```python
+from research_implementation.core import ImplementationManager
+
+# Initialize the implementation manager
+impl_manager = ImplementationManager()
+
+# Create an implementation from a paper and context
+implementation = impl_manager.create_implementation(
+    topic="Vision Transformer",
+    context={
+        "model": {"name": "Vision Transformer", "type": "Transformer"},
+        "papers": [{"title": "An Image is Worth 16x16 Words", "year": 2021}],
+        "components": ["PatchEmbedding", "TransformerEncoder", "ClassificationHead"]
+    }
+)
+
+# Export the implementation
+impl_manager.export_implementation(implementation, "vision_transformer_impl")
+```
+
+### Web UI
+
+Access the web UI for a user-friendly interface:
+
+1. **Research Page**: Conduct research queries and generate reports
+   - Go to: http://localhost:3001/research
+
+2. **Knowledge Graph Page**: Visualize and explore the knowledge graph
+   - Go to: http://localhost:3001/knowledge-graph
+
+3. **Implementation Page**: Generate code implementations from papers
+   - Go to: http://localhost:3001/implementation
+
 ## Development Guidelines
 
 - PEP 8 compliant Python code
@@ -184,3 +269,32 @@ The project follows a modular architecture with well-defined interfaces between 
 - 80%+ test coverage for all components
 
 For detailed information about the project architecture, integrated repositories, and implementation plans, please refer to the CLAUDE.md file.
+
+## Future Work
+
+While all planned features have been implemented, there are several potential enhancements for future iterations:
+
+1. **Enhanced Knowledge Graph Visualization**:
+   - Support for more sophisticated network visualization techniques
+   - Temporal evolution visualization of research trends
+   - Customizable graph layouts and styling
+
+2. **Research Query Improvements**:
+   - Streaming responses for better user experience
+   - Advanced filtering and relevance ranking
+   - Specialized query templates for different research domains
+
+3. **Code Implementation Enhancements**:
+   - Runtime execution environment for testing implementations
+   - Versioning and diff viewing for implementations
+   - Integration with experiment tracking frameworks
+
+4. **Deployment and Scaling**:
+   - Kubernetes deployment configuration
+   - Horizontal scaling for handling larger workloads
+   - Cloud provider-specific optimizations
+
+5. **Integration with Additional Tools**:
+   - Integration with citation management tools
+   - Support for LaTeX document generation
+   - Connection to academic repositories and preprint servers
