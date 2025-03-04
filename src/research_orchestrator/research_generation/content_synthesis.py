@@ -18,6 +18,7 @@ from functools import lru_cache
 
 from .report_structure import DocumentStructure, Section, SectionType, DocumentType
 from .citation import CitationManager, CitationStyle
+from .visualization import VisualizationGenerator, VisualizationType, ChartType, DiagramType
 
 # Try to import LLM-related modules
 try:
@@ -377,7 +378,8 @@ class ContentSynthesisEngine:
                  llm: Optional[Any] = None,
                  knowledge_graph_adapter = None,
                  citation_manager: Optional[CitationManager] = None,
-                 citation_style: Union[CitationStyle, str] = CitationStyle.APA):
+                 citation_style: Union[CitationStyle, str] = CitationStyle.APA,
+                 visualization_generator: Optional['VisualizationGenerator'] = None):
         """
         Initialize the Content Synthesis Engine.
         
@@ -387,6 +389,7 @@ class ContentSynthesisEngine:
             knowledge_graph_adapter: Adapter for accessing knowledge graph (optional)
             citation_manager: Citation manager for handling citations (optional)
             citation_style: Citation style to use for formatting citations
+            visualization_generator: Generator for creating visualizations (optional)
         """
         self.config = config or ContentGenerationConfig()
         self.logger = logging.getLogger(__name__)
@@ -399,6 +402,14 @@ class ContentSynthesisEngine:
         else:
             self.citation_manager = CitationManager(
                 style=citation_style,
+                knowledge_graph_adapter=knowledge_graph_adapter
+            )
+            
+        # Initialize visualization generator
+        if visualization_generator:
+            self.visualization_generator = visualization_generator
+        else:
+            self.visualization_generator = VisualizationGenerator(
                 knowledge_graph_adapter=knowledge_graph_adapter
             )
         
@@ -1723,3 +1734,75 @@ This represents a significant advancement over existing methods and provides a f
             Text with formatted citations
         """
         return self.citation_manager.process_text_with_citations(text)
+        
+    def generate_visualization(self,
+                              data: Union[Dict[str, Any], List[Dict[str, Any]]],
+                              vis_type: Union[VisualizationType, str],
+                              subtype: Optional[Union[ChartType, DiagramType, str]] = None,
+                              title: str = "",
+                              x_label: str = "",
+                              y_label: str = "",
+                              x_column: Optional[str] = None,
+                              y_column: Optional[str] = None,
+                              category_column: Optional[str] = None,
+                              file_name: Optional[str] = None,
+                              **kwargs) -> str:
+        """
+        Generate a visualization for research content.
+        
+        Args:
+            data: Data for the visualization (dict or list of dicts)
+            vis_type: Type of visualization (CHART, DIAGRAM, NETWORK, TABLE)
+            subtype: Subtype of visualization (e.g., BAR, LINE, FLOWCHART)
+            title: Title for the visualization
+            x_label: Label for x-axis
+            y_label: Label for y-axis
+            x_column: Column name for x-axis data
+            y_column: Column name for y-axis data
+            category_column: Column name for categorization
+            file_name: Name for the output file
+            **kwargs: Additional parameters for the visualization
+            
+        Returns:
+            Path to the generated visualization file, markdown, or base64-encoded visualization
+        """
+        return self.visualization_generator.create_visualization(
+            data=data,
+            vis_type=vis_type,
+            subtype=subtype,
+            title=title,
+            x_label=x_label,
+            y_label=y_label,
+            x_column=x_column,
+            y_column=y_column,
+            category_column=category_column,
+            file_name=file_name,
+            **kwargs
+        )
+    
+    def generate_knowledge_graph_visualization(self,
+                                             query: str,
+                                             chart_type: Union[ChartType, str] = ChartType.NETWORK,
+                                             title: str = "",
+                                             file_name: Optional[str] = None,
+                                             **kwargs) -> str:
+        """
+        Generate a visualization based on data from the knowledge graph.
+        
+        Args:
+            query: Cypher query for the knowledge graph
+            chart_type: Type of chart to create
+            title: Title for the visualization
+            file_name: Name for the output file
+            **kwargs: Additional parameters for the visualization
+            
+        Returns:
+            Path to the generated visualization file, markdown, or base64-encoded visualization
+        """
+        return self.visualization_generator.generate_chart_from_knowledge_graph(
+            query=query,
+            chart_type=chart_type,
+            title=title,
+            file_name=file_name,
+            **kwargs
+        )
