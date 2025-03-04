@@ -13,35 +13,43 @@ import uuid
 
 class EntityType(Enum):
     """Enumeration of entity types recognized by the system."""
+    # Core entity types
+    MODEL = auto()               # Neural network architectures, LLMs, etc.
+    ALGORITHM = auto()           # Specific algorithms and methods
+    DATASET = auto()             # Benchmark and training datasets
+    METRIC = auto()              # Evaluation metrics
+    PAPER = auto()               # Research publications
+    AUTHOR = auto()              # Researchers and paper authors
+    INSTITUTION = auto()         # Research institutions, universities, labs
+    CODE = auto()                # Implementation repositories or source code
+    CONCEPT = auto()             # AI concepts, methods, techniques
+    
     # AI-specific entity types
-    MODEL = auto()
-    ALGORITHM = auto()
-    ARCHITECTURE = auto()
-    DATASET = auto()
-    METRIC = auto()
-    PARAMETER = auto()
-    HYPERPARAMETER = auto()
-    FRAMEWORK = auto()
-    LIBRARY = auto()
-    TECHNIQUE = auto()
-    TASK = auto()
-    BENCHMARK = auto()
+    ARCHITECTURE = auto()        # Neural network architectural patterns
+    PARAMETER = auto()           # Model parameters and weights
+    HYPERPARAMETER = auto()      # Training and model configuration parameters
+    FRAMEWORK = auto()           # Software frameworks (TensorFlow, PyTorch)
+    LIBRARY = auto()             # Software libraries
+    TECHNIQUE = auto()           # Specific AI techniques
+    TASK = auto()                # AI tasks (classification, generation)
+    BENCHMARK = auto()           # Standard evaluation benchmarks
+    COMPONENT = auto()           # Modular parts of larger systems
+    FEATURE = auto()             # Features or attributes
     
     # Scientific entity types
-    CONCEPT = auto()
-    THEORY = auto()
-    METHODOLOGY = auto()
-    FINDING = auto()
-    HYPOTHESIS = auto()
-    EXPERIMENT = auto()
-    ARTIFACT = auto()
-    TOOL = auto()
-    PROPERTY = auto()
-    CONSTRAINT = auto()
-    LIMITATION = auto()
-    FIELD = auto()
-    AUTHOR = auto()
-    INSTITUTION = auto()
+    THEORY = auto()              # Scientific theories
+    METHODOLOGY = auto()         # Research methodologies
+    FINDING = auto()             # Research findings and results
+    HYPOTHESIS = auto()          # Scientific hypotheses
+    EXPERIMENT = auto()          # Experimental setups and procedures
+    ARTIFACT = auto()            # Research artifacts
+    TOOL = auto()                # Tools and instruments
+    PROPERTY = auto()            # Properties and characteristics
+    CONSTRAINT = auto()          # Limitations and constraints
+    LIMITATION = auto()          # Known limitations
+    FIELD = auto()               # Research fields and domains
+    PROBLEM = auto()             # Research problems and challenges
+    SOLUTION = auto()            # Proposed solutions
     
     # Other/generic types
     UNKNOWN = auto()
