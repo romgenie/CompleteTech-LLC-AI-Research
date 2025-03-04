@@ -84,9 +84,9 @@ The project integrates these existing repositories:
 4. **Fourth priority**: Paper Processing Pipeline
 
 > **Current Implementation Status:**  
-> - Total cost: $77.21  
-> - Total API duration: 5h 26m 15.6s  
-> - Total wall clock time: 15h 42m 49.7s  
+> - Total cost: $77.63  
+> - Total API duration: 5h 27m 18.6s  
+> - Total wall clock time: 15h 50m 47.9s  
 > 
 > All core priorities (#1-3) have been completed. Priority #4 (Paper Processing Pipeline) is planned for future implementation.
 
