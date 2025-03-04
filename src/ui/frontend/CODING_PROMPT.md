@@ -1,11 +1,27 @@
 # Frontend Development Guide
 
-## Recent Achievements
+## Recent Achievements & Current Focus
 - ✅ Enhanced Knowledge Graph Explorer with advanced visualization settings
 - ✅ Implemented comprehensive UX improvements for better information hierarchy
 - ✅ Added research-focused analysis tools for AI scientists
 - ✅ Created intuitive onboarding experience with step-by-step guidance
 - ✅ Improved export capabilities with multiple format options
+
+## Implementation Priorities (Next 4 Weeks)
+1. **Knowledge Graph Performance & Accessibility** (Weeks 1-2)
+   - Optimize rendering for large graphs (1000+ nodes)
+   - Implement keyboard navigation for visualization
+   - Add screen reader support for data visualization
+
+2. **TypeScript Migration** (Weeks 1-2)
+   - Convert core contexts and hooks to TypeScript
+   - Create comprehensive interface definitions
+   - Implement type validation for API interactions
+
+3. **Research Enhancement** (Weeks 3-4)
+   - Complete citation and reference management
+   - Implement research history and favorites
+   - Apply Knowledge Graph UX standards to research interface
 
 ## Project Overview
 The AI Research Integration frontend provides a UI for interacting with our knowledge graph, research, and paper implementation systems. It's built with React, MUI, and integrates with our FastAPI backend.
@@ -31,8 +47,9 @@ The AI Research Integration frontend provides a UI for interacting with our know
    - Use functional components with hooks
    - Follow atomic design principles
    - Extract complex logic to custom hooks
-   - Implement proper prop validation
+   - Implement proper prop validation with TypeScript or PropTypes
    - Use lazy loading for routes and heavy components
+   - Follow established UX patterns from Knowledge Graph Explorer
 
 2. **State Management**
    - Use React Context for global state
@@ -45,6 +62,8 @@ The AI Research Integration frontend provides a UI for interacting with our know
    - Include error handling and loading states
    - Implement graceful fallbacks to mock data
    - Use the useFetch hook for consistent API access
+   - Add proper TypeScript interfaces for request/response types
+   - Include retry logic for transient failures
 
 4. **Code Style**
    - Follow ESLint configuration
@@ -59,13 +78,20 @@ The AI Research Integration frontend provides a UI for interacting with our know
    - Implement virtualization for lists with 100+ items
    - Optimize D3 rendering with useCallback and useD3 hook
    - Avoid unnecessary re-renders (React DevTools profiler)
+   - Implement progressive loading for large datasets
+   - Use level-of-detail techniques for complex visualizations
+   - Add client-side caching where appropriate
 
 ## Testing Strategy
-- Unit tests for utilities and hooks
+- Unit tests for utilities and hooks (minimum 80% coverage)
 - Component tests with React Testing Library
-- Mock API responses for offline testing
+- Mock API responses using Mock Service Worker
+- Visual regression tests for UI components
 - Focus on critical user flows
 - Add E2E tests for main user journeys
+- Include accessibility testing in component tests
+- Test keyboard navigation for all interactive elements
+- Verify screen reader compatibility for critical components
 
 ## Docker Development
 - Use Docker for consistent development environments
@@ -224,6 +250,14 @@ Following our Knowledge Graph Explorer redesign, all components should follow th
    - Use consistent layouts across similar components
    - Employ typography to create clear hierarchies
    - Balance information density with readability
+
+6. **Accessibility**
+   - Ensure keyboard navigation for all interactive elements
+   - Include ARIA labels and roles for screen readers
+   - Maintain sufficient color contrast ratios (WCAG AA compliance)
+   - Provide alternative text for visualizations
+   - Create text-based alternatives for graphical information
+   - Support different viewport sizes with responsive design
 
 ## Current Development Priorities
 
