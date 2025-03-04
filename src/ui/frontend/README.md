@@ -199,13 +199,28 @@ See [PROJECT_PLAN.md](./PROJECT_PLAN.md) for the detailed project roadmap, which
 
 We are focusing on the following priorities:
 
-1. **TypeScript Implementation**: Continuing the TypeScript migration with full interfaces and type safety
-2. **Knowledge Graph Visualization Further Enhancements**: 
-   - ✅ Added advanced filtering, visualization settings, and export capabilities
-   - ✅ Implemented research-focused analysis tools (metrics, frontiers)
-   - 🔄 Optimizing performance for graphs with 1000+ nodes (In progress)
-3. **Performance Optimization**: Implementing React Query and virtualization for better performance
-4. **Research Enhancement**: Adding source citation, reference tracking, and export capabilities
+1. **Knowledge Graph UX Optimization**: Building on recent improvements
+   - ✅ Added comprehensive user onboarding experience
+   - ✅ Implemented progressive disclosure for advanced features
+   - ✅ Enhanced visualization with tooltips and contextual guidance
+   - ✅ Improved information hierarchy and visual feedback
+   - 🔄 Adding keyboard navigation and accessibility features (In progress)
+
+2. **TypeScript Migration**: Continuing the TypeScript migration with full interfaces and type safety
+   - ✅ Added JSDoc type definitions as interim solution
+   - ✅ Configured TypeScript with tsconfig.json
+   - 🔄 Converting core contexts and hooks (In progress)
+
+3. **Performance Optimization for Large Graphs**: 
+   - 🔄 Optimizing D3 force simulation parameters
+   - 🔄 Adding level-of-detail rendering based on zoom level
+   - 🔄 Implementing progressive loading for large datasets
+   
+4. **Research Enhancement**: Building on Knowledge Graph UX improvements
+   - ✅ Added preliminary export capabilities
+   - ✅ Implemented basic sharing functionality
+   - 🔄 Working on citation and reference management
+   - 🔄 Developing research history and favorites
 
 See the following documents for more details:
 - [CODING_PROMPT.md](./CODING_PROMPT.md): Development guidelines and standards
