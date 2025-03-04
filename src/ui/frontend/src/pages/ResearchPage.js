@@ -304,6 +304,13 @@ const ResearchPage = () => {
                 <Typography variant="h6" color="text.secondary">
                   Select a research result to view
                 </Typography>
+                <Alert severity="info" sx={{ mt: 3, maxWidth: 400 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Integration Status:</Typography>
+                  <Typography variant="body2">
+                    The Research Assistant is integrated with the Paper Processing Pipeline foundation,
+                    allowing seamless connections between research queries and paper analysis.
+                  </Typography>
+                </Alert>
               </Box>
             )}
           </Paper>
