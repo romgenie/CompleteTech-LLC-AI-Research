@@ -1,0 +1,7 @@
+Metadata-Version: 2.1
+Name: ai-research-integration
+Version: 0.1.0
+Requires-Python: >=3.9
+Requires-Dist: requests>=2.25.0
+Requires-Dist: pytest>=6.0.0
+Requires-Dist: pytest-cov>=2.10.0
