@@ -130,6 +130,12 @@ function Layout() {
           <Typography variant="body2" sx={{ mr: 2 }}>
             {currentUser?.username}
           </Typography>
+          
+          {/* Notification Center */}
+          <Box sx={{ mr: 2 }}>
+            <NotificationCenter maxNotifications={15} />
+          </Box>
+          
           <Button color="inherit" onClick={handleLogout} sx={{ display: { xs: 'none', sm: 'block' } }}>
             Logout
           </Button>
