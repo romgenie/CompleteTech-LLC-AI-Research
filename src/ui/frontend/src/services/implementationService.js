@@ -19,6 +19,10 @@ implementationApi.interceptors.request.use(
   }
 );
 
+// Note: Paper processing pipeline is planned for Phase 3.5 implementation.
+// Papers will remain in "uploaded" status until the processing pipeline is implemented.
+// Implementation requests are still possible but require manual paper information entry.
+
 /**
  * Implementation service for interacting with the research implementation API.
  */
