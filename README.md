@@ -3,9 +3,9 @@
 This project aims to integrate capabilities from several advanced AI research repositories to create a comprehensive system for AI research discovery, knowledge extraction, and implementation.
 
 > **Development Statistics:**  
-> Total cost: $10.69  
-> Total duration (API): 57m 41.7s  
-> Total duration (wall): 1h 52m 8.9s  
+> Total cost: $11.08  
+> Total duration (API): 58m 57.5s  
+> Total duration (wall): 1h 57m 43.4s  
 
 ## Project Overview
 
@@ -36,9 +36,20 @@ The AI Research Integration Project consists of three main systems:
 
 ### Next Implementation Priorities
 
-1. **Knowledge Extraction Pipeline**
-2. **Graph-based Knowledge Integration**
-3. **Research Generation System**
+1. **Knowledge Extraction Pipeline** (in progress)
+   - Document Processing Engine
+   - Entity Recognition System
+   - Relationship Extraction Module
+   
+2. **Knowledge Graph System Core** (starting)
+   - Core Graph Management
+   - Multi-source Knowledge Extractor
+
+3. **Technical Infrastructure** (planned)
+   - Neo4j and MongoDB setup
+   - FastAPI development
+
+See [PLAN.md](./PLAN.md) for the complete implementation roadmap.
 
 ## Technology Stack
 
