@@ -21,6 +21,8 @@ This project is the frontend interface for the AI Research Integration system, p
 
 ### Installation
 
+#### Using npm
+
 1. Clone the repository
 2. Navigate to the frontend directory:
    ```
@@ -36,9 +38,32 @@ This project is the frontend interface for the AI Research Integration system, p
    ```
    The app will run on [http://localhost:3001](http://localhost:3001)
 
+#### Using Docker
+
+We provide multiple Docker setups for different development scenarios:
+
+1. **Development Mode**:
+   ```
+   docker-compose -f docker/docker-compose.dev.yml up
+   ```
+
+2. **Development with Mock API** (recommended for frontend-only development):
+   ```
+   docker-compose -f docker/docker-compose.mock.yml up
+   ```
+
+3. **Full Stack Development**:
+   ```
+   docker-compose up
+   ```
+
+See [Docker Setup Documentation](./docker/README.md) for detailed information.
+
 ### Environment Setup
 
-The application relies on a FastAPI backend running at `http://localhost:8000` but will gracefully fall back to mock data if the backend is unreachable.
+The application connects to a FastAPI backend running at `http://localhost:8000` and WebSocket server at `ws://localhost:8000/ws`. It will gracefully fall back to mock data if the backend is unreachable.
+
+When using the mock API Docker setup, all backend features are simulated including real-time updates and notifications.
 
 ## Development
 
