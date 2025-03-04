@@ -6,6 +6,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import App from './App';
 import theme from './theme';
 import { AuthProvider } from './contexts/AuthContext';
+import { WebSocketProvider } from './contexts/WebSocketContext';
 import reportWebVitals from './reportWebVitals';
 import './index.css';
 
@@ -16,7 +17,9 @@ root.render(
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <AuthProvider>
-          <App />
+          <WebSocketProvider>
+            <App />
+          </WebSocketProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
