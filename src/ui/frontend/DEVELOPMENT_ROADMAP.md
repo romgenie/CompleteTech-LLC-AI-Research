@@ -128,6 +128,28 @@ Improving the codebase health and developer experience.
    - Ensure screen reader compatibility
    - Add high contrast mode support
 
+## Docker & Development Environment
+
+To facilitate easier development and testing, we've implemented Docker configurations:
+
+1. **Development Environment**:
+   - Docker Compose setup for development with hot reloading
+   - Configuration in `docker/docker-compose.dev.yml`
+
+2. **Mock API Server**:
+   - Standalone API server that simulates all backend functionality
+   - Includes authentication, CRUD operations, and WebSocket support
+   - Provides realistic mock data and real-time updates
+   - Configuration in `docker/docker-compose.mock.yml`
+
+3. **Production Build**:
+   - Optimized production build with Nginx
+   - Configuration in `docker/Dockerfile` and `docker/nginx.conf`
+
+4. **Full Stack Deployment**:
+   - Complete application stack with all services
+   - Configuration in `docker-compose.yml`
+
 ## Implementation Guidelines
 
 ### Component Architecture
