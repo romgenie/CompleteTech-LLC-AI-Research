@@ -84,8 +84,13 @@ def demo_pattern_extraction() -> None:
     # Extract relationships
     relationships = relationship_extractor.extract_relationships(text, entities)
     
+    # Filter to higher confidence relationships
+    filtered_relationships = relationship_extractor.filter_relationships(
+        relationships, min_confidence=0.8
+    )
+    
     # Print results
-    print_relationships(relationships, "Pattern-Based Relationships")
+    print_relationships(filtered_relationships, "Pattern-Based Relationships (High Confidence)")
 
 
 def demo_ai_extraction() -> None:
@@ -109,8 +114,13 @@ def demo_ai_extraction() -> None:
     # Extract relationships
     relationships = relationship_extractor.extract_relationships(text, entities)
     
+    # Filter to higher confidence relationships
+    filtered_relationships = relationship_extractor.filter_relationships(
+        relationships, min_confidence=0.75
+    )
+    
     # Print results
-    print_relationships(relationships, "AI-Specific Relationships")
+    print_relationships(filtered_relationships, "AI-Specific Relationships (High Confidence)")
 
 
 def demo_combined_extraction() -> None:
