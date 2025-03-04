@@ -3,9 +3,9 @@
 This project aims to integrate capabilities from several advanced AI research repositories to create a comprehensive system for AI research discovery, knowledge extraction, and implementation.
 
 > **Development Statistics:**  
-> Total cost: $77.63  
-> Total duration (API): 5h 27m 18.6s  
-> Total duration (wall): 15h 50m 47.9s  
+> Total cost: $78.52  
+> Total duration (API): 5h 28m 42.2s  
+> Total duration (wall): 16h 1m 22.6s  
 
 ## Project Overview
 
@@ -176,8 +176,15 @@ The project follows a modular architecture with well-defined interfaces between 
 ### Authentication
 - Test credentials: username: admin, password: password
 
-### Notes on Paper Uploads
-Currently, papers can be uploaded but will remain in the "uploaded" status. The automatic paper processing pipeline is planned for future implementation.
+### Notes on Paper Processing
+Currently, papers can be uploaded but will remain in the "uploaded" status. The automatic paper processing pipeline is planned for **Phase 3.5** implementation as outlined in CODING_PROMPT.md. This is the **fourth implementation priority**, following the successful completion of the first three priorities:
+
+1. ✅ Research Orchestration Framework core and Research Planning
+2. ✅ Knowledge Graph System core and Knowledge Extractor
+3. ✅ Research Implementation core and Research Understanding
+4. 🔄 Paper Processing Pipeline
+
+The detailed plan for the Paper Processing Pipeline can be found in PLAN.md and the system-specific DEVELOPER_PLAN.md files. Each core system has been designed with clear integration points for connecting with this pipeline once implemented.
 
 ### Development Setup
 1. Explore the documentation in this order:
@@ -302,30 +309,34 @@ All core planned features have been implemented, with one notable exception: pap
 1. **Paper Processing Pipeline** (Planned - Phase 3.5):
    - **Asynchronous Processing Architecture**:
      - Celery task queue with Redis as message broker
-     - Worker configuration with auto-retry and dead letter queues
-     - Task prioritization and rate limiting
-     - Health monitoring and logging
+     - Worker configuration with auto-retry and exponential backoff
+     - Dead letter queues for failed processing tasks
+     - Resource management with task prioritization
+     - Logging and monitoring dashboards for system health
    - **Paper Lifecycle Management**:
-     - State machine to track paper processing status
-     - Detailed status tracking with granular states
-     - Real-time status updates via WebSockets
-     - Progress tracking with stage information
-   - **Processing Components**:
-     - Integration with existing DocumentProcessor
-     - Entity and relationship extraction from papers
-     - Knowledge graph integration
-     - Citation network analysis
-     - Metadata extraction for paper classification
-   - **API Endpoints**:
-     - Manual processing trigger endpoints
-     - Batch processing capability
-     - Status query endpoints
-     - WebSocket endpoints for real-time updates
-   - **Implementation Integration**:
-     - Connect paper analysis to implementation requests
-     - Extract algorithms for code generation
-     - Generate implementation artifacts
-     - Implement testing and validation
+     - Granular state machine (uploaded → queued → processing → extracting_entities → extracting_relationships → building_knowledge_graph → analyzed → implementation_ready)
+     - State management service with proper error handling
+     - Transaction-based state changes for consistency
+     - Processing history tracking with timestamps
+     - Reporting system for statistics and performance
+   - **Processing Integration Components**:
+     - Integration with existing document processors
+     - Support for additional formats (LaTeX, Word, Markdown)
+     - Entity and relationship extraction from academic papers
+     - Citation extraction and reference analysis
+     - Metadata classification for paper organization
+   - **API and Interface Enhancements**:
+     - Manual and batch processing endpoints
+     - Real-time updates via WebSockets
+     - Progress tracking with detailed stage information
+     - Paper search, filtering, and organization tools
+     - Dashboard widgets for monitoring processing status
+   - **Implementation System Integration**:
+     - Algorithm extraction for code generation
+     - Entity-to-code mapping frameworks
+     - Automatic test generation from paper metrics
+     - Validation comparing implementations to source papers
+     - Traceability between papers and generated code
 
 1. **Enhanced Knowledge Graph Visualization**:
    - Support for more sophisticated network visualization techniques
