@@ -1,12 +1,13 @@
 # Research Understanding Engine
 
-The Research Understanding Engine is a comprehensive framework for analyzing research papers, extracting structured information, and preparing for implementation. It provides tools for processing papers, extracting algorithms, and generating code implementations.
+The Research Understanding Engine is a comprehensive framework for analyzing research papers, extracting structured information, and preparing for implementation. It provides tools for processing papers, extracting algorithms, collecting implementation details, and generating code implementations.
 
 ## Features
 
 - **Paper Processing**: Convert research papers in various formats (PDF, HTML, ArXiv) into structured representations
 - **Algorithm Extraction**: Identify algorithms and their implementation details from papers
-- **Implementation Generation**: Generate code implementations from algorithm descriptions
+- **Implementation Detail Collection**: Extract fine-grained implementation details to facilitate accurate code generation
+- **Implementation Generation**: Generate code implementations from algorithm descriptions and implementation details
 
 ## Architecture
 
@@ -29,9 +30,16 @@ The Algorithm Extraction module identifies and extracts algorithms and their imp
 - `AlgorithmImplementationGenerator`: Generator for creating code implementations
 - Data models: `ExtractedAlgorithm`, `AlgorithmParameter`, `AlgorithmVariable`, `AlgorithmSubroutine`
 
+### Implementation Details Module
+
+The Implementation Details module extracts fine-grained implementation details to facilitate accurate code generation. It includes:
+
+- `ImplementationDetailCollector`: Main class for collecting detailed implementation information
+- Data models: `CodeSnippet`, `ImplementationRequirement`, `DatasetInfo`, `EvaluationMetric`, `HyperparameterInfo`, `EnvironmentInfo`, `ImplementationDetail`
+
 ### Understanding Engine
 
-The `ResearchUnderstandingEngine` class provides high-level functionality that coordinates the paper processing, algorithm extraction, and implementation generation stages.
+The `ResearchUnderstandingEngine` class provides high-level functionality that coordinates the paper processing, algorithm extraction, implementation detail collection, and implementation generation stages.
 
 ## Usage
 
@@ -48,25 +56,35 @@ engine = ResearchUnderstandingEngine(cache_dir='/path/to/cache')
 result = engine.process_paper(
     paper_path='/path/to/paper.pdf',
     paper_format=PaperFormat.PDF,
-    extract_algorithms=True
+    extract_algorithms=True,
+    collect_implementation_details=True
 )
 
 # Access the processed data
 paper = result['paper']
 algorithms = result['algorithms']
+implementation_details = result['implementation_details']
+
+# Enhance an algorithm with comprehensive implementation details
+enhanced_algorithm = engine.enhance_algorithm_with_details(
+    algorithm=algorithms[0],
+    paper=paper
+)
 
 # Generate implementations
 implementations = engine.generate_implementations(
-    algorithms=algorithms,
+    algorithms=[enhanced_algorithm],
     language='python',
     include_comments=True
 )
 
-# Extract detailed implementation information
-enriched_algo = engine.extract_implementation_details(
-    paper=paper,
-    algorithm_id=algorithms[0].algorithm_id
-)
+# Access specific implementation details
+code_snippets = implementation_details.code_snippets
+requirements = implementation_details.requirements
+datasets = implementation_details.datasets
+metrics = implementation_details.metrics
+hyperparameters = implementation_details.hyperparameters
+libraries = implementation_details.libraries_used
 ```
 
 ### Advanced Usage
