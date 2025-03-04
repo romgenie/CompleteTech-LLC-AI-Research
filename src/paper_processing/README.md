@@ -6,12 +6,27 @@ The Paper Processing Pipeline is designed to automate the processing of uploaded
 
 ## Current Status
 
-Currently, papers can be uploaded but remain in the "uploaded" status. The automatic paper processing functionality is planned for future implementation after the completion of the three core components:
+The Paper Processing Pipeline foundation has been implemented as part of Phase 3.5, with the following components in place:
 
 1. ✅ Research Orchestration Framework core and Research Planning
 2. ✅ Knowledge Graph System core and Knowledge Extractor
 3. ✅ Research Implementation core and Research Understanding
-4. 🔄 Paper Processing Pipeline (Planned - Phase 3.5)
+4. 🔄 Paper Processing Pipeline (Phase 3.5 - Foundation Implemented)
+
+### Implementation Progress
+
+- ✅ Core state machine architecture for paper lifecycle
+- ✅ Paper data models with comprehensive states
+- ✅ Celery task infrastructure with Redis integration
+- ✅ API endpoints infrastructure
+- ✅ WebSocket event structure for real-time updates
+- ✅ Schema validation for requests and responses
+- ✅ MongoDB database models and connection management
+- ✅ Integration adapters for Knowledge Graph, Research Implementation, and Orchestrator
+- ✅ Extraction adapter for Knowledge Extraction Pipeline
+- 🔄 Full task implementation (coming in next sprints)
+- 🔄 WebSocket server implementation (coming in next sprints)
+- 🔄 Complete integration testing (coming in next sprints)
 
 ## Architecture
 
