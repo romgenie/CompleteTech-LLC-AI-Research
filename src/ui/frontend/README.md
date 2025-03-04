@@ -125,7 +125,17 @@ The frontend interfaces with the following backend services:
 - **Implementation API**: `/api/implementation` for paper implementation
 - **WebSocket Server**: Real-time updates for paper processing
 
-### Mock Data
+### WebSocket Integration
+
+The application uses WebSockets for real-time updates:
+
+- WebSocketContext provides a global WebSocket connection
+- Status updates for paper processing are received in real-time
+- Notifications system for alerting users about status changes
+- Auto-reconnection with exponential backoff for connection stability
+- Authentication integration with JWT tokens
+
+### Mock Data and Error Handling
 
 When backend services are unavailable, the application falls back to mock data defined in `/src/utils/mockData.js`. This includes:
 
@@ -133,6 +143,14 @@ When backend services are unavailable, the application falls back to mock data d
 - Research query results
 - Paper implementation code
 - Paper processing status
+
+The application implements comprehensive error handling:
+
+- Global ErrorBoundary at the application root
+- Component-level error boundaries for isolated failures
+- Consistent error UI with ErrorFallback component
+- Standardized loading states with LoadingFallback
+- Automatic retry with exponential backoff for API requests
 
 ## Project Roadmap
 
