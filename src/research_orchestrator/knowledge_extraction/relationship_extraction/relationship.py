@@ -19,53 +19,67 @@ from ..entity_recognition.entity import Entity
 class RelationType(Enum):
     """Enumeration of relationship types recognized by the system."""
     
-    # General relationship types
-    IS_A = auto()
-    PART_OF = auto()
-    USED_FOR = auto()
-    BASED_ON = auto()
-    DEVELOPED_BY = auto()
-    EVALUATED_ON = auto()
-    OUTPERFORMS = auto()
-    IMPLEMENTS = auto()
-    EXTENDS = auto()
-    RELATED_TO = auto()
+    # Core relationship types
+    IS_A = auto()                # Subclass/superclass relationship
+    PART_OF = auto()             # Component or membership relationship
+    USED_FOR = auto()            # Purpose-based relationship
+    BUILDS_ON = auto()           # Based on prior work
+    DEVELOPED_BY = auto()        # Creator/developer relationship
+    EVALUATED_ON = auto()        # Evaluation relationship
+    OUTPERFORMS = auto()         # Performance comparison
+    IMPLEMENTS = auto()          # Implementation relationship
+    EXTENDS = auto()             # Extension of existing work
+    RELATED_TO = auto()          # General-purpose relationship
     
-    # AI-specific relationship types
-    TRAINED_ON = auto()
-    ACHIEVES = auto()
-    USES = auto()
-    COMPARED_TO = auto()
-    FEATURE_OF = auto()
-    PARAMETER_OF = auto()
-    APPLIED_TO = auto()
-    OPTIMIZED_FOR = auto()
-    BELONGS_TO = auto()
-    SUPPORTED_BY = auto()
-    IMPLEMENTED_IN = auto()
-    COMPOSED_OF = auto()
-    COMPATIBLE_WITH = auto()
+    # AI research relationships
+    TRAINED_ON = auto()          # Model trained on dataset
+    ACHIEVES = auto()            # Achieves results/performance
+    USES = auto()                # Uses a technique/method
+    COMPARED_TO = auto()         # Comparison relationship
+    FEATURE_OF = auto()          # Feature/property relationship
+    PARAMETER_OF = auto()        # Parameter-based relationship
+    APPLIED_TO = auto()          # Applied to a problem domain
+    OPTIMIZED_FOR = auto()       # Optimization target
+    BELONGS_TO = auto()          # Domain/field membership
+    SUPPORTED_BY = auto()        # Support/funding relationship
+    IMPLEMENTED_IN = auto()      # Implementation language/framework
+    COMPOSED_OF = auto()         # Compositional relationship
+    COMPATIBLE_WITH = auto()     # Compatibility relationship
     
-    # Scientific relationship types
-    HYPOTHESIZES = auto()
-    PROVES = auto()
-    DISPROVES = auto()
-    CITES = auto()
-    CONTRADICTS = auto()
-    CONFIRMS = auto()
-    STUDIES = auto()
-    ANALYZES = auto()
-    INTRODUCES = auto()
-    IMPROVES_UPON = auto()
-    EXPLAINS = auto()
-    PRODUCES = auto()
-    USED_BY = auto()
-    BASIS_FOR = auto()
-    OUTPERFORMED_BY = auto()
-    IMPLEMENTED_BY = auto()
-    CONTAINS = auto()
-    HAS_FEATURE = auto()
-    HAS_PARAMETER = auto()
+    # Scientific relationships
+    HYPOTHESIZES = auto()        # Proposes a hypothesis
+    PROVES = auto()              # Proves a theorem/concept
+    DISPROVES = auto()           # Disproves a hypothesis
+    CITES = auto()               # Citation relationship
+    CITED_BY = auto()            # Inverse of cites
+    CONTRADICTS = auto()         # Contradiction relationship
+    CONTRADICTED_BY = auto()     # Inverse of contradicts
+    CONFIRMS = auto()            # Confirmation relationship
+    REPLICATES = auto()          # Replicates results from a previous study
+    STUDIES = auto()             # Studies a phenomenon
+    ANALYZES = auto()            # Analysis relationship
+    INTRODUCES = auto()          # Introduction of new concept
+    IMPROVES_UPON = auto()       # Improvement relationship
+    
+    # Additional academic relationships
+    PROPOSES = auto()            # Proposes a new theory/approach
+    AUTHORED_BY = auto()         # Authorship relationship
+    AUTHOR_OF = auto()           # Inverse of authored_by
+    AFFILIATED_WITH = auto()     # Institutional affiliation
+    HAS_MEMBER = auto()          # Inverse of affiliated_with
+    COLLABORATES_WITH = auto()   # Collaboration between researchers
+    HAS_CODE = auto()            # Link to implementation code
+    EXPLAINS = auto()            # Explanation relationship
+    PRODUCES = auto()            # Production relationship
+    PRODUCED = auto()            # Inverse of produces/developed_by
+    USED_BY = auto()             # Usage relationship
+    BASIS_FOR = auto()           # Foundation relationship
+    DERIVED_FROM = auto()        # Derivation relationship for algorithms/models/datasets
+    OUTPERFORMED_BY = auto()     # Inverse of outperforms
+    IMPLEMENTED_BY = auto()      # Inverse of implements
+    CONTAINS = auto()            # Container relationship
+    HAS_FEATURE = auto()         # Feature relationship
+    HAS_PARAMETER = auto()       # Parameter relationship
     
     # Other/generic types
     UNKNOWN = auto()
@@ -176,16 +190,34 @@ class Relationship:
         """
         # Define inverse relationship types
         inverse_types = {
-            RelationType.PART_OF: RelationType.COMPOSED_OF,
+            RelationType.PART_OF: RelationType.CONTAINS,
+            RelationType.CONTAINS: RelationType.PART_OF,
             RelationType.COMPOSED_OF: RelationType.PART_OF,
             RelationType.USES: RelationType.USED_BY,
-            RelationType.TRAINED_ON: RelationType.USED_TO_TRAIN,
-            RelationType.BASED_ON: RelationType.BASIS_FOR,
+            RelationType.USED_BY: RelationType.USES,
+            RelationType.TRAINED_ON: RelationType.USED_FOR,
+            RelationType.BUILDS_ON: RelationType.BASIS_FOR,
+            RelationType.BASIS_FOR: RelationType.BUILDS_ON,
+            RelationType.DERIVED_FROM: RelationType.BASIS_FOR,
+            RelationType.DEVELOPED_BY: RelationType.PRODUCED,
             RelationType.OUTPERFORMS: RelationType.OUTPERFORMED_BY,
+            RelationType.OUTPERFORMED_BY: RelationType.OUTPERFORMS,
             RelationType.IMPLEMENTS: RelationType.IMPLEMENTED_BY,
+            RelationType.IMPLEMENTED_BY: RelationType.IMPLEMENTS,
             RelationType.BELONGS_TO: RelationType.CONTAINS,
             RelationType.FEATURE_OF: RelationType.HAS_FEATURE,
+            RelationType.HAS_FEATURE: RelationType.FEATURE_OF,
             RelationType.PARAMETER_OF: RelationType.HAS_PARAMETER,
+            RelationType.HAS_PARAMETER: RelationType.PARAMETER_OF,
+            RelationType.AUTHORED_BY: RelationType.AUTHOR_OF,
+            RelationType.AUTHOR_OF: RelationType.AUTHORED_BY,
+            RelationType.AFFILIATED_WITH: RelationType.HAS_MEMBER,
+            RelationType.HAS_MEMBER: RelationType.AFFILIATED_WITH,
+            RelationType.COLLABORATES_WITH: RelationType.COLLABORATES_WITH,
+            RelationType.CITES: RelationType.CITED_BY,
+            RelationType.CITED_BY: RelationType.CITES,
+            RelationType.CONTRADICTS: RelationType.CONTRADICTED_BY,
+            RelationType.CONTRADICTED_BY: RelationType.CONTRADICTS,
         }
         
         # If bidirectional, just swap source and target
