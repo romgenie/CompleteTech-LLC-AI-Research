@@ -4,6 +4,8 @@ import ErrorBoundary from './ErrorBoundary';
 import ErrorFallback from './ErrorFallback';
 import LoadingFallback from './LoadingFallback';
 import StatusIndicator from './StatusIndicator';
+import PaperStatusCard from './PaperStatusCard';
+import NotificationCenter from './NotificationCenter';
 
 export {
   Layout,
@@ -11,5 +13,7 @@ export {
   ErrorBoundary,
   ErrorFallback,
   LoadingFallback,
-  StatusIndicator
+  StatusIndicator,
+  PaperStatusCard,
+  NotificationCenter
 };
