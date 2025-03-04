@@ -22,7 +22,60 @@ knowledgeGraphApi.interceptors.request.use(
 /**
  * Knowledge Graph service for interacting with the knowledge graph API.
  */
+// Add methods needed by KnowledgeGraphPage
 const knowledgeGraphService = {
+  /**
+   * Get entity details
+   * 
+   * @param {string} entityId - Entity ID
+   * @returns {Promise<Object>} - Entity details
+   */
+  getEntityDetails: async (entityId) => {
+    try {
+      const response = await knowledgeGraphApi.get(`/entities/${entityId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching entity details for ${entityId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get related entities
+   * 
+   * @param {string} entityId - Entity ID
+   * @returns {Promise<Object>} - Related entities and relationships
+   */
+  getRelatedEntities: async (entityId) => {
+    try {
+      const response = await knowledgeGraphApi.get(`/entities/${entityId}/related`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching related entities for ${entityId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Search entities by term and type
+   * 
+   * @param {string} term - Search term
+   * @param {string} type - Entity type
+   * @returns {Promise<Array>} - Search results
+   */
+  searchEntities: async (term, type = 'all') => {
+    try {
+      const response = await knowledgeGraphApi.get('/search', { 
+        params: { term, type } 
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error searching entities:', error);
+      throw error;
+    }
+  },
+
+  // Original methods
   /**
    * Get entities with optional filtering.
    * 
@@ -104,22 +157,6 @@ const knowledgeGraphService = {
   },
 
   /**
-   * Search for entities.
-   * 
-   * @param {Object} searchParams - Search parameters
-   * @returns {Promise<Object>} - Search results
-   */
-  searchEntities: async (searchParams) => {
-    try {
-      const response = await knowledgeGraphApi.post('/search/entities', searchParams);
-      return response.data;
-    } catch (error) {
-      console.error('Error searching entities:', error);
-      throw error;
-    }
-  },
-
-  /**
    * Get relationships with optional filtering.
    * 
    * @param {Object} params - Query parameters
@@ -184,6 +221,35 @@ const knowledgeGraphService = {
       console.error('Error finding paths:', error);
       throw error;
     }
+  },
+
+  /**
+   * Generate a mock graph with sample data
+   * Used for testing when there's no backend
+   * 
+   * @returns {Object} - Sample graph data
+   */
+  getMockGraph: () => {
+    return {
+      nodes: [
+        { id: "1", name: "BERT", type: "MODEL" },
+        { id: "2", name: "GPT-3", type: "MODEL" },
+        { id: "3", name: "Attention Is All You Need", type: "PAPER" },
+        { id: "4", name: "ImageNet", type: "DATASET" },
+        { id: "5", name: "Transformer", type: "ALGORITHM" },
+        { id: "6", name: "GLUE Benchmark", type: "DATASET" },
+        { id: "7", name: "Ashish Vaswani", type: "AUTHOR" }
+      ],
+      links: [
+        { source: "1", target: "5", type: "USES" },
+        { source: "2", target: "5", type: "USES" },
+        { source: "3", target: "5", type: "INTRODUCES" },
+        { source: "1", target: "6", type: "EVALUATED_ON" },
+        { source: "2", target: "6", type: "EVALUATED_ON" },
+        { source: "7", target: "3", type: "AUTHORED" },
+        { source: "3", target: "1", type: "INSPIRED" }
+      ]
+    };
   }
 };
 
