@@ -60,6 +60,13 @@ The AI Research Integration frontend provides a UI for interacting with our know
 - Focus on critical user flows
 - Add E2E tests for main user journeys
 
+## Docker Development
+- Use Docker for consistent development environments
+- Development mode: `docker-compose -f docker/docker-compose.dev.yml up`
+- Mock API mode: `docker-compose -f docker/docker-compose.mock.yml up`
+- Production build: Build with `docker/Dockerfile`
+- Full stack: Use root `docker-compose.yml`
+
 ## Error Handling
 - Use the ErrorBoundary component for critical UI sections
 - Provide user-friendly error messages with ErrorFallback
