@@ -1,0 +1,80 @@
+{
+  "document_type": "WHITE_PAPER",
+  "title": "White Paper Template",
+  "description": "Standard structure for technical white papers",
+  "sections": [
+    {
+      "title": "Title",
+      "section_type": "TITLE",
+      "required": true
+    },
+    {
+      "title": "Executive Summary",
+      "section_type": "EXECUTIVE_SUMMARY",
+      "required": true
+    },
+    {
+      "title": "Introduction",
+      "section_type": "INTRODUCTION",
+      "required": true
+    },
+    {
+      "title": "Problem Statement",
+      "section_type": "PROBLEM_STATEMENT",
+      "required": true
+    },
+    {
+      "title": "Background",
+      "section_type": "BACKGROUND",
+      "required": true
+    },
+    {
+      "title": "Solutions",
+      "section_type": "SOLUTIONS",
+      "required": true,
+      "subsections": [
+        {
+          "title": "Proposed Solution",
+          "section_type": "SOLUTION_PROPOSAL",
+          "required": true
+        },
+        {
+          "title": "Technical Details",
+          "section_type": "SOLUTION_DETAILS",
+          "required": true
+        },
+        {
+          "title": "Implementation Considerations",
+          "section_type": "SOLUTION_IMPLEMENTATION",
+          "required": true
+        }
+      ]
+    },
+    {
+      "title": "Case Studies",
+      "section_type": "CASE_STUDIES",
+      "required": false
+    },
+    {
+      "title": "Benefits and ROI",
+      "section_type": "BENEFITS",
+      "required": true
+    },
+    {
+      "title": "Conclusion",
+      "section_type": "CONCLUSION",
+      "required": true
+    },
+    {
+      "title": "References",
+      "section_type": "REFERENCES",
+      "required": false
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "field": "Technology",
+    "suitable_for": ["Industry", "Technical Audiences", "Decision Makers"],
+    "typical_length": "5-15 pages"
+  }
+}
