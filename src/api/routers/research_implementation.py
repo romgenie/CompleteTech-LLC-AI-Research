@@ -2,6 +2,12 @@
 Research Implementation router for the API.
 
 This module provides endpoints for managing research implementations.
+
+Note: The paper processing pipeline is currently not implemented.
+Papers can be uploaded but will remain in "uploaded" status.
+Future implementation will include automatic background processing
+and manual processing endpoints to analyze papers and generate
+implementations.
 """
 
 import logging
