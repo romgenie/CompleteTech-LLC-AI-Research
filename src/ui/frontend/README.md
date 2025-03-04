@@ -178,7 +178,10 @@ We are focusing on the following priorities:
 2. **Knowledge Graph Visualization Enhancements**: Optimizing visualization for large graphs
 3. **Performance Optimization**: Implementing React Query and virtualization for better performance
 
-See [CODING_PROMPT.md](./CODING_PROMPT.md) for detailed development guidelines and next steps.
+See the following documents for more details:
+- [CODING_PROMPT.md](./CODING_PROMPT.md): Development guidelines and standards
+- [PROJECT_PLAN.md](./PROJECT_PLAN.md): High-level project roadmap
+- [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md): Detailed implementation plan for Phase 3
 
 ## License
 
