@@ -247,274 +247,461 @@ See [PROJECT_PLAN.md](./PROJECT_PLAN.md) for the detailed project roadmap, which
 - Technical debt management (Ongoing)
 - Timeline and success metrics
 
-### Current Focus
+### Next Steps & Implementation Plan
 
-We are focusing on the following priorities:
+We are currently focused on the following priorities for the next 4 weeks:
 
-### Implementation Roadmap (Next 4 Weeks)
+## Week 1-2: Knowledge Graph Performance & Accessibility + TypeScript Migration
 
-1. **Knowledge Graph Performance & Accessibility** (Weeks 1-2) 📈 🚀
-   - 🔄 **Performance for Large Graphs**
-     - **Week 1: D3 Force Optimization & Smart Filtering**
-       ```javascript
-       // Optimize simulation for stability with large node sets
-       .alphaDecay(0.028)  // Slower cooling for better layout
-       .velocityDecay(0.4) // Control movement friction
-       
-       // Implement importance-based filtering
-       const filteredNodes = nodes.filter(node => 
-         node.id === selectedNode.id || 
-         isDirectlyConnected(node) ||
-         hasHighImportance(node)
-       );
-       ```
-       
-     - **Week 2: Dynamic Level-of-Detail & Aggregation**
-       ```javascript
-       // Adjust detail based on zoom level
-       function updateDetailLevel(zoomScale) {
-         // Show labels only at higher zoom levels
-         svg.selectAll(".node-label")
-            .style("visibility", zoomScale > 1.2 ? "visible" : "hidden");
-            
-         // Create node clusters at low zoom levels
-         if (zoomScale < 0.8 && nodes.length > 200) {
-           showAggregatedView();
-         } else {
-           showDetailedView();
-         }
-       }
-       ```
-       
-   - 🔄 **Accessibility Enhancements**
-     - **Week 1: Keyboard Navigation & ARIA**
-       ```javascript
-       // Add keyboard controls for graph navigation
-       node.attr("tabindex", 0)
-          .attr("role", "button")
-          .attr("aria-label", d => `${d.type}: ${d.name}`)
-          .on("keydown", handleKeyNavigation);
-          
-       // Create screen reader announcements
-       const announcer = d3.select("body").append("div")
-         .attr("aria-live", "polite")
-         .style("position", "absolute")
-         .style("clip", "rect(0,0,0,0)");
-       ```
-       
-     - **Week 2: Alternative Views & High Contrast**
-       ```javascript
-       // Create text-based view of graph data
-       function createTextAlternative() {
-         container.html(`
-           <h3>Graph Summary</h3>
-           <p>${nodes.length} entities, ${links.length} relationships</p>
-           <p>Central entity: ${selectedEntity.name}</p>
-           
-           <div class="entity-list">...</div>
-           <div class="relationship-list">...</div>
-         `);
-       }
-       
-       // Add high contrast color mode
-       const highContrastColors = {
-         MODEL: '#0000FF',   // Bold blue
-         DATASET: '#008000', // Bold green
-         ALGORITHM: '#FF0000', // Bold red
-         // ...
-       };
-       ```
+### Knowledge Graph Performance Optimization (Week 1) 📈
 
-2. **TypeScript Migration** (Weeks 1-2) 🔐 📝
-   - 🔄 **Core Context Migration**
-     - **Week 1: AuthContext & WebSocketContext**
-       ```typescript
-       // AuthContext with proper JWT typing
-       interface AuthState {
-         isAuthenticated: boolean;
-         token: string | null;
-         user: User | null;
-         error: Error | null;
-         loading: boolean;
-       }
-       
-       interface AuthContextType extends AuthState {
-         login: (username: string, password: string) => Promise<void>;
-         logout: () => void;
-         checkAuthStatus: () => Promise<boolean>;
-       }
-       
-       // WebSocket message types
-       type WebSocketMessage = 
-         | AuthMessage 
-         | NotificationMessage 
-         | SubscriptionMessage;
-         
-       interface NotificationMessage {
-         type: 'notification';
-         id: string;
-         category: 'info' | 'success' | 'warning' | 'error' | 'paper_status';
-         title: string;
-         message: string;
-         timestamp: string;
-         action?: {
-           type: string;
-           path: string;
-         };
-       }
-       ```
-       
-   - 🔄 **Custom Hook Migration**
-     - **Week 2: useD3, useFetch & useWebSocket**
-       ```typescript
-       // useD3 with proper D3 selection typing
-       function useD3<GElement extends d3.BaseType, PDatum, PGroup extends d3.BaseType>(
-         renderFn: (selection: d3.Selection<GElement, PDatum, PGroup, unknown>) => void,
-         dependencies: React.DependencyList = []
-       ): React.RefObject<GElement> {
-         const ref = useRef<GElement>(null);
-         
-         useEffect(() => {
-           if (ref.current) {
-             renderFn(d3.select(ref.current));
-           }
-           return () => {
-             // Clean up code
-           };
-         }, dependencies);
-         
-         return ref;
-       }
-       
-       // useFetch with request/response generics
-       function useFetch<TData = any, TError = Error>() {
-         const [data, setData] = useState<TData | null>(null);
-         const [loading, setLoading] = useState<boolean>(false);
-         const [error, setError] = useState<TError | null>(null);
-         
-         const fetchData = async <T = TData>(
-           url: string, 
-           options?: RequestInit
-         ): Promise<T> => {
-           // Implementation with proper type handling
-         };
-         
-         return { data, loading, error, fetchData };
-       }
-       ```
+**Mon-Tue: Force Simulation Parameter Optimization**
+```javascript
+// Optimize D3 force simulation for large graph performance
+const simulation = d3.forceSimulation(graphData.nodes)
+  // Reduce alpha decay for more stable layout with 1000+ nodes
+  .alphaDecay(0.028)  // default is 0.0228
+  .velocityDecay(0.4) // Controls movement friction
+  
+  // Configure link forces with dynamic distance and strength
+  .force("link", d3.forceLink(graphData.links)
+    .id(d => d.id)
+    .distance(d => visualizationSettings.nodeSize * 10)
+    .strength(d => 1 / Math.min(countConnections(d.source), countConnections(d.target))))
+  
+  // Scale charge force based on node count for better layouts
+  .force("charge", d3.forceManyBody()
+    .strength(d => -visualizationSettings.forceStrength / Math.sqrt(graphData.nodes.length))
+    .distanceMax(300))  // Limit effect distance for performance
+  
+  // Prevent node overlap in dense graphs
+  .force("collision", d3.forceCollide().radius(d => visualizationSettings.nodeSize * 1.5));
+```
 
-3. **Research Enhancement** (Weeks 3-4) 📚 🔍
-   - 🔄 **Citation Management**
-     - **Week 3: Export & Reference Interface**
-       ```javascript
-       // Citation export in multiple formats
-       const exportFormats = {
-         bibtex: citation => `@article{${citation.id},
-           title={${citation.title}},
-           author={${citation.authors.join(' and ')}},
-           journal={${citation.journal}},
-           year={${citation.year}},
-           doi={${citation.doi}}
-         }`,
-         
-         apa: citation => `${citation.authors[0]} et al. (${citation.year}). 
-           ${citation.title}. ${citation.journal}, ${citation.volume}(${citation.issue}), 
-           ${citation.pages}. https://doi.org/${citation.doi}`,
-           
-         // Additional formats...
-       };
-       
-       // Collapsible reference panel component
-       const ReferencePanel = ({ citations, onEdit }) => (
-         <Accordion>
-           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-             <Typography>References ({citations.length})</Typography>
-           </AccordionSummary>
-           <AccordionDetails>
-             <List dense>
-               {citations.map(citation => (
-                 <ListItem key={citation.id}>
-                   <ListItemText primary={citation.title} 
-                                 secondary={`${citation.authors[0]} et al., ${citation.year}`} />
-                   <ListItemSecondaryAction>
-                     <IconButton onClick={() => onEdit(citation)}><EditIcon /></IconButton>
-                   </ListItemSecondaryAction>
-                 </ListItem>
-               ))}
-             </List>
-           </AccordionDetails>
-         </Accordion>
-       );
-       ```
-       
-   - 🔄 **Research Organization**
-     - **Week 4: History & Favorites**
-       ```javascript
-       // Research history with local storage
-       const useResearchHistory = () => {
-         const [history, setHistory] = useState([]);
-         
-         // Load from localStorage on mount
-         useEffect(() => {
-           const savedHistory = localStorage.getItem('researchHistory');
-           if (savedHistory) {
-             setHistory(JSON.parse(savedHistory));
-           }
-         }, []);
-         
-         // Save query to history
-         const saveToHistory = (query) => {
-           const newHistory = [
-             { query, timestamp: new Date().toISOString() },
-             ...history
-           ].slice(0, 50); // Keep last 50 queries
-           
-           setHistory(newHistory);
-           localStorage.setItem('researchHistory', JSON.stringify(newHistory));
-         };
-         
-         return { history, saveToHistory };
-       };
-       
-       // Progressive disclosure UI for research filters
-       const ResearchFilters = () => (
-         <Accordion>
-           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-             <Typography>Advanced Filters</Typography>
-           </AccordionSummary>
-           <AccordionDetails>
-             <Grid container spacing={2}>
-               {/* Filter controls with tooltips */}
-               <Grid item xs={6}>
-                 <Tooltip title="Filter by publication year range">
-                   <FormControl fullWidth>
-                     <InputLabel>Year Range</InputLabel>
-                     {/* Date range control */}
-                   </FormControl>
-                 </Tooltip>
-               </Grid>
-               {/* Additional filters... */}
-             </Grid>
-           </AccordionDetails>
-         </Accordion>
-       );
-       ```
+**Wed-Thu: Smart Node Filtering Based on Importance**
+```javascript
+// Intelligently filter nodes for large graphs
+function getVisibleNodes() {
+  return graphData.nodes.filter(node => {
+    // Always show selected node
+    if (node.id === selectedEntity.id) return true;
+    
+    // Always show direct connections to selected node
+    if (graphData.links.some(link => 
+      (link.source.id === selectedEntity.id && link.target.id === node.id) ||
+      (link.target.id === selectedEntity.id && link.source.id === node.id))) {
+      return true;
+    }
+    
+    // For other nodes, filter based on connection count
+    const connectionCount = graphData.links.filter(link => 
+      link.source.id === node.id || link.target.id === node.id
+    ).length;
+    
+    // Show only significant nodes when graph is large
+    return graphData.nodes.length < 100 || 
+           connectionCount > Math.log(graphData.nodes.length);
+  });
+}
+```
 
-4. **Cross-Cutting Concerns** (Throughout Sprint) 🛠️ ♿
-   - 🔄 **Accessibility Implementation**
-     - Apply keyboard navigation across components
-     - Ensure screen reader compatibility
-     - Test with assistive technologies
-     
-   - 🔄 **Testing Foundation**
-     - Set up Jest with React Testing Library
-     - Create test utilities and helpers
-     - Begin component test implementation
+**Fri: Dynamic Node Sizing Based on Connectivity**
+```javascript
+// Scale node sizes based on connectivity and importance
+const nodeSizeScale = d3.scaleLinear()
+  .domain([0, d3.max(graphData.nodes, d => countConnections(d))])
+  .range([visualizationSettings.nodeSize, visualizationSettings.nodeSize * 2.5]);
 
-See the following documents for more details:
-- [CODING_PROMPT.md](./CODING_PROMPT.md): Development guidelines and standards
+// Apply dynamic sizing to nodes
+node.attr("r", d => {
+  // Selected node is always prominent
+  if (d.id === selectedEntity.id) {
+    return visualizationSettings.nodeSize * 1.5;
+  }
+  
+  // Size based on connection count
+  return nodeSizeScale(countConnections(d));
+});
+```
+
+### TypeScript Migration (Week 1) 🔐
+
+**Mon-Tue: Convert AuthContext to TypeScript**
+```typescript
+// Core authentication types
+interface User {
+  id: string;
+  username: string;
+  roles: string[];
+  email?: string;
+}
+
+interface AuthState {
+  currentUser: User | null;
+  token: string | null;
+  loading: boolean;
+  error: Error | null;
+  isAuthenticated: boolean;
+}
+
+interface AuthContextType extends AuthState {
+  login: (username: string, password: string) => Promise<User>;
+  logout: () => void;
+}
+```
+
+**Wed-Fri: Convert WebSocketContext to TypeScript**
+```typescript
+// WebSocket message types
+interface WebSocketMessage {
+  type: string;
+  [key: string]: any;
+}
+
+interface NotificationMessage extends WebSocketMessage {
+  type: 'notification';
+  id: string;
+  title: string;
+  message: string;
+  category: 'info' | 'success' | 'warning' | 'error' | 'paper_status';
+  timestamp: string;
+}
+
+interface WebSocketContextType {
+  isConnected: boolean;
+  connect: () => void;
+  disconnect: () => void;
+  sendMessage: (data: WebSocketMessage) => boolean;
+  lastMessage: WebSocketMessage | null;
+  error: Event | null;
+  notifications: NotificationMessage[];
+  clearNotifications: () => void;
+  subscribeToPaperUpdates: (paperId: string) => boolean;
+}
+```
+
+### Knowledge Graph Accessibility (Week 2) ♿ 
+
+**Mon-Tue: Keyboard Navigation**
+```javascript
+// Add keyboard navigation to graph visualization
+svg.attr("tabindex", 0)
+  .attr("role", "application")
+  .attr("aria-label", "Knowledge Graph Visualization")
+  .on("keydown", e => {
+    // Navigation shortcuts
+    switch(e.key) {
+      case "ArrowRight": navigateToNextNode(); break;
+      case "ArrowLeft": navigateToPrevNode(); break;
+      case "+": zoomIn(); break;
+      case "-": zoomOut(); break;
+      case "0": resetZoom(); break;
+    }
+  });
+
+// Make nodes focusable
+node.attr("tabindex", 0)
+  .attr("role", "button")
+  .attr("aria-label", d => `${d.type} node: ${d.name}`)
+  .on("focus", handleNodeFocus)
+  .on("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      selectNode(d);
+    }
+  });
+```
+
+**Wed-Thu: Screen Reader Support**
+```javascript
+// Create live region for screen reader announcements
+const announcer = d3.select("body")
+  .append("div")
+  .attr("id", "graph-announcer")
+  .attr("role", "status")
+  .attr("aria-live", "polite")
+  .style("position", "absolute")
+  .style("clip", "rect(0,0,0,0)");
+
+// Announce graph changes to screen readers
+function announceToScreenReader(message) {
+  announcer.text(message);
+}
+
+// Add proper ARIA attributes to visualization controls
+d3.selectAll(".visualization-control")
+  .attr("aria-controls", "knowledge-graph-visualization");
+```
+
+**Fri: Text-Based Alternative View & High Contrast Mode**
+```javascript
+// Create text representation of graph data
+function createTextAlternative() {
+  const container = d3.select("#graph-text-alternative");
+  
+  // Add graph summary
+  container.html(`
+    <h3>Knowledge Graph Summary</h3>
+    <p>This graph contains ${graphData.nodes.length} entities and 
+       ${graphData.links.length} relationships.</p>
+    <p>The central entity is ${selectedEntity.type}: 
+       <strong>${selectedEntity.name}</strong></p>
+  `);
+  
+  // Add entity list grouped by type
+  const entityTypes = [...new Set(graphData.nodes.map(n => n.type))];
+  entityTypes.forEach(type => {
+    const typeNodes = graphData.nodes.filter(n => n.type === type);
+    // Add entity listings with interaction buttons...
+  });
+}
+
+// Add high contrast mode
+function applyHighContrastMode(enabled) {
+  if (enabled) {
+    const highContrastColors = {
+      MODEL: '#0000FF',    // Blue
+      DATASET: '#008000',  // Green
+      ALGORITHM: '#FF0000' // Red
+      // ...other entity types
+    };
+    
+    // Apply high contrast colors with strong borders
+    node.attr("fill", d => highContrastColors[d.type] || '#000000')
+      .attr("stroke", "#FFFFFF")
+      .attr("stroke-width", 2);
+      
+    // Increase contrast for links
+    link.attr("stroke", "#000000")
+      .attr("stroke-width", 2);
+  }
+}
+```
+
+### TypeScript Migration (Week 2) 📝
+
+**Mon-Wed: Convert useD3 Hook to TypeScript**
+```typescript
+// Add proper typing to D3 integration hook
+function useD3<GElement extends d3.BaseType>(
+  renderFn: (selection: d3.Selection<GElement, unknown, null, undefined>) => void, 
+  dependencies: React.DependencyList = []
+): React.RefObject<GElement> {
+  const ref = useRef<GElement>(null);
+  
+  useEffect(() => {
+    if (ref.current) {
+      renderFn(d3.select(ref.current));
+    }
+    return () => {
+      if (ref.current) {
+        d3.select(ref.current).selectAll('*').interrupt();
+      }
+    };
+  }, dependencies);
+  
+  return ref;
+}
+```
+
+**Thu-Fri: Convert useFetch & useLocalStorage to TypeScript**
+```typescript
+// Type-safe data fetching hook
+function useFetch<TData = any, TError = Error>(
+  url: string,
+  options?: RequestInit,
+  immediate: boolean = true
+): {
+  data: TData | null;
+  loading: boolean;
+  error: TError | null;
+  refetch: () => Promise<void>;
+} {
+  // Implementation...
+}
+
+// Type-safe localStorage hook
+function useLocalStorage<T>(
+  key: string, 
+  initialValue: T
+): [T, (value: T | ((val: T) => T)) => void] {
+  // Implementation...
+}
+```
+
+## Week 3-4: Research Enhancement & Knowledge Graph Improvements
+
+### Citation Management (Week 3) 📚
+
+**Mon-Tue: Citation Export in Multiple Formats**
+```javascript
+// Support multiple citation format exports
+const exportFormats = {
+  bibtex: citation => `@article{${citation.id},
+    title={${citation.title}},
+    author={${citation.authors.join(' and ')}},
+    journal={${citation.journal}},
+    year={${citation.year}}
+  }`,
+  
+  apa: citation => `${citation.authors[0]} et al. (${citation.year}). 
+    ${citation.title}. ${citation.journal}, ${citation.volume}(${citation.issue}), 
+    ${citation.pages}.`
+};
+
+// UI for export format selection
+const CitationExport = ({ citation }) => (
+  <FormControl fullWidth variant="outlined" size="small">
+    <InputLabel>Export Format</InputLabel>
+    <Select value={format} onChange={handleFormatChange}>
+      <MenuItem value="bibtex">BibTeX</MenuItem>
+      <MenuItem value="apa">APA</MenuItem>
+      <MenuItem value="mla">MLA</MenuItem>
+      <MenuItem value="chicago">Chicago</MenuItem>
+    </Select>
+    <TextField
+      multiline
+      value={formatCitation(citation, format)}
+      InputProps={{
+        endAdornment: (
+          <InputAdornment position="end">
+            <IconButton onClick={handleCopy}><ContentCopyIcon /></IconButton>
+          </InputAdornment>
+        )
+      }}
+    />
+  </FormControl>
+);
+```
+
+**Wed-Fri: Reference Management Interface**
+```javascript
+// Reference management panel component
+const ReferencePanel = ({ citations, onEdit }) => (
+  <Card variant="outlined">
+    <CardHeader 
+      title="References" 
+      subheader={`${citations.length} citations`}
+      action={
+        <IconButton aria-label="export all">
+          <FileDownloadIcon />
+        </IconButton>
+      }
+    />
+    <Divider />
+    <List sx={{ maxHeight: '400px', overflow: 'auto' }}>
+      {citations.map(citation => (
+        <ListItem 
+          key={citation.id}
+          secondaryAction={
+            <IconButton edge="end" onClick={() => onEdit(citation)}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+          }
+        >
+          <ListItemText
+            primary={citation.title}
+            secondary={`${citation.authors[0]} et al., ${citation.year}`}
+          />
+        </ListItem>
+      ))}
+    </List>
+  </Card>
+);
+```
+
+### Research Organization (Week 4) 🔍
+
+**Mon-Tue: Research History with Local Storage**
+```javascript
+// Research history management hook
+const useResearchHistory = () => {
+  const [history, setHistory] = useLocalStorage('researchHistory', []);
+  
+  const saveToHistory = (query) => {
+    const newHistory = [
+      { 
+        query, 
+        timestamp: new Date().toISOString(),
+        id: `query-${Date.now()}`
+      },
+      ...history
+    ].slice(0, 50); // Keep last 50 queries
+    
+    setHistory(newHistory);
+  };
+  
+  const removeFromHistory = (id) => {
+    setHistory(history.filter(item => item.id !== id));
+  };
+  
+  const clearHistory = () => setHistory([]);
+  
+  return { 
+    history, 
+    saveToHistory, 
+    removeFromHistory,
+    clearHistory
+  };
+};
+```
+
+**Wed-Fri: Research UI Improvements**
+```javascript
+// Progressive disclosure UI for research options
+const ResearchOptions = () => {
+  const [expanded, setExpanded] = useState(false);
+  
+  return (
+    <Paper variant="outlined" sx={{ mt: 2, p: 2 }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Typography variant="subtitle1">Search Options</Typography>
+        <Button 
+          size="small"
+          endIcon={expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? "Hide Options" : "Show Options"}
+        </Button>
+      </Box>
+      
+      <Collapse in={expanded}>
+        <Box mt={2}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Result Type</InputLabel>
+                <Select value={resultType} onChange={handleResultTypeChange}>
+                  <MenuItem value="all">All Results</MenuItem>
+                  <MenuItem value="papers">Research Papers</MenuItem>
+                  <MenuItem value="implementation">Implementations</MenuItem>
+                  <MenuItem value="datasets">Datasets</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Time Period</InputLabel>
+                <Select value={timePeriod} onChange={handleTimePeriodChange}>
+                  <MenuItem value="all">All Time</MenuItem>
+                  <MenuItem value="year">Last Year</MenuItem>
+                  <MenuItem value="month">Last Month</MenuItem>
+                  <MenuItem value="custom">Custom Range</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Box>
+      </Collapse>
+    </Paper>
+  );
+};
+```
+
+See the following documents for detailed implementation plans:
+- [CODING_PROMPT.md](./CODING_PROMPT.md): Complete implementation code samples
 - [PROJECT_PLAN.md](./PROJECT_PLAN.md): High-level project roadmap
-- [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md): Detailed implementation plan for Phase 3
+- [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md): Day-by-day implementation schedule
 
 ## License
 
