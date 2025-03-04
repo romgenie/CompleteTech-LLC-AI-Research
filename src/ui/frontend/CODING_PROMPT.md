@@ -198,11 +198,34 @@ The AI Research Integration frontend provides a UI for interacting with our know
 - Consider visual information density for different screen sizes
 
 ## Research Query Interface
+
+### Core Requirements (Weeks 3-4 Priority)
+- Apply the same UX patterns established in the Knowledge Graph Explorer
+- Implement step-by-step guided research process
+- Use progressive disclosure for advanced query options
+- Create meaningful empty states with clear guidance
+- Add visual feedback for search relevance and quality
+
+### Citation Management
+- Implement citation export in multiple formats (BibTeX, APA, Chicago, MLA)
+- Create reference management interface with filtering and sorting
+- Add validation for required citation fields
+- Implement DOI lookup for citation enrichment
+- Support persistent citation storage
+
+### Research Organization
+- Implement history tracking for all research queries
+- Create favorites and saved queries functionality
+- Add tagging and collection organization
+- Build history viewer with filtering capabilities
+- Support re-running historical queries
+
+### Query Experience
 - Show loading indicators during queries
-- Implement typeahead suggestions
-- Add query history and favorites
+- Implement typeahead suggestions 
 - Support structured and natural language queries
 - Format results with proper citations
+- Add filtering and sorting of results
 
 ## Implemented Features (Phases 1 & 2)
 
@@ -280,13 +303,26 @@ Following our Knowledge Graph Explorer redesign, all components should follow th
 
 ## Current Development Priorities
 
-1. **TypeScript Migration** (Priority: High)
+1. **TypeScript Migration** (Priority: High - Weeks 1-2)
    - Create JSDoc type definitions as preparation (✅ Completed with typeDefs.js)
-   - Add TypeScript and tsconfig.json configuration
-   - Convert core contexts and hooks first
-   - Convert components incrementally
-   - Add comprehensive typing for all props
-   - Ensure all API models have proper interfaces
+   - Add TypeScript and tsconfig.json configuration (✅ Completed)
+   
+   **Core System Migration (Week 1):**
+   - Convert AuthContext to TypeScript with proper JWT typing
+   - Convert WebSocketContext with message and subscription typing
+   - Add comprehensive interface definitions for context values
+   - Create reusable type utilities for common patterns
+   
+   **Hook Migration (Week 2):**
+   - Convert useD3 hook with D3 selection typing
+   - Implement generics for useFetch request/response types
+   - Add proper typing for useWebSocket messages and events
+   - Convert useLocalStorage with generic value typing
+   
+   **Future Phases:**
+   - Convert UI components incrementally (starting with shared components)
+   - Add comprehensive API model interfaces
+   - Implement runtime type validation
 
 2. **Performance Optimization** (Priority: Medium)
    - Implement React Query for data fetching and caching
@@ -305,12 +341,23 @@ Following our Knowledge Graph Explorer redesign, all components should follow th
    - ✅ Improve information hierarchy with collapsible sections
    - ✅ Add intuitive empty state with step-by-step guidance
    
-   **Phase 2 (In Progress):**
-   - Optimize performance for graphs with 1000+ nodes (Priority: High)
-   - Add WebGL rendering for very large graphs (Priority: Medium)
-   - Implement URL state encoding for sharing specific views (Priority: Medium)
-   - Add keyboard navigation and accessibility features (Priority: High)
-   - Create additional layout options (hierarchical and radial) (Priority: Low)
+   **Phase 2 (Next 2 Weeks - Highest Priority):**
+   - Optimize performance for graphs with 1000+ nodes
+     - Implement level-of-detail rendering based on zoom level
+     - Add node aggregation for dense clusters
+     - Optimize D3 force simulation parameters
+     - Implement node filtering based on importance metrics
+   
+   - Add accessibility features for visualization
+     - Implement keyboard navigation for graph interaction
+     - Add screen reader support with ARIA attributes
+     - Create text-based alternatives for visualization data
+     - Add high-contrast mode support
+     
+   **Future Enhancements:**
+   - Add WebGL rendering for very large graphs (1000+ nodes)
+   - Implement URL state encoding for sharing specific views
+   - Create additional layout options (hierarchical and radial)
 
 4. **Paper Dashboard** (Priority: High) ✅ Completed
    - Create comprehensive paper management dashboard with PaperDashboard component
