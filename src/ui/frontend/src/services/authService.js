@@ -7,6 +7,8 @@ const authApi = axios.create({
 
 // Mock data for testing
 const MOCK_MODE = false; // Set to false to try real API first, but fall back to mock when API fails
+// Note: Paper processing pipeline is planned for Phase 3.5 implementation
+// Papers will remain in "uploaded" status until the processing pipeline is implemented
 const MOCK_USERS = {
   'admin': {
     id: 1,
