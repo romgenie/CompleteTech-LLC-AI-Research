@@ -17,6 +17,7 @@ import asyncio
 from functools import lru_cache
 
 from .report_structure import DocumentStructure, Section, SectionType, DocumentType
+from .citation import CitationManager, CitationStyle
 
 # Try to import LLM-related modules
 try:
@@ -374,7 +375,9 @@ class ContentSynthesisEngine:
     def __init__(self, 
                  config: Optional[ContentGenerationConfig] = None,
                  llm: Optional[Any] = None,
-                 knowledge_graph_adapter = None):
+                 knowledge_graph_adapter = None,
+                 citation_manager: Optional[CitationManager] = None,
+                 citation_style: Union[CitationStyle, str] = CitationStyle.APA):
         """
         Initialize the Content Synthesis Engine.
         
@@ -382,11 +385,22 @@ class ContentSynthesisEngine:
             config: Configuration for content generation
             llm: Language model to use for content generation (optional)
             knowledge_graph_adapter: Adapter for accessing knowledge graph (optional)
+            citation_manager: Citation manager for handling citations (optional)
+            citation_style: Citation style to use for formatting citations
         """
         self.config = config or ContentGenerationConfig()
         self.logger = logging.getLogger(__name__)
         self.llm = llm
         self.knowledge_graph_adapter = knowledge_graph_adapter
+        
+        # Initialize citation manager
+        if citation_manager:
+            self.citation_manager = citation_manager
+        else:
+            self.citation_manager = CitationManager(
+                style=citation_style,
+                knowledge_graph_adapter=knowledge_graph_adapter
+            )
         
         # Initialize default templates
         self._initialize_templates()
@@ -1328,6 +1342,28 @@ In conclusion, this work advances the state of the art in {topic} by {final_conc
                     for subsection in section.subsections:
                         structure_info += f"  - {subsection.title} ({subsection.section_type.name})\n"
             
+            # Load papers from research data into citation manager
+            if research_data.papers:
+                self.citation_manager.load_papers_from_research_data(research_data)
+            
+            # Create citation instructions
+            citation_instructions = (
+                f"For citations, use the format [@citation_key] where citation_key is one of the following:\n"
+            )
+            
+            # Include available citation keys
+            for i, paper in enumerate(self.citation_manager.papers[:10]):  # Limit to 10 papers
+                citation_key = paper.get("citation_key", "")
+                title = paper.get("title", "Unknown")
+                authors = paper.get("authors", ["Unknown"])
+                if isinstance(authors, list) and len(authors) > 0:
+                    author = authors[0]
+                else:
+                    author = "Unknown"
+                year = paper.get("year", "")
+                
+                citation_instructions += f"- {citation_key}: {title} by {author} ({year})\n"
+            
             # Create system message
             system_message = (
                 f"You are a research document generator specialized in {research_data.topic}. "
@@ -1344,10 +1380,12 @@ In conclusion, this work advances the state of the art in {topic} by {final_conc
                 f"titled '{document_structure.title}' about {research_data.topic}.\n\n"
                 f"DOCUMENT STRUCTURE:\n{structure_info}\n\n"
                 f"CONTEXT INFORMATION:\n{context}\n\n"
+                f"CITATION INSTRUCTIONS:\n{citation_instructions}\n\n"
                 f"Generate the complete document with all sections specified in the structure. "
                 f"Use Markdown formatting with appropriate headings (# for title, ## for main sections, ### for subsections). "
                 f"Include all typical content expected in each section of a {document_structure.document_type.name.lower().replace('_', ' ')}. "
                 f"If applicable, include references to papers, models, datasets, and methods from the context information. "
+                f"Use citations in the format [@citation_key] when referring to specific papers. "
                 f"Make sure to include all specified sections and maintain the correct heading structure."
             )
             
@@ -1364,6 +1402,9 @@ In conclusion, this work advances the state of the art in {topic} by {final_conc
             # Ensure document title is at the beginning if not already
             if not content.startswith(f"# {document_structure.title}"):
                 content = f"# {document_structure.title}\n\n{content}"
+            
+            # Process citation placeholders
+            content = self.process_citations(content)
             
             return content
             
@@ -1611,59 +1652,15 @@ This represents a significant advancement over existing methods and provides a f
     
     def _generate_references(self, research_data: ResearchData) -> str:
         """Generate references for the document."""
-        # Use papers from research data if available
+        # Load papers from research data into citation manager
         if research_data.papers:
-            references = []
-            
-            for i, paper in enumerate(research_data.papers[:10]):  # Limit to 10 references
-                authors = paper.get("authors", ["Author"])
-                if isinstance(authors, str):
-                    authors_text = authors
-                else:
-                    if len(authors) == 1:
-                        authors_text = authors[0]
-                    elif len(authors) == 2:
-                        authors_text = authors[0] + " and " + authors[1]
-                    else:
-                        authors_text = ", ".join(authors[:-1]) + ", and " + authors[-1]
-                
-                title = paper.get("title", "Paper Title")
-                venue = paper.get("venue", "Conference/Journal")
-                year = paper.get("year", "2023")
-                doi = paper.get("doi", "")
-                url = paper.get("url", "")
-                
-                # Format reference based on available information
-                reference = f"[{i+1}] {authors_text}. \"{title}.\" {venue}, {year}."
-                
-                # Add DOI or URL if available
-                if doi:
-                    reference += f" DOI: {doi}"
-                elif url:
-                    reference += f" Available at: {url}"
-                
-                references.append(reference)
-            
-            return "\n\n".join(references)
+            self.citation_manager.load_papers_from_research_data(research_data)
         
-        # Try to generate references with LLM if available
-        if self.llm and LANGCHAIN_AVAILABLE:
-            try:
-                references = self._generate_references_with_llm(research_data)
-                if references:
-                    return references
-            except Exception as e:
-                self.logger.error(f"Error generating references with LLM: {e}")
-        
-        # Generate dummy references if no papers are available and LLM generation failed
-        return """[1] Smith, J. and Johnson, A. "A Novel Approach to Machine Learning." Journal of Artificial Intelligence, 2022.
-
-[2] Brown, R., Davis, M., Wilson, E., and Thompson, K. "Advances in Neural Networks." Conference on Neural Information Processing Systems, 2021.
-
-[3] Lee, S. "Deep Learning for Computer Vision: A Comprehensive Survey." IEEE Transactions on Pattern Analysis and Machine Intelligence, 2023."""
+        # Generate reference list using citation manager
+        return self.citation_manager.generate_reference_list("References")
         
     def _generate_references_with_llm(self, research_data: ResearchData) -> str:
-        """Generate references using a language model."""
+        """Generate references using a language model and format them with citation manager."""
         if not self.llm or not LANGCHAIN_AVAILABLE:
             return ""
         
@@ -1672,10 +1669,11 @@ This represents a significant advancement over existing methods and provides a f
             prompt = (
                 f"Generate a list of 5-7 realistic academic references for a research paper on {research_data.topic}. "
                 f"Include influential papers, recent developments, and seminal works in this field. "
-                f"Format the references according to APA style. Each reference should include authors, year, "
-                f"title, journal/conference name, and DOI (when applicable). Include real papers that exist in the literature "
-                f"with accurate publication details.\n\n"
-                f"Return the references as a numbered list, with one blank line between each reference."
+                f"Each reference should include full details with this exact JSON format for each paper:\n\n"
+                f"{{'title': 'Paper Title', 'authors': ['Author 1', 'Author 2'], 'year': '2023', "
+                f"'journal': 'Journal Name', 'volume': '10', 'issue': '2', 'pages': '123-145', "
+                f"'doi': '10.xxxx/xxxxx', 'url': 'https://doi.org/...' }}\n\n"
+                f"Return ONLY the JSON array of references, properly formatted for parsing."
             )
             
             # Create messages
@@ -1686,10 +1684,42 @@ This represents a significant advancement over existing methods and provides a f
             
             # Get response
             response = self.llm(messages)
-            references = response.content if hasattr(response, 'content') else str(response)
+            references_text = response.content if hasattr(response, 'content') else str(response)
             
-            return references
+            # Try to parse JSON (might need cleaning)
+            try:
+                # Extract JSON array from response (may be surrounded by markdown code blocks or other text)
+                json_pattern = r'\[\s*\{.+\}\s*\]'
+                json_match = re.search(json_pattern, references_text, re.DOTALL)
+                
+                if json_match:
+                    references_json = json_match.group(0)
+                    references = json.loads(references_json)
+                    
+                    # Add papers to citation manager
+                    for paper in references:
+                        self.citation_manager.add_paper(paper)
+                    
+                    # Generate reference list
+                    return self.citation_manager.generate_reference_list("References")
+            except Exception as e:
+                self.logger.error(f"Error parsing LLM-generated references: {e}")
+            
+            # If JSON parsing fails, try to use the raw text as a fallback
+            return references_text
             
         except Exception as e:
             self.logger.error(f"Error generating references with LLM: {e}")
             return ""
+            
+    def process_citations(self, text: str) -> str:
+        """
+        Process citation placeholders in text and replace with formatted citations.
+        
+        Args:
+            text: Text with citation placeholders
+            
+        Returns:
+            Text with formatted citations
+        """
+        return self.citation_manager.process_text_with_citations(text)
