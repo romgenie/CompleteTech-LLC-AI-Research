@@ -1,181 +1,111 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography,
+import { useParams } from 'react-router-dom';
+import {
+  Box,
+  Grid,
   Paper,
+  Typography,
   Tabs,
   Tab,
-  Button,
-  Grid,
+  CircularProgress,
+  Alert,
+  Chip,
+  Avatar,
   List,
   ListItem,
-  ListItemText,
   ListItemAvatar,
-  ListItemSecondary,
-  Avatar,
-  Chip,
-  Divider,
-  TextField,
-  Card,
-  CardContent,
-  CardActions,
+  ListItemText,
   IconButton,
-  Tooltip,
-  CircularProgress,
-  Alert
+  Menu,
+  MenuItem,
+  Button,
+  Divider
 } from '@mui/material';
-import { 
-  Add as AddIcon,
+import {
   Edit as EditIcon,
   Delete as DeleteIcon,
-  People as PeopleIcon,
-  Code as CodeIcon,
-  History as HistoryIcon,
-  FolderOpen as FolderIcon,
-  Link as LinkIcon,
+  Share as ShareIcon,
+  MoreVert as MoreVertIcon,
+  Add as AddIcon,
+  Settings as SettingsIcon,
+  VisibilityOff as PrivateIcon,
   Public as PublicIcon,
-  Lock as LockIcon,
-  GroupWork as GroupWorkIcon
+  Business as InternalIcon,
+  Folder as FolderIcon,
+  Description as DescriptionIcon,
+  Person as PersonIcon,
+  Group as GroupIcon
 } from '@mui/icons-material';
-import { Link as RouterLink, useParams } from 'react-router-dom';
 import collaborationService from '../../services/collaborationService';
 
-// Panel for the content of each tab
-function TabPanel({ children, value, index, ...other }) {
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`workspace-tabpanel-${index}`}
-      aria-labelledby={`workspace-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ py: 3 }}>
-          {children}
-        </Box>
-      )}
-    </div>
-  );
-}
-
 /**
- * Component to display the details of a workspace, its projects, and members
+ * Component for displaying and managing workspace details
  */
 const WorkspaceDetail = () => {
   const { workspaceId } = useParams();
+  
+  // State
   const [workspace, setWorkspace] = useState(null);
   const [projects, setProjects] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [tabValue, setTabValue] = useState(0);
+  const [currentTab, setCurrentTab] = useState(0);
+  const [menuAnchor, setMenuAnchor] = useState(null);
 
-  // Fetch workspace details
+  // Load workspace data on mount
   useEffect(() => {
-    const fetchWorkspaceDetails = async () => {
-      if (!workspaceId) return;
-      
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // In a real app, we would use proper API calls
-        // For now, we'll simulate with mock data
-        const mockWorkspace = {
-          id: workspaceId,
-          name: "Research AI Integration",
-          description: "Collaborative workspace for AI research integration projects",
-          visibility: "internal",
-          created_at: "2023-10-15T10:30:00Z",
-          updated_at: "2023-11-10T14:22:00Z",
-          tags: ["AI", "Research", "Integration"]
-        };
-        
-        const mockProjects = [
-          {
-            id: "proj1",
-            name: "Knowledge Graph System",
-            description: "Development of the knowledge graph system for research integration",
-            status: "in_progress",
-            last_updated: "2023-11-09T08:45:00Z",
-            contributors: 5
-          },
-          {
-            id: "proj2",
-            name: "Research Orchestrator",
-            description: "Implementation of the research orchestration component",
-            status: "completed",
-            last_updated: "2023-11-02T15:20:00Z",
-            contributors: 3
-          },
-          {
-            id: "proj3",
-            name: "Paper Processing Pipeline",
-            description: "Development of the paper processing and information extraction pipeline",
-            status: "planning",
-            last_updated: "2023-11-10T09:15:00Z",
-            contributors: 2
-          }
-        ];
-        
-        const mockMembers = [
-          {
-            id: "user1",
-            name: "John Doe",
-            role: "Admin",
-            avatar: "J"
-          },
-          {
-            id: "user2",
-            name: "Jane Smith",
-            role: "Contributor",
-            avatar: "J"
-          },
-          {
-            id: "user3",
-            name: "Bob Johnson",
-            role: "Viewer",
-            avatar: "B"
-          }
-        ];
-        
-        setWorkspace(mockWorkspace);
-        setProjects(mockProjects);
-        setMembers(mockMembers);
-      } catch (err) {
-        setError(err.message || 'Failed to load workspace details');
-        console.error('Error fetching workspace details:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchWorkspaceDetails();
+    fetchWorkspaceData();
   }, [workspaceId]);
 
-  // Handle tab change
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-  };
+  // Fetch all workspace related data
+  const fetchWorkspaceData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  // Get status chip color
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed': return 'success';
-      case 'in_progress': return 'primary';
-      case 'planning': return 'info';
-      default: return 'default';
+      // Fetch workspace details, projects, and members in parallel
+      const [workspaceData, projectsData, membersData] = await Promise.all([
+        collaborationService.getWorkspace(workspaceId),
+        collaborationService.getProjects(workspaceId),
+        collaborationService.getWorkspaceMembers(workspaceId)
+      ]);
+
+      setWorkspace(workspaceData);
+      setProjects(projectsData);
+      setMembers(membersData);
+    } catch (err) {
+      setError('Failed to load workspace details. Please try again.');
+      console.error('Error fetching workspace data:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Get visibility icon
-  const getVisibilityIcon = (visibility) => {
-    switch (visibility) {
-      case 'public': return <PublicIcon />;
-      case 'internal': return <GroupWorkIcon />;
-      case 'private': return <LockIcon />;
-      default: return <LockIcon />;
+  // Menu handlers
+  const handleMenuOpen = (event) => {
+    setMenuAnchor(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
+  };
+
+  // Tab change handler
+  const handleTabChange = (event, newValue) => {
+    setCurrentTab(newValue);
+  };
+
+  // Get visibility icon based on workspace type
+  const getVisibilityIcon = () => {
+    switch (workspace?.visibility) {
+      case 'private':
+        return <PrivateIcon fontSize="small" />;
+      case 'public':
+        return <PublicIcon fontSize="small" />;
+      case 'internal':
+      default:
+        return <InternalIcon fontSize="small" />;
     }
   };
 
@@ -197,7 +127,7 @@ const WorkspaceDetail = () => {
 
   if (!workspace) {
     return (
-      <Alert severity="info" sx={{ mb: 3 }}>
+      <Alert severity="info">
         Workspace not found
       </Alert>
     );
@@ -207,205 +137,177 @@ const WorkspaceDetail = () => {
     <Box>
       {/* Workspace Header */}
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <Typography variant="h4" component="h1">
-                {workspace.name}
-              </Typography>
-              <Chip 
-                icon={getVisibilityIcon(workspace.visibility)}
-                label={workspace.visibility}
-                sx={{ ml: 2 }}
-                variant="outlined"
-              />
-            </Box>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+          <FolderIcon 
+            color="primary" 
+            sx={{ 
+              fontSize: 40,
+              mr: 2
+            }} 
+          />
+          
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h4" component="h1" gutterBottom>
+              {workspace.name}
+            </Typography>
+            
             <Typography variant="body1" color="text.secondary" paragraph>
               {workspace.description}
             </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
-              {workspace.tags && workspace.tags.map(tag => (
-                <Chip key={tag} label={tag} size="small" />
+            
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Chip
+                icon={getVisibilityIcon()}
+                label={workspace.visibility.charAt(0).toUpperCase() + workspace.visibility.slice(1)}
+                size="small"
+              />
+              {workspace.tags?.map(tag => (
+                <Chip
+                  key={tag}
+                  label={tag}
+                  size="small"
+                  variant="outlined"
+                />
               ))}
             </Box>
-            <Typography variant="body2" color="text.secondary">
-              Last updated: {new Date(workspace.updated_at).toLocaleDateString()}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} md={4} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-            <Box>
-              <Button
-                variant="outlined"
-                startIcon={<EditIcon />}
-                sx={{ mr: 1 }}
-              >
-                Edit
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<DeleteIcon />}
-              >
-                Delete
-              </Button>
-            </Box>
-          </Grid>
-        </Grid>
+          </Box>
+
+          <Box>
+            <IconButton onClick={handleMenuOpen}>
+              <MoreVertIcon />
+            </IconButton>
+            <Menu
+              anchorEl={menuAnchor}
+              open={Boolean(menuAnchor)}
+              onClose={handleMenuClose}
+            >
+              <MenuItem>
+                <EditIcon fontSize="small" sx={{ mr: 1 }} /> Edit Workspace
+              </MenuItem>
+              <MenuItem>
+                <ShareIcon fontSize="small" sx={{ mr: 1 }} /> Share
+              </MenuItem>
+              <MenuItem>
+                <SettingsIcon fontSize="small" sx={{ mr: 1 }} /> Settings
+              </MenuItem>
+              <Divider />
+              <MenuItem sx={{ color: 'error.main' }}>
+                <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Delete
+              </MenuItem>
+            </Menu>
+          </Box>
+        </Box>
       </Paper>
 
-      {/* Tabs for Projects and Members */}
-      <Box sx={{ width: '100%' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange} aria-label="workspace tabs">
-            <Tab label="Projects" id="workspace-tab-0" aria-controls="workspace-tabpanel-0" />
-            <Tab label="Members" id="workspace-tab-1" aria-controls="workspace-tabpanel-1" />
-          </Tabs>
-        </Box>
-        
-        {/* Projects Tab */}
-        <TabPanel value={tabValue} index={0}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-            <Typography variant="h6">
-              Projects ({projects.length})
-            </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<AddIcon />}
+      {/* Tabs Navigation */}
+      <Paper sx={{ mb: 3 }}>
+        <Tabs 
+          value={currentTab} 
+          onChange={handleTabChange}
+          sx={{ borderBottom: 1, borderColor: 'divider' }}
+        >
+          <Tab 
+            icon={<DescriptionIcon />} 
+            iconPosition="start"
+            label={`Projects (${projects.length})`} 
+          />
+          <Tab 
+            icon={<GroupIcon />}
+            iconPosition="start" 
+            label={`Members (${members.length})`} 
+          />
+        </Tabs>
+      </Paper>
+
+      {/* Tab Panels */}
+      {currentTab === 0 ? (
+        <Grid container spacing={3}>
+          {/* Projects List */}
+          {projects.map(project => (
+            <Grid item xs={12} sm={6} md={4} key={project.id}>
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="h6" gutterBottom>
+                  {project.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  {project.description}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Chip 
+                    label={project.status} 
+                    size="small"
+                    color={project.status === 'completed' ? 'success' : 'default'}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    {project.contributors} contributors
+                  </Typography>
+                </Box>
+              </Paper>
+            </Grid>
+          ))}
+          
+          {/* Add Project Card */}
+          <Grid item xs={12} sm={6} md={4}>
+            <Paper 
+              sx={{ 
+                p: 2, 
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                cursor: 'pointer',
+                '&:hover': {
+                  bgcolor: 'action.hover',
+                }
+              }}
             >
-              New Project
-            </Button>
-          </Box>
-          
-          <Grid container spacing={3}>
-            {projects.map(project => (
-              <Grid item xs={12} sm={6} md={4} key={project.id}>
-                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" component="h2" gutterBottom>
-                      {project.name}
-                    </Typography>
-                    <Chip 
-                      label={project.status.replace('_', ' ')}
-                      size="small"
-                      color={getStatusColor(project.status)}
-                      sx={{ mb: 2 }}
-                    />
-                    <Typography variant="body2" color="text.secondary" paragraph>
-                      {project.description}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Updated: {new Date(project.last_updated).toLocaleDateString()}
-                      </Typography>
-                      <Tooltip title={`${project.contributors} contributors`}>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <PeopleIcon fontSize="small" sx={{ mr: 0.5 }} />
-                          <Typography variant="caption">{project.contributors}</Typography>
-                        </Box>
-                      </Tooltip>
-                    </Box>
-                  </CardContent>
-                  <Divider />
-                  <CardActions>
-                    <Button 
-                      size="small" 
-                      component={RouterLink}
-                      to={`/workspaces/${workspaceId}/projects/${project.id}`}
-                    >
-                      View
-                    </Button>
-                    <Button 
-                      size="small"
-                      component={RouterLink}
-                      to={`/workspaces/${workspaceId}/projects/${project.id}/versions`}
-                      startIcon={<HistoryIcon fontSize="small" />}
-                    >
-                      History
-                    </Button>
-                    <Box sx={{ flexGrow: 1 }} />
-                    <Tooltip title="Project files">
-                      <IconButton size="small">
-                        <FolderIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-          
-          {projects.length === 0 && (
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <Typography variant="body1" color="text.secondary" gutterBottom>
-                No projects yet.
-              </Typography>
-              <Button 
-                variant="outlined" 
-                startIcon={<AddIcon />}
-                sx={{ mt: 1 }}
+              <IconButton 
+                color="primary"
+                sx={{ mb: 1 }}
               >
-                Create a Project
-              </Button>
+                <AddIcon />
+              </IconButton>
+              <Typography variant="h6">
+                Add Project
+              </Typography>
             </Paper>
-          )}
-        </TabPanel>
-        
-        {/* Members Tab */}
-        <TabPanel value={tabValue} index={1}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+          </Grid>
+        </Grid>
+      ) : (
+        <Paper sx={{ p: 3 }}>
+          {/* Members List */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="h6">
-              Members ({members.length})
+              Team Members
             </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<AddIcon />}
-            >
+            <Button startIcon={<AddIcon />}>
               Add Member
             </Button>
           </Box>
           
-          <Paper>
-            <List>
-              {members.map((member, index) => (
-                <React.Fragment key={member.id}>
-                  <ListItem>
-                    <ListItemAvatar>
-                      <Avatar>{member.avatar}</Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={member.name}
-                      secondary={member.role}
-                    />
-                    <Tooltip title="Edit role">
-                      <IconButton edge="end" aria-label="edit">
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </ListItem>
-                  {index < members.length - 1 && <Divider variant="inset" component="li" />}
-                </React.Fragment>
-              ))}
-            </List>
-          </Paper>
-          
-          {members.length === 0 && (
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <Typography variant="body1" color="text.secondary" gutterBottom>
-                No members yet.
-              </Typography>
-              <Button 
-                variant="outlined" 
-                startIcon={<AddIcon />}
-                sx={{ mt: 1 }}
+          <List>
+            {members.map(member => (
+              <ListItem
+                key={member.id}
+                secondaryAction={
+                  <IconButton edge="end">
+                    <MoreVertIcon />
+                  </IconButton>
+                }
               >
-                Add a Member
-              </Button>
-            </Paper>
-          )}
-        </TabPanel>
-      </Box>
+                <ListItemAvatar>
+                  <Avatar>{member.avatar}</Avatar>
+                </ListItemAvatar>
+                <ListItemText
+                  primary={member.name}
+                  secondary={member.role}
+                />
+              </ListItem>
+            ))}
+          </List>
+        </Paper>
+      )}
     </Box>
   );
 };

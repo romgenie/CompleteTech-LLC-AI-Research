@@ -10,6 +10,11 @@ export interface User {
   role?: string;
   permissions?: string[];
   preferences?: UserPreferences;
+  groups?: string[]; // Groups/teams user belongs to
+  organizationId?: string; // Organization user belongs to
+  taxonomyAccess?: string[]; // IDs of taxonomies user can access
+  customTags?: string[]; // IDs of tags created by user
+  favoriteTagIds?: string[]; // IDs of tags marked as favorites
 }
 
 export interface UserPreferences {

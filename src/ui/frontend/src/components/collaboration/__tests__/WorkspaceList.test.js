@@ -1,6 +1,6 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { render, screen, fireEvent, waitFor } from '../../../test-utils';
+import userEvent from '@testing-library/user-event';
 import WorkspaceList from '../WorkspaceList';
 import collaborationService from '../../../services/collaborationService';
 
@@ -11,75 +11,64 @@ describe('WorkspaceList Component', () => {
   const mockWorkspaces = [
     {
       id: 'ws1',
-      name: 'Research AI Integration',
-      description: 'Collaborative workspace for AI research integration projects',
+      name: 'AI Research Integration',
+      description: 'Main research workspace',
       visibility: 'internal',
-      created_at: '2023-10-15T10:30:00Z',
-      updated_at: '2023-11-10T14:22:00Z',
+      members_count: 5,
       projects_count: 3,
-      members_count: 5
+      updated_at: '2023-11-10T14:22:00Z'
     },
     {
       id: 'ws2',
-      name: 'Paper Processing Pipeline',
-      description: 'Development of the paper processing pipeline',
+      name: 'Knowledge Graph System',
+      description: 'Knowledge graph development',
       visibility: 'private',
-      created_at: '2023-09-20T08:45:00Z',
-      updated_at: '2023-11-05T11:10:00Z',
+      members_count: 3,
       projects_count: 2,
-      members_count: 3
+      updated_at: '2023-11-09T10:15:00Z'
     }
   ];
 
   beforeEach(() => {
-    // Reset mocks before each test
-    jest.resetAllMocks();
-    
-    // Mock the getWorkspaces method
+    jest.clearAllMocks();
     collaborationService.getWorkspaces.mockResolvedValue(mockWorkspaces);
   });
 
   it('renders loading state initially', () => {
-    render(
-      <BrowserRouter>
-        <WorkspaceList />
-      </BrowserRouter>
-    );
-    
+    render(<WorkspaceList />);
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  it('renders workspaces after loading', async () => {
-    render(
-      <BrowserRouter>
-        <WorkspaceList />
-      </BrowserRouter>
-    );
-    
-    // Wait for the workspaces to load
+  it('displays workspaces after loading', async () => {
+    render(<WorkspaceList />);
+
     await waitFor(() => {
-      expect(collaborationService.getWorkspaces).toHaveBeenCalledTimes(1);
+      mockWorkspaces.forEach(workspace => {
+        expect(screen.getByText(workspace.name)).toBeInTheDocument();
+      });
     });
-    
-    // Check if workspace names are displayed
-    expect(screen.getByText('Research AI Integration')).toBeInTheDocument();
-    expect(screen.getByText('Paper Processing Pipeline')).toBeInTheDocument();
-    
-    // Check if the create button is displayed
-    expect(screen.getByText('Create Workspace')).toBeInTheDocument();
   });
 
-  it('displays error message when loading fails', async () => {
-    // Mock the service to return an error
-    collaborationService.getWorkspaces.mockRejectedValue(new Error('Failed to fetch workspaces'));
-    
-    render(
-      <BrowserRouter>
-        <WorkspaceList />
-      </BrowserRouter>
-    );
-    
-    // Wait for the error to appear
+  it('filters workspaces by search query', async () => {
+    render(<WorkspaceList />);
+
+    await waitFor(() => {
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText(/search workspaces/i);
+    await userEvent.type(searchInput, 'graph');
+
+    expect(screen.queryByText('AI Research Integration')).not.toBeInTheDocument();
+    expect(screen.getByText('Knowledge Graph System')).toBeInTheDocument();
+  });
+
+  it('handles API errors gracefully', async () => {
+    const errorMessage = 'Failed to load workspaces';
+    collaborationService.getWorkspaces.mockRejectedValue(new Error(errorMessage));
+
+    render(<WorkspaceList />);
+
     await waitFor(() => {
       expect(screen.getByText(/failed to load workspaces/i)).toBeInTheDocument();
     });

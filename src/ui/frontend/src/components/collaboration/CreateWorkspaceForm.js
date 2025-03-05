@@ -1,260 +1,247 @@
 import React, { useState } from 'react';
-import { 
+import { useNavigate } from 'react-router-dom';
+import {
   Box,
+  Paper,
+  Typography,
   TextField,
   Button,
   FormControl,
   FormLabel,
-  RadioGroup,
   FormControlLabel,
+  RadioGroup,
   Radio,
-  Typography,
+  Stack,
   Chip,
-  Paper,
-  InputAdornment,
-  IconButton,
-  CircularProgress,
   Alert,
-  Stack
+  CircularProgress
 } from '@mui/material';
-import { 
-  Add as AddIcon,
-  Close as CloseIcon,
-  Save as SaveIcon,
-  Cancel as CancelIcon
+import {
+  VisibilityOff as PrivateIcon,
+  Public as PublicIcon,
+  Business as InternalIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
 import collaborationService from '../../services/collaborationService';
 
 /**
- * Form component for creating new collaborative workspaces
+ * Form component for creating new workspaces
  */
-const CreateWorkspaceForm = ({ onSuccess }) => {
+const CreateWorkspaceForm = () => {
   const navigate = useNavigate();
-
+  
   // Form state
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    visibility: 'internal' // Default visibility
+    visibility: 'private',
+    tags: []
   });
-
-  // Tags state
-  const [tags, setTags] = useState([]);
+  
+  // UI state
   const [tagInput, setTagInput] = useState('');
-
-  // Form submission state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  // Handle form input changes
+  // Handle form field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevData => ({
-      ...prevData,
+    setFormData(prev => ({
+      ...prev,
       [name]: value
     }));
   };
 
   // Handle tag input
-  const handleTagInputChange = (e) => {
-    setTagInput(e.target.value);
-  };
-
-  // Add tag when Enter key is pressed
-  const handleTagKeyDown = (e) => {
+  const handleTagInputKeyDown = (e) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault();
-      addTag();
-    }
-  };
-
-  // Add a tag
-  const addTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags(prevTags => [...prevTags, tagInput.trim()]);
+      if (!formData.tags.includes(tagInput.trim())) {
+        setFormData(prev => ({
+          ...prev,
+          tags: [...prev.tags, tagInput.trim()]
+        }));
+      }
       setTagInput('');
     }
   };
 
-  // Delete a tag
-  const deleteTag = (tagToDelete) => {
-    setTags(tags.filter(tag => tag !== tagToDelete));
+  // Remove tag
+  const handleRemoveTag = (tagToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
   };
 
-  // Form validation
-  const isFormValid = () => {
-    return formData.name.trim() !== '' && formData.description.trim() !== '';
-  };
-
-  // Handle form submission
+  // Form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isFormValid()) return;
-
+    
     try {
       setLoading(true);
       setError(null);
-
-      const workspaceData = {
-        ...formData,
-        tags
-      };
-
-      // Call the service to create the workspace
-      const createdWorkspace = await collaborationService.createWorkspace(workspaceData);
       
-      // Handle success
+      // Create workspace
+      const workspace = await collaborationService.createWorkspace(formData);
+      
       setSuccess(true);
       
-      // Notify parent component if callback provided
-      if (onSuccess) {
-        onSuccess(createdWorkspace);
-      }
-      
-      // Navigate to the new workspace after a brief delay
+      // Redirect to the new workspace after a brief delay
       setTimeout(() => {
-        navigate(`/workspaces/${createdWorkspace.id}`);
-      }, 1000);
+        navigate(`/workspaces/${workspace.id}`);
+      }, 1500);
     } catch (err) {
-      setError(err.message || 'Failed to create workspace. Please try again.');
+      setError(err.message);
       console.error('Error creating workspace:', err);
     } finally {
       setLoading(false);
     }
   };
 
+  // Check if form is valid
+  const isValid = formData.name.trim() && formData.description.trim();
+
   return (
-    <Paper sx={{ p: 3 }}>
-      <Typography variant="h5" component="h2" gutterBottom>
+    <Box>
+      <Typography variant="h4" component="h1" gutterBottom>
         Create New Workspace
       </Typography>
       
+      <Typography variant="body1" color="text.secondary" paragraph>
+        Create a workspace to collaborate on research projects with your team
+      </Typography>
+
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
-      
+
       {success && (
         <Alert severity="success" sx={{ mb: 3 }}>
           Workspace created successfully! Redirecting...
         </Alert>
       )}
-      
-      <Box component="form" onSubmit={handleSubmit} noValidate>
-        <TextField
-          name="name"
-          label="Workspace Name"
-          value={formData.name}
-          onChange={handleChange}
-          margin="normal"
-          required
-          fullWidth
-          disabled={loading || success}
-          error={formData.name === '' && formData.name !== undefined}
-          helperText={formData.name === '' && formData.name !== undefined ? "Workspace name is required" : ""}
-        />
-        
-        <TextField
-          name="description"
-          label="Description"
-          value={formData.description}
-          onChange={handleChange}
-          margin="normal"
-          required
-          fullWidth
-          multiline
-          rows={3}
-          disabled={loading || success}
-          error={formData.description === '' && formData.description !== undefined}
-          helperText={formData.description === '' && formData.description !== undefined ? "Description is required" : ""}
-        />
-        
-        <FormControl component="fieldset" margin="normal" disabled={loading || success}>
-          <FormLabel component="legend">Visibility</FormLabel>
-          <RadioGroup
-            name="visibility"
-            value={formData.visibility}
-            onChange={handleChange}
-            sx={{ flexDirection: { xs: 'column', sm: 'row' } }}
-          >
-            <FormControlLabel value="private" control={<Radio />} label="Private" />
-            <FormControlLabel value="internal" control={<Radio />} label="Internal" />
-            <FormControlLabel value="public" control={<Radio />} label="Public" />
-          </RadioGroup>
-        </FormControl>
-        
-        <Box sx={{ mt: 3, mb: 1 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Tags (Optional)
-          </Typography>
-          <TextField
-            value={tagInput}
-            onChange={handleTagInputChange}
-            onKeyDown={handleTagKeyDown}
-            placeholder="Add a tag and press Enter"
-            fullWidth
-            variant="outlined"
-            size="small"
-            disabled={loading || success}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton 
-                    onClick={addTag}
-                    disabled={!tagInput.trim() || loading || success}
-                    edge="end"
-                  >
-                    <AddIcon />
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
-          />
-        </Box>
-        
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 3, mt: 1 }}>
-          {tags.map(tag => (
-            <Chip
-              key={tag}
-              label={tag}
-              onDelete={() => deleteTag(tag)}
-              disabled={loading || success}
-              size="small"
+
+      <Paper sx={{ p: 3 }}>
+        <form onSubmit={handleSubmit}>
+          <Stack spacing={3}>
+            {/* Workspace Name */}
+            <TextField
+              label="Workspace Name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              fullWidth
             />
-          ))}
-          {tags.length === 0 && (
-            <Typography variant="body2" color="text.secondary">
-              No tags added yet
-            </Typography>
-          )}
-        </Box>
-        
-        <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 3 }}>
-          <Button
-            type="button"
-            variant="outlined"
-            color="secondary"
-            startIcon={<CancelIcon />}
-            onClick={() => navigate('/workspaces')}
-            disabled={loading || success}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            startIcon={loading ? <CircularProgress size={24} color="inherit" /> : <SaveIcon />}
-            disabled={!isFormValid() || loading || success}
-          >
-            {loading ? 'Creating...' : 'Create Workspace'}
-          </Button>
-        </Stack>
-      </Box>
-    </Paper>
+
+            {/* Description */}
+            <TextField
+              label="Description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              required
+              multiline
+              rows={3}
+              fullWidth
+            />
+
+            {/* Visibility */}
+            <FormControl>
+              <FormLabel>Visibility</FormLabel>
+              <RadioGroup
+                name="visibility"
+                value={formData.visibility}
+                onChange={handleChange}
+                row
+              >
+                <FormControlLabel
+                  value="private"
+                  control={<Radio />}
+                  label={
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <PrivateIcon fontSize="small" />
+                      <span>Private</span>
+                    </Stack>
+                  }
+                />
+                <FormControlLabel
+                  value="internal"
+                  control={<Radio />}
+                  label={
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <InternalIcon fontSize="small" />
+                      <span>Internal</span>
+                    </Stack>
+                  }
+                />
+                <FormControlLabel
+                  value="public"
+                  control={<Radio />}
+                  label={
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <PublicIcon fontSize="small" />
+                      <span>Public</span>
+                    </Stack>
+                  }
+                />
+              </RadioGroup>
+            </FormControl>
+
+            {/* Tags */}
+            <Box>
+              <TextField
+                label="Tags"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagInputKeyDown}
+                placeholder="Add a tag and press Enter"
+                fullWidth
+                helperText="Press Enter to add a tag"
+              />
+              
+              <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {formData.tags.length > 0 ? (
+                  formData.tags.map(tag => (
+                    <Chip
+                      key={tag}
+                      label={tag}
+                      onDelete={() => handleRemoveTag(tag)}
+                      size="small"
+                    />
+                  ))
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No tags added yet
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+
+            {/* Actions */}
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+              <Button
+                type="button"
+                onClick={() => navigate('/workspaces')}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={!isValid || loading}
+                startIcon={loading && <CircularProgress size={20} />}
+              >
+                Create Workspace
+              </Button>
+            </Box>
+          </Stack>
+        </form>
+      </Paper>
+    </Box>
   );
 };
 

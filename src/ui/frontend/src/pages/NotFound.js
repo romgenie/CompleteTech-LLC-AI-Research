@@ -1,41 +1,53 @@
 import React from 'react';
-import { Box, Typography, Button, Container, Paper } from '@mui/material';
-import { Home as HomeIcon } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
+import {
+  Box,
+  Container,
+  Typography,
+  Button,
+  Paper
+} from '@mui/material';
+import { Error as ErrorIcon } from '@mui/icons-material';
 
 /**
- * NotFound page component for 404 errors
+ * 404 Not Found page component
  */
 const NotFound = () => {
   return (
     <Container maxWidth="md">
-      <Paper sx={{ 
-        p: 5, 
-        mt: 5, 
-        textAlign: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center'
-      }}>
-        <Typography variant="h1" component="h1" sx={{ fontSize: '6rem', color: 'primary.main' }}>
-          404
+      <Paper 
+        sx={{ 
+          p: 6,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center'
+        }}
+      >
+        <ErrorIcon 
+          color="error" 
+          sx={{ fontSize: 64, mb: 2 }} 
+        />
+        
+        <Typography variant="h3" component="h1" gutterBottom>
+          404: Page Not Found
         </Typography>
-        <Typography variant="h4" component="h2" gutterBottom>
-          Page Not Found
-        </Typography>
+        
         <Typography variant="body1" color="text.secondary" paragraph>
-          The page you are looking for does not exist or has been moved.
+          The page you are looking for might have been removed, had its name changed,
+          or is temporarily unavailable.
         </Typography>
-        <Button 
-          component={RouterLink} 
-          to="/" 
-          variant="contained" 
-          startIcon={<HomeIcon />}
-          size="large"
-          sx={{ mt: 2 }}
-        >
-          Back to Home
-        </Button>
+        
+        <Box sx={{ mt: 4 }}>
+          <Button
+            component={RouterLink}
+            to="/workspaces"
+            variant="contained"
+            size="large"
+          >
+            Return to Workspaces
+          </Button>
+        </Box>
       </Paper>
     </Container>
   );

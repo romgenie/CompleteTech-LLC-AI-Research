@@ -17,6 +17,7 @@ import ResearchRecommendationCard from './ResearchRecommendationCard';
 import ResearchRecommendationList from './ResearchRecommendationList';
 import ResearchInsightCard from './ResearchInsightCard';
 import ResearchInsightList from './ResearchInsightList';
+import Pagination from './Pagination';
 import { TagInput, TagList, TagFilter, TagManager } from './Tags';
 
 export {
@@ -39,6 +40,7 @@ export {
   ResearchRecommendationList,
   ResearchInsightCard,
   ResearchInsightList,
+  Pagination,
   TagInput,
   TagList,
   TagFilter,

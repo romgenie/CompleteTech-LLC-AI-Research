@@ -1,12 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  Container, 
   Typography, 
   Box, 
   TextField, 
   Button, 
-  Card, 
-  CardContent, 
   Divider,
   CircularProgress,
   Grid,
@@ -16,13 +13,15 @@ import {
   ListItemText,
   Alert,
   Tabs,
-  Tab
+  Tab,
+  useTheme
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
-import HistoryIcon from '@mui/icons-material/History';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import researchService from '../services/researchService';
+import paginationService from '../services/paginationService';
+import { Pagination } from '../components';
 
 // Panel for the content of each tab
 function TabPanel({ children, value, index, ...other }) {
@@ -44,38 +43,45 @@ function TabPanel({ children, value, index, ...other }) {
 }
 
 const ResearchPage = () => {
+  const theme = useTheme();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState(null);
   const [tabValue, setTabValue] = useState(0);
-  const [savedQueries, setSavedQueries] = useState([]);
-  const [queryHistory, setQueryHistory] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
 
-  // Fetch saved queries and history on component mount
-  useEffect(() => {
-    const fetchSavedQueries = async () => {
-      try {
-        const data = await researchService.getSavedQueries();
-        setSavedQueries(data);
-      } catch (err) {
-        console.error('Error fetching saved queries:', err);
-      }
-    };
+  // Use paginated queries for history and saved queries
+  const {
+    data: historyData,
+    isLoading: historyLoading,
+    error: historyError,
+    pagination: historyPagination
+  } = paginationService.useResearchData({
+    initialPage: 1,
+    initialPageSize: 10,
+    sortField: 'timestamp',
+    sortDirection: 'desc',
+    requestConfig: {
+      params: { type: 'history' }
+    }
+  });
 
-    const fetchQueryHistory = async () => {
-      try {
-        const data = await researchService.getQueryHistory();
-        setQueryHistory(data);
-      } catch (err) {
-        console.error('Error fetching query history:', err);
-      }
-    };
-
-    fetchSavedQueries();
-    fetchQueryHistory();
-  }, []);
+  // Saved queries with pagination
+  const {
+    data: savedQueriesData,
+    isLoading: savedQueriesLoading,
+    error: savedQueriesError,
+    pagination: savedQueriesPagination
+  } = paginationService.useResearchData({
+    initialPage: 1,
+    initialPageSize: 10,
+    sortField: 'timestamp',
+    sortDirection: 'desc',
+    requestConfig: {
+      params: { type: 'saved' }
+    }
+  });
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -84,26 +90,26 @@ const ResearchPage = () => {
   const handleSearch = async () => {
     if (!query.trim()) return;
 
-    setLoading(true);
-    setError(null);
+    setSearchLoading(true);
+    setSearchError(null);
     try {
       const data = await researchService.conductResearch(query);
       setResults(data.results);
       
-      // Update history in state
-      setQueryHistory(prev => [{ query, timestamp: new Date().toISOString() }, ...prev]);
+      // Real API would update the history automatically
+      // We don't need to update the history state manually here, 
+      // as the paginated query will refetch
     } catch (err) {
       console.error('Research error:', err);
       
       // Use mock data for demonstration purposes
       const mockData = researchService.getMockResults();
       setResults(mockData.results);
-      setQueryHistory(prev => [{ query, timestamp: new Date().toISOString() }, ...prev]);
       
       // Still show the error to indicate we're using mock data
-      setError('Using mock data for demonstration. In production, this would call the actual API.');
+      setSearchError('Using mock data for demonstration. In production, this would call the actual API.');
     } finally {
-      setLoading(false);
+      setSearchLoading(false);
     }
   };
 
@@ -112,7 +118,8 @@ const ResearchPage = () => {
     
     try {
       await researchService.saveQuery(query);
-      setSavedQueries(prev => [{ query, timestamp: new Date().toISOString() }, ...prev]);
+      // Refresh saved queries after saving
+      savedQueriesPagination.goToPage(1);
     } catch (err) {
       console.error('Error saving query:', err);
     }
@@ -123,7 +130,7 @@ const ResearchPage = () => {
   };
 
   const renderResultsList = () => {
-    if (loading) {
+    if (searchLoading) {
       return (
         <Box display="flex" justifyContent="center" p={3}>
           <CircularProgress />
@@ -131,10 +138,10 @@ const ResearchPage = () => {
       );
     }
 
-    if (error) {
+    if (searchError) {
       return (
         <Alert severity="error" sx={{ mt: 2 }}>
-          {error}
+          {searchError}
         </Alert>
       );
     }
@@ -197,8 +204,9 @@ const ResearchPage = () => {
               onClick={handleSearch}
               sx={{ height: '56px' }}
               startIcon={<SearchIcon />}
+              disabled={searchLoading}
             >
-              Search
+              {searchLoading ? <CircularProgress size={24} /> : 'Search'}
             </Button>
           </Grid>
           <Grid item xs={6} md={1}>
@@ -223,54 +231,104 @@ const ResearchPage = () => {
       </Box>
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
-          <Paper variant="outlined" sx={{ height: '70vh', overflowY: 'auto' }}>
-            <TabPanel value={tabValue} index={0}>
-              {renderResultsList()}
-            </TabPanel>
-            <TabPanel value={tabValue} index={1}>
-              <List>
-                {savedQueries.length ? (
-                  savedQueries.map((item, index) => (
-                    <ListItem 
-                      button 
-                      key={index}
-                      onClick={() => setQuery(item.query)}
-                    >
-                      <ListItemText 
-                        primary={item.query} 
-                        secondary={new Date(item.timestamp).toLocaleDateString()} 
-                      />
-                    </ListItem>
-                  ))
+          <Paper variant="outlined" sx={{ height: '70vh', display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
+              <TabPanel value={tabValue} index={0}>
+                {renderResultsList()}
+              </TabPanel>
+              <TabPanel value={tabValue} index={1}>
+                {savedQueriesLoading ? (
+                  <Box display="flex" justifyContent="center" p={3}>
+                    <CircularProgress />
+                  </Box>
+                ) : savedQueriesError ? (
+                  <Alert severity="error" sx={{ m: 2 }}>
+                    Error loading saved queries
+                  </Alert>
+                ) : savedQueriesData?.items?.length ? (
+                  <List>
+                    {savedQueriesData.items.map((item, index) => (
+                      <ListItem 
+                        button 
+                        key={item.id || index}
+                        onClick={() => setQuery(item.query)}
+                      >
+                        <ListItemText 
+                          primary={item.query} 
+                          secondary={new Date(item.timestamp).toLocaleDateString()} 
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
                 ) : (
-                  <Typography variant="body1" color="text.secondary">
+                  <Typography variant="body1" color="text.secondary" sx={{ p: 2 }}>
                     No saved queries yet.
                   </Typography>
                 )}
-              </List>
-            </TabPanel>
-            <TabPanel value={tabValue} index={2}>
-              <List>
-                {queryHistory.length ? (
-                  queryHistory.map((item, index) => (
-                    <ListItem 
-                      button 
-                      key={index}
-                      onClick={() => setQuery(item.query)}
-                    >
-                      <ListItemText 
-                        primary={item.query} 
-                        secondary={new Date(item.timestamp).toLocaleDateString()} 
-                      />
-                    </ListItem>
-                  ))
+                
+                {/* Pagination for saved queries */}
+                {savedQueriesData && savedQueriesData.total > 0 && (
+                  <Box sx={{ mx: 2 }}>
+                    <Pagination
+                      page={savedQueriesPagination.page}
+                      pageSize={savedQueriesPagination.pageSize}
+                      total={savedQueriesData.total}
+                      totalPages={savedQueriesData.totalPages}
+                      onPageChange={savedQueriesPagination.goToPage}
+                      onPageSizeChange={savedQueriesPagination.setPageSize}
+                      loading={savedQueriesLoading}
+                      compact={true}
+                    />
+                  </Box>
+                )}
+              </TabPanel>
+              <TabPanel value={tabValue} index={2}>
+                {historyLoading ? (
+                  <Box display="flex" justifyContent="center" p={3}>
+                    <CircularProgress />
+                  </Box>
+                ) : historyError ? (
+                  <Alert severity="error" sx={{ m: 2 }}>
+                    Error loading history
+                  </Alert>
+                ) : historyData?.items?.length ? (
+                  <List>
+                    {historyData.items.map((item, index) => (
+                      <ListItem 
+                        button 
+                        key={item.id || index}
+                        onClick={() => setQuery(item.query)}
+                      >
+                        <ListItemText 
+                          primary={item.query} 
+                          secondary={new Date(item.timestamp).toLocaleDateString()} 
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
                 ) : (
-                  <Typography variant="body1" color="text.secondary">
+                  <Typography variant="body1" color="text.secondary" sx={{ p: 2 }}>
                     No query history yet.
                   </Typography>
                 )}
-              </List>
-            </TabPanel>
+                
+                {/* Pagination for history */}
+                {historyData && historyData.total > 0 && (
+                  <Box sx={{ mx: 2 }}>
+                    <Pagination
+                      page={historyPagination.page}
+                      pageSize={historyPagination.pageSize}
+                      total={historyData.total}
+                      totalPages={historyData.totalPages}
+                      onPageChange={historyPagination.goToPage}
+                      onPageSizeChange={historyPagination.setPageSize}
+                      loading={historyLoading}
+                      compact={true}
+                    />
+                  </Box>
+                )}
+              </TabPanel>
+            </Box>
           </Paper>
         </Grid>
         <Grid item xs={12} md={8}>
@@ -304,11 +362,12 @@ const ResearchPage = () => {
                 <Typography variant="h6" color="text.secondary">
                   Select a research result to view
                 </Typography>
-                <Alert severity="info" sx={{ mt: 3, maxWidth: 400 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Integration Status:</Typography>
+                <Alert severity="info" sx={{ mt: 3, maxWidth: 550 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Server-Side Pagination Implementation:</Typography>
                   <Typography variant="body2">
-                    The Research Assistant is integrated with the Paper Processing Pipeline foundation,
-                    allowing seamless connections between research queries and paper analysis.
+                    This page now demonstrates server-side pagination for research history and saved queries.
+                    The pagination system efficiently handles large datasets by fetching only the current page
+                    of data from the server, with prefetching for smooth navigation.
                   </Typography>
                 </Alert>
               </Box>

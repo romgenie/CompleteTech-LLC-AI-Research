@@ -1,145 +1,42 @@
-import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';
+import { 
+  BrowserRouter, 
+  Routes, 
+  Route,
+  Navigate,
+  useRoutes
+} from 'react-router-dom';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
 
-import { ErrorBoundary, LoadingFallback } from './components';
-import Layout from './components/Layout';
-import ProtectedRoute from './components/ProtectedRoute';
-import { useAuth } from './contexts/AuthContext';
+// Import theme
+import theme from './theme';
 
-// Lazy load pages for better performance
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Login = lazy(() => import('./pages/Login'));
-const ResearchPage = lazy(() => import('./pages/ResearchPage'));
-const ResearchPageOptimized = lazy(() => import('./pages/ResearchPageOptimized'));
-const ResearchStatsPage = lazy(() => import('./pages/ResearchStatsPage'));
-const ResearchRecommendationsPage = lazy(() => import('./pages/ResearchRecommendationsPage'));
-const TagManagementPage = lazy(() => import('./pages/TagManagementPage'));
-// KnowledgeGraphPage is now working with JavaScript
-const KnowledgeGraphPage = lazy(() => import('./pages/KnowledgeGraphPage'));
-const ImplementationPage = lazy(() => import('./pages/ImplementationPage'));
-const NotFound = lazy(() => import('./pages/NotFound'));
+// Import routes configuration
+import routes from './routes';
 
-// Collaboration pages
-const WorkspacesPage = lazy(() => import('./pages/WorkspacesPage'));
-const WorkspaceDetailPage = lazy(() => import('./pages/WorkspaceDetailPage'));
-const ProjectVersionsPage = lazy(() => import('./pages/ProjectVersionsPage'));
-
-function App() {
-  const { loading } = useAuth();
-
-  if (loading) {
-    return <LoadingFallback fullPage message="Loading application..." />;
-  }
-
+/**
+ * Main App component that sets up routing and theming
+ */
+const App = () => {
   return (
-    <div className="app-container">
-      <ErrorBoundary errorTitle="Application Error">
-        <Suspense fallback={<LoadingFallback fullPage />}>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
-            
-            {/* Protected Routes */}
-            <Route element={<Layout />}>
-              <Route 
-                path="/" 
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/research" 
-                element={
-                  <ProtectedRoute>
-                    <ResearchPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/research/optimized" 
-                element={
-                  <ProtectedRoute>
-                    <ResearchPageOptimized />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/research/stats" 
-                element={
-                  <ProtectedRoute>
-                    <ResearchStatsPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/research/tags" 
-                element={
-                  <ProtectedRoute>
-                    <TagManagementPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/research/recommendations" 
-                element={
-                  <ProtectedRoute>
-                    <ResearchRecommendationsPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/knowledge-graph" 
-                element={
-                  <ProtectedRoute>
-                    <KnowledgeGraphPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/implementation" 
-                element={
-                  <ProtectedRoute>
-                    <ImplementationPage />
-                  </ProtectedRoute>
-                } 
-              />
-              {/* Collaboration Routes */}
-              <Route 
-                path="/workspaces" 
-                element={
-                  <ProtectedRoute>
-                    <WorkspacesPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/workspaces/:workspaceId" 
-                element={
-                  <ProtectedRoute>
-                    <WorkspaceDetailPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/workspaces/:workspaceId/projects/:projectId/versions" 
-                element={
-                  <ProtectedRoute>
-                    <ProjectVersionsPage />
-                  </ProtectedRoute>
-                } 
-              />
-            </Route>
-
-            {/* Not Found and Redirect */}
-            <Route path="/404" element={<NotFound />} />
-            <Route path="*" element={<Navigate to="/404" replace />} />
-          </Routes>
-        </Suspense>
-      </ErrorBoundary>
-    </div>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </ThemeProvider>
   );
-}
+};
+
+/**
+ * Component to render routes from configuration
+ */
+const AppRoutes = () => {
+  // Use the routes configuration to generate React Router routes
+  const routeElements = useRoutes(routes);
+  
+  return routeElements;
+};
 
 export default App;

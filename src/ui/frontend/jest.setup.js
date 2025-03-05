@@ -1,8 +1,8 @@
 // Add fetch polyfill for tests
-import 'whatwg-fetch';
+require('whatwg-fetch');
 
 // Add testing-library jest-dom matchers
-import '@testing-library/jest-dom';
+require('@testing-library/jest-dom');
 
 // Suppress console errors/warnings in tests
 const originalConsoleError = console.error;

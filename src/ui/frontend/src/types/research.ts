@@ -57,6 +57,94 @@ export interface Tag {
   color?: string;
   description?: string;
   count?: number; // Number of items with this tag
+  parentId?: string | null; // ID of parent tag if this is a child tag
+  children?: string[]; // IDs of child tags
+  level?: number; // Hierarchy level (0 for root tags)
+  path?: string; // Full path of the tag (e.g., "AI/Machine Learning/NLP")
+  inheritedFrom?: string[]; // IDs of tags from which properties are inherited
+  
+  // Collaboration properties
+  owner?: string; // User ID of tag owner
+  visibility: TagVisibility; // Public, private, or shared
+  sharedWith?: SharedWith[]; // Users or groups this tag is shared with
+  isGlobal?: boolean; // Whether this tag is available to all users
+  taxonomyId?: string; // ID of the taxonomy this tag belongs to
+  usageCount?: number; // How many users have used this tag
+  popularity?: number; // Calculated score based on usage
+  suggestedBy?: string; // System or user ID that suggested this tag
+  lastUsed?: string; // Timestamp when the tag was last used
+}
+
+// Visibility options for tags
+export type TagVisibility = 'private' | 'public' | 'shared';
+
+// Sharing permissions
+export interface SharedWith {
+  id: string; // User or group ID
+  type: 'user' | 'group' | 'team'; // Type of entity
+  permission: 'view' | 'use' | 'edit' | 'admin'; // Permission level
+}
+
+// Taxonomy for organizing tags
+export interface Taxonomy {
+  id: string;
+  name: string;
+  description?: string;
+  owner: string; // User ID
+  visibility: TagVisibility;
+  sharedWith?: SharedWith[];
+  rootTags: string[]; // IDs of top-level tags
+  isOfficial?: boolean; // Whether this is an official/curated taxonomy
+  domain?: string; // Domain this taxonomy is related to (e.g. "machine learning")
+  createdAt: string;
+  updatedAt?: string;
+  version?: string;
+}
+
+// Tag suggestion model
+export interface TagSuggestion {
+  id: string;
+  tagId?: string; // ID of existing tag if suggestion is for an existing tag
+  name: string;
+  parentId?: string; // Suggested parent tag
+  taxonomy?: string; // Suggested taxonomy
+  reason: 'similarity' | 'popularity' | 'cooccurrence' | 'system' | 'user';
+  confidence: number; // 0-1 score
+  source?: string; // ID of user or system that generated the suggestion
+  expiresAt?: string; // When this suggestion expires
+}
+
+// Community tag usage statistics
+export interface TagUsageStats {
+  tagId: string;
+  userCount: number; // Number of users using this tag
+  itemCount: number; // Number of items tagged
+  dailyUse?: {date: string, count: number}[]; // Usage trend
+  relatedTags: {tagId: string, cooccurrence: number}[]; // Tags often used together
+  trend: 'rising' | 'stable' | 'falling'; // Popularity trend
+}
+
+// Tag conflict resolution for competing hierarchies
+export interface TagConflict {
+  id: string;
+  tagId: string;
+  conflictType: 'hierarchy' | 'name' | 'classification' | 'duplicate';
+  description: string;
+  options: TagConflictOption[];
+  resolved: boolean;
+  selectedOption?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+// Resolution options for tag conflicts
+export interface TagConflictOption {
+  id: string;
+  description: string;
+  action: 'merge' | 'move' | 'rename' | 'split' | 'keep';
+  tagIds: string[]; // Tags affected by this option
+  newParentId?: string; // For move action
+  newName?: string; // For rename action
 }
 
 // Research history item
