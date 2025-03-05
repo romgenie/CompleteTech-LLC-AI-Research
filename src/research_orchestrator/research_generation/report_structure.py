@@ -7,7 +7,7 @@ determining appropriate sections, and organizing content in a logical flow.
 
 import logging
 from enum import Enum, auto
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, Union
 import json
 import os
 from pathlib import Path
