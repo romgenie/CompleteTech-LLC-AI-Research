@@ -10,9 +10,9 @@ import shutil
 from typing import Dict, List, Any
 from unittest.mock import MagicMock, patch
 
-from research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
-from research_orchestrator.knowledge_extraction.entity_recognition.entity_recognizer import Entity
-from research_orchestrator.knowledge_extraction.relationship_extraction.relationship_extractor import Relationship
+from src.research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
+from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
+from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
 
 
 class TestKnowledgeExtractor(unittest.TestCase):
@@ -30,24 +30,45 @@ class TestKnowledgeExtractor(unittest.TestCase):
         # Create mock entity recognizer
         self.mock_entity_recognizer = MagicMock()
         self.mock_entities = [
-            Entity("e1", "GPT-4", "model", 0.95, 0, 5, {}),
-            Entity("e2", "large dataset", "dataset", 0.8, 20, 33, {}),
-            Entity("e3", "MMLU", "benchmark", 0.9, 48, 52, {}),
-            Entity("e4", "accuracy", "metric", 0.85, 77, 85, {}),
-            Entity("e5", "GPT-3", "model", 0.9, 120, 125, {})
+            Entity(text="GPT-4", type=EntityType.MODEL, confidence=0.95, start_pos=0, end_pos=5, metadata={}, id="e1"),
+            Entity(text="large dataset", type=EntityType.DATASET, confidence=0.8, start_pos=20, end_pos=33, metadata={}, id="e2"),
+            Entity(text="MMLU", type=EntityType.BENCHMARK, confidence=0.9, start_pos=48, end_pos=52, metadata={}, id="e3"),
+            Entity(text="accuracy", type=EntityType.METRIC, confidence=0.85, start_pos=77, end_pos=85, metadata={}, id="e4"),
+            Entity(text="GPT-3", type=EntityType.MODEL, confidence=0.9, start_pos=120, end_pos=125, metadata={}, id="e5")
         ]
-        self.mock_entity_recognizer.recognize_entities.return_value = self.mock_entities
+        self.mock_entity_recognizer.recognize.return_value = self.mock_entities
         self.mock_entity_recognizer.filter_entities.return_value = self.mock_entities
         
         # Create mock relationship extractor
         self.mock_relationship_extractor = MagicMock()
         self.mock_relationships = [
-            Relationship("r1", self.mock_entities[0], self.mock_entities[1], "trained_on", 0.9, 
-                        "GPT-4 was trained on a large dataset", {}),
-            Relationship("r2", self.mock_entities[0], self.mock_entities[2], "evaluated_on", 0.85, 
-                        "GPT-4 was evaluated on MMLU benchmark", {}),
-            Relationship("r3", self.mock_entities[0], self.mock_entities[4], "outperforms", 0.8, 
-                        "GPT-4 outperforming previous models like GPT-3", {})
+            Relationship(
+                source=self.mock_entities[0], 
+                target=self.mock_entities[1], 
+                relation_type=RelationType.TRAINED_ON, 
+                confidence=0.9, 
+                context="GPT-4 was trained on a large dataset", 
+                metadata={},
+                id="r1"
+            ),
+            Relationship(
+                source=self.mock_entities[0], 
+                target=self.mock_entities[2], 
+                relation_type=RelationType.EVALUATED_ON, 
+                confidence=0.85, 
+                context="GPT-4 was evaluated on MMLU benchmark", 
+                metadata={},
+                id="r2"
+            ),
+            Relationship(
+                source=self.mock_entities[0], 
+                target=self.mock_entities[4], 
+                relation_type=RelationType.OUTPERFORMS, 
+                confidence=0.8, 
+                context="GPT-4 outperforming previous models like GPT-3", 
+                metadata={},
+                id="r3"
+            )
         ]
         self.mock_relationship_extractor.extract_relationships.return_value = self.mock_relationships
         self.mock_relationship_extractor.filter_relationships.return_value = self.mock_relationships
@@ -163,11 +184,11 @@ class TestKnowledgeExtractor(unittest.TestCase):
     
     def test_extract_knowledge(self):
         """Test extracting knowledge from a document."""
-        result = self.knowledge_extractor.extract_knowledge("test.pdf", self.temp_dir)
+        result = self.knowledge_extractor.extract_from_document("test.pdf")
         
         # Check that the document processor, entity recognizer, and relationship extractor were called
         self.mock_document_processor.process.assert_called_once()
-        self.mock_entity_recognizer.recognize_entities.assert_called_once()
+        self.mock_entity_recognizer.recognize.assert_called_once()
         self.mock_relationship_extractor.extract_relationships.assert_called_once()
         
         # Check that the result has the right structure
