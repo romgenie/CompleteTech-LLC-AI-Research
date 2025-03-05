@@ -327,8 +327,10 @@ export function calculateLevelOfDetail(scale: number, nodeCount: number): {
   nodeBorderWidth: number;
   linkOpacity: number;
   labelFontSize: number;
+  nodeOpacity: number;
+  nodeRadiusMultiplier: number;
 } {
-  // Base thresholds
+  // Base thresholds - adjusted dynamically based on graph size
   const labelThreshold = nodeCount > 1000 ? 1.5 : nodeCount > 500 ? 1.2 : 0.8;
   const relationshipLabelThreshold = nodeCount > 1000 ? 3.0 : nodeCount > 500 ? 2.5 : 2.0;
   
@@ -339,16 +341,30 @@ export function calculateLevelOfDetail(scale: number, nodeCount: number): {
   // Adjust opacity - links become more transparent when zoomed out
   const linkOpacity = scale < 0.5 ? 0.3 : scale < 1 ? 0.5 : 0.7;
   
-  // Adjust font size
+  // Adjust node opacity for better performance with large graphs
+  const nodeOpacity = nodeCount > 2000 
+    ? (scale < 0.5 ? 0.7 : 0.9) 
+    : nodeCount > 1000 
+      ? (scale < 0.7 ? 0.8 : 1.0) 
+      : 1.0;
+  
+  // Adjust font size based on zoom level
   const baseFontSize = 10;
-  const labelFontSize = scale > 2 ? baseFontSize : baseFontSize * Math.max(0.8, scale);
+  const labelFontSize = scale > 2 
+    ? baseFontSize 
+    : baseFontSize * Math.max(0.8, scale);
+  
+  // Adjust node radius based on zoom (for visual consistency)
+  const nodeRadiusMultiplier = 1 / Math.sqrt(Math.max(0.1, scale));
   
   return {
     showLabels: scale > labelThreshold,
     showRelationshipLabels: scale > relationshipLabelThreshold,
     nodeBorderWidth,
     linkOpacity,
-    labelFontSize
+    labelFontSize,
+    nodeOpacity,
+    nodeRadiusMultiplier
   };
 }
 
@@ -366,6 +382,14 @@ export function createNodeIndexMap(nodes: Entity[]): Map<string, number> {
   });
   
   return indexMap;
+}
+
+/**
+ * Node focus information for keyboard navigation
+ */
+export interface NodeFocusInfo {
+  id: string;
+  index: number;
 }
 
 /**

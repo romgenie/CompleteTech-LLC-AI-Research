@@ -137,6 +137,14 @@ export interface Entity {
   importance?: number;
   year?: number | string;
   color?: string;
+  // D3 force simulation properties
+  x?: number;
+  y?: number;
+  vx?: number;
+  vy?: number;
+  fx?: number | null;
+  fy?: number | null;
+  index?: number;
 }
 
 export interface Relationship {
@@ -147,6 +155,7 @@ export interface Relationship {
   properties?: Record<string, any>;
   weight?: number;
   confidence?: number;
+  index?: number;
 }
 
 export interface Graph {
