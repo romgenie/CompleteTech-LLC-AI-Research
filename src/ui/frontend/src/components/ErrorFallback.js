@@ -11,7 +11,8 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
  */
 const ErrorFallback = ({
   error,
-  resetErrorBoundary,
+  reset, // This matches what ErrorBoundary passes
+  resetErrorBoundary, // For compatibility with react-error-boundary
   title = 'Error',
   message = 'An unexpected error occurred.',
   showResetButton = true,
@@ -20,6 +21,8 @@ const ErrorFallback = ({
   fullPage = false,
   icon = true
 }) => {
+  // Use either reset function that's provided
+  const handleReset = reset || resetErrorBoundary;
   return (
     <Box
       sx={{
@@ -73,11 +76,11 @@ const ErrorFallback = ({
           </Box>
         )}
         
-        {showResetButton && resetErrorBoundary && (
+        {showResetButton && handleReset && (
           <Button
             variant="contained"
             color="primary"
-            onClick={resetErrorBoundary}
+            onClick={handleReset}
             sx={{ mt: 3 }}
           >
             {resetButtonText}
@@ -92,7 +95,10 @@ ErrorFallback.propTypes = {
   /** The error that occurred */
   error: PropTypes.any,
   
-  /** Function to reset the error state */
+  /** Function to reset the error state (from ErrorBoundary) */
+  reset: PropTypes.func,
+  
+  /** Function to reset the error state (from react-error-boundary) */
   resetErrorBoundary: PropTypes.func,
   
   /** Title of the error display */

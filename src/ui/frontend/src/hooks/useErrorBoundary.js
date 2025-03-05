@@ -45,9 +45,8 @@ class ErrorBoundary extends Component {
     if (hasError) {
       // Check if a custom fallback component was provided
       if (fallback) {
+        // Simple fallback that doesn't use the error props
         return React.cloneElement(fallback, {
-          error,
-          errorInfo,
           reset: this.reset
         });
       }
@@ -84,9 +83,9 @@ ErrorBoundary.propTypes = {
  * This is just a convenience hook to use the ErrorBoundary component
  * 
  * @param {Object} options - Options for the error boundary
- * @param {React.Element} options.fallback - Custom fallback component
- * @param {Function} options.onError - Error callback function
- * @returns {Component} - Error boundary component
+ * @param {React.ReactElement} options.fallback - Fallback component to show on error
+ * @param {Function} options.onError - Error callback
+ * @returns {React.ComponentType} Error boundary component
  */
 function useErrorBoundary(options = {}) {
   const { fallback, onError } = options;
@@ -96,7 +95,7 @@ function useErrorBoundary(options = {}) {
       {children}
     </ErrorBoundary>
   );
-  
+
   ErrorBoundaryWrapper.propTypes = {
     children: PropTypes.node.isRequired
   };

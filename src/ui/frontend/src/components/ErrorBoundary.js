@@ -66,8 +66,6 @@ class ErrorBoundary extends Component {
       // Check if a custom fallback component was provided
       if (fallback) {
         return React.cloneElement(fallback, {
-          error,
-          errorInfo,
           reset: this.handleReset
         });
       }
@@ -76,105 +74,91 @@ class ErrorBoundary extends Component {
       return (
         <Box 
           sx={{
+            p: 3,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            p: 3,
-            m: 2,
-            maxWidth: '100%'
+            bgcolor: 'background.paper',
+            borderRadius: 1
           }}
         >
-          <Paper 
-            elevation={3}
-            sx={{
-              p: 4,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              maxWidth: '600px',
-              width: '100%'
-            }}
-          >
-            <ErrorOutlineIcon color="error" sx={{ fontSize: 60, mb: 2 }} />
-            
-            <Typography variant="h5" component="h2" align="center" gutterBottom>
-              {errorTitle}
-            </Typography>
-            
-            <Typography variant="body1" align="center" color="text.secondary" paragraph>
-              An unexpected error occurred in the application. 
-              {showReset && " Please try again or contact support if the problem persists."}
-            </Typography>
-            
-            {process.env.NODE_ENV === 'development' && (
-              <>
-                <Divider sx={{ width: '100%', my: 2 }} />
-                <Box 
-                  sx={{
-                    mt: 2,
-                    p: 2,
-                    bgcolor: 'grey.100',
-                    borderRadius: 1,
-                    width: '100%',
-                    overflow: 'auto'
-                  }}
-                >
+          <ErrorOutlineIcon color="error" sx={{ fontSize: 60, mb: 2 }} />
+          <Typography variant="h5" component="h2" gutterBottom>
+            {errorTitle}
+          </Typography>
+          
+          {process.env.NODE_ENV === 'development' && (
+            <Paper 
+              variant="outlined" 
+              sx={{ 
+                p: 2, 
+                mt: 2, 
+                width: '100%', 
+                overflow: 'auto', 
+                maxHeight: '300px' 
+              }}
+            >
+              <Typography variant="subtitle2" gutterBottom>
+                Error Details:
+              </Typography>
+              <Typography variant="body2" component="pre" sx={{ fontSize: '0.8rem' }}>
+                {error && error.toString()}
+              </Typography>
+              
+              {errorInfo && (
+                <>
+                  <Divider sx={{ my: 2 }} />
                   <Typography variant="subtitle2" gutterBottom>
-                    Error Details (Development Only):
+                    Component Stack:
                   </Typography>
-                  <Typography variant="body2" component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
-                    {error && error.toString()}
+                  <Typography variant="body2" component="pre" sx={{ fontSize: '0.8rem' }}>
+                    {errorInfo.componentStack}
                   </Typography>
-                  {errorInfo && (
-                    <Typography variant="body2" component="pre" sx={{ mt: 2, whiteSpace: 'pre-wrap' }}>
-                      {errorInfo.componentStack}
-                    </Typography>
-                  )}
-                </Box>
-              </>
-            )}
-            
-            {showReset && (
-              <Button 
-                variant="contained" 
-                color="primary" 
-                onClick={this.handleReset}
-                sx={{ mt: 3 }}
-              >
-                {resetButtonText}
-              </Button>
-            )}
-          </Paper>
+                </>
+              )}
+            </Paper>
+          )}
+          
+          {showReset && (
+            <Button 
+              variant="contained" 
+              color="primary" 
+              onClick={this.handleReset}
+              sx={{ mt: 3 }}
+            >
+              {resetButtonText}
+            </Button>
+          )}
         </Box>
       );
     }
 
+    // No error, render children
     return children;
   }
 }
 
 ErrorBoundary.propTypes = {
-  /** Content to render when no error is present */
+  /** Children to render when there's no error */
   children: PropTypes.node.isRequired,
   
   /** Custom component to render when an error occurs */
   fallback: PropTypes.element,
   
+  /** Whether to show reset button */
+  showReset: PropTypes.bool,
+  
+  /** Text for reset button */
+  resetButtonText: PropTypes.string,
+  
+  /** Title for the error message */
+  errorTitle: PropTypes.string,
+  
   /** Callback function when an error occurs */
   onError: PropTypes.func,
   
-  /** Callback function when reset is triggered */
-  onReset: PropTypes.func,
-  
-  /** Whether to show the reset button */
-  showReset: PropTypes.bool,
-  
-  /** Text for the reset button */
-  resetButtonText: PropTypes.string,
-  
-  /** Title text for the error message */
-  errorTitle: PropTypes.string
+  /** Callback function when reset button is clicked */
+  onReset: PropTypes.func
 };
 
 export default ErrorBoundary;

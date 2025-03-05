@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Container,
   Typography,
@@ -28,8 +28,6 @@ import {
   Slider,
   Tooltip,
   IconButton,
-  Snackbar,
-  Portal
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -37,17 +35,18 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoIcon from '@mui/icons-material/Info';
 import DownloadIcon from '@mui/icons-material/Download';
 import ShareIcon from '@mui/icons-material/Share';
-import AccessibilityIcon from '@mui/icons-material/Accessibility';
 import SpeedIcon from '@mui/icons-material/Speed';
 import * as d3 from 'd3';
 import knowledgeGraphService from '../services/knowledgeGraphService';
+import { useSvgD3 } from '../hooks/useD3';
 import { 
   getFilteredNodes, 
   createNodeSizeScale, 
-  calculateLevelOfDetail,
+  countNodeConnections, 
   createOptimizedForceParameters,
-  getNavigableNode,
-  findRelatedNodes
+  generateTestData,
+  calculateLevelOfDetail,
+  getNavigableNode
 } from '../utils/graphUtils';
 import KnowledgeGraphAccessibility from '../components/KnowledgeGraphAccessibility';
 
@@ -63,6 +62,7 @@ const KnowledgeGraphPage = () => {
   const [error, setError] = useState(null);
   const [entityType, setEntityType] = useState('all');
   const [graphData, setGraphData] = useState(null);
+  const [filteredGraphData, setFilteredGraphData] = useState(null);
   
   // Visualization settings
   const [advancedSearchOpen, setAdvancedSearchOpen] = useState(false);
@@ -76,22 +76,10 @@ const KnowledgeGraphPage = () => {
     showRelationshipLabels: false,
     timeBasedLayout: false,
     darkMode: false,
-    levelOfDetail: true,
-    useWebGL: false,
-    useWorkerThread: false,
-    progressiveLoading: true,
-  });
-  
-  // Accessibility settings
-  const [accessibilitySettings, setAccessibilitySettings] = useState({
-    highContrastMode: false,
-    largeNodeSize: false,
-    showTextualAlternative: false,
-    keyboardNavigationEnabled: true,
-    reducedMotion: false,
-    colorBlindMode: 'none',
-    minimumLabelSize: 10,
-    screenReaderAnnouncements: 'minimal'
+    filterThreshold: 100,
+    importanceThreshold: 0.5,
+    progressiveLoading: false,
+    levelOfDetail: true
   });
   
   // Analysis settings
@@ -105,22 +93,20 @@ const KnowledgeGraphPage = () => {
     identifyResearchFrontiers: false,
   });
   
-  // UI state
+  // Export options
   const [exportFormat, setExportFormat] = useState('json');
-  const [accessibilityDialogOpen, setAccessibilityDialogOpen] = useState(false);
-  const [performanceInfoOpen, setPerformanceInfoOpen] = useState(false);
-  const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
-  const [focusedNodeId, setFocusedNodeId] = useState(null);
-  const [currentZoom, setCurrentZoom] = useState(1);
   
-  // Worker refs
-  const simulationWorker = useRef(null);
-  const rendererRef = useRef(null);
-  const zoomRef = useRef(null);
-
-  const svgRef = useRef(null);
+  // Benchmark mode
+  const [benchmarkMode, setBenchmarkMode] = useState(false);
+  const [benchmarkResults, setBenchmarkResults] = useState(null);
+  const [testDataSize, setTestDataSize] = useState(100);
+  
   const graphContainerRef = useRef(null);
 
+  // Track loaded node count for progressive loading
+  const [loadedNodeCount, setLoadedNodeCount] = useState(0);
+  const progressiveLoadingStep = 50; // Number of nodes to add each step
+  
   // Colors for different entity types
   const entityColors = {
     MODEL: '#4285F4',      // Google Blue
@@ -132,6 +118,12 @@ const KnowledgeGraphPage = () => {
     default: '#757575'     // Gray
   };
 
+  // Performance metrics
+  const fpsCounterRef = useRef(0);
+  const lastFrameTimeRef = useRef(0);
+  const frameDurationsRef = useRef([]);
+  const frameCountRef = useRef(0);
+
   useEffect(() => {
     // When selectedEntity changes, get its details and related entities
     if (selectedEntity) {
@@ -140,15 +132,640 @@ const KnowledgeGraphPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEntity]);
-
+  
   useEffect(() => {
-    // Create or update graph visualization when graphData changes
-    if (graphData) {
-      renderGraph();
+    // Apply smart filtering to graph data
+    if (graphData && graphData.nodes.length > 0) {
+      if (graphData.nodes.length > (visualizationSettings.filterThreshold || 100)) {
+        // Apply smart filtering for large graphs
+        const filteredNodes = getFilteredNodes(
+          graphData.nodes, 
+          graphData.links,
+          selectedEntity?.id || null,
+          visualizationSettings
+        );
+        
+        // Only keep links between filtered nodes
+        const nodeIds = new Set(filteredNodes.map(node => node.id));
+        const filteredLinks = graphData.links.filter(link => {
+          const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+          const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+          return nodeIds.has(sourceId) && nodeIds.has(targetId);
+        });
+        
+        setFilteredGraphData({ nodes: filteredNodes, links: filteredLinks });
+        setLoadedNodeCount(visualizationSettings.progressiveLoading ? 
+          Math.min(progressiveLoadingStep, filteredNodes.length) : 
+          filteredNodes.length
+        );
+      } else {
+        // For smaller graphs, no filtering needed
+        setFilteredGraphData(graphData);
+        setLoadedNodeCount(visualizationSettings.progressiveLoading ? 
+          Math.min(progressiveLoadingStep, graphData.nodes.length) : 
+          graphData.nodes.length
+        );
+      }
+    } else {
+      setFilteredGraphData(null);
+      setLoadedNodeCount(0);
     }
-  }, [graphData, visualizationSettings]);
+  }, [graphData, visualizationSettings.filterThreshold, visualizationSettings.importanceThreshold, selectedEntity, visualizationSettings.progressiveLoading]);
 
-  const fetchEntityDetails = async (entityId) => {
+  // Store currently focused node for keyboard navigation
+  const [focusedNodeId, setFocusedNodeId] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const svgRef = useRef(null);
+  
+  // Use D3 hook for rendering
+  const renderGraph = useSvgD3((svg) => {
+    if (!svg.node() || !filteredGraphData || loadedNodeCount === 0) return;
+    
+    // Store ref for keyboard handlers
+    svgRef.current = svg.node();
+    
+    const startTime = performance.now();
+    
+    // Clear previous graph
+    svg.selectAll("*").remove();
+    
+    const width = graphContainerRef.current?.clientWidth || 800;
+    const height = Math.max(500, graphContainerRef.current?.clientHeight || 600);
+    
+    // Apply dark mode if enabled
+    if (visualizationSettings.darkMode) {
+      svg.style("background-color", "#1a1a1a");
+    } else {
+      svg.style("background-color", "transparent");
+    }
+    
+    // Set ARIA attributes for accessibility
+    svg.attr("aria-label", "Knowledge Graph Visualization")
+       .attr("role", "application")
+       .attr("tabindex", "0");
+    
+    // Get only the nodes to render based on progressive loading
+    const nodesToRender = filteredGraphData.nodes.slice(0, loadedNodeCount);
+    const nodeIds = new Set(nodesToRender.map(node => node.id));
+    
+    // Only include links where both nodes are being rendered
+    const linksToRender = filteredGraphData.links.filter(link => {
+      const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+      const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+      return nodeIds.has(sourceId) && nodeIds.has(targetId);
+    });
+    
+    // Create the visualization container
+    const vis = svg.append("g")
+      .attr("class", "visualization")
+      .attr("aria-label", "Graph visualization containing " + 
+            nodesToRender.length + " nodes and " + linksToRender.length + " relationships");
+    
+    // Get optimized force simulation parameters
+    const forceParams = createOptimizedForceParameters(
+      nodesToRender,
+      visualizationSettings
+    );
+    
+    // Create node size scale based on connections
+    const nodeSizeScale = createNodeSizeScale(
+      nodesToRender,
+      linksToRender,
+      visualizationSettings.nodeSize
+    );
+    
+    // Define simulation with settings from visualization options
+    const simulation = d3.forceSimulation(nodesToRender)
+      .force("link", d3.forceLink(linksToRender)
+        .id((d: any) => d.id)
+        .distance(forceParams.linkDistance))
+      .force("charge", d3.forceManyBody()
+        .strength(forceParams.chargeStrength))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("collision", d3.forceCollide().radius(forceParams.collisionRadius))
+      .alphaDecay(forceParams.alphaDecay)
+      .velocityDecay(forceParams.velocityDecay)
+      .alphaMin(forceParams.alphaMin);
+      
+    // Add cluster force if enabled
+    if (visualizationSettings.clusterByType) {
+      simulation.force("x", d3.forceX(width / 2).strength(0.1))
+               .force("y", d3.forceY(height / 2).strength(0.1))
+               .force("cluster", forceCluster());
+    }
+    
+    // Add zoom behavior
+    const zoom = d3.zoom()
+      .scaleExtent([0.1, 8])
+      .on("zoom", (event) => {
+        vis.attr("transform", event.transform);
+        
+        // Store current zoom level for accessibility features
+        setZoomLevel(event.transform.k);
+        
+        // Level of detail adjustments based on zoom level
+        if (visualizationSettings.levelOfDetail) {
+          const scale = event.transform.k;
+          const lodSettings = calculateLevelOfDetail(scale, nodesToRender.length);
+          
+          // Show/hide labels based on zoom level
+          vis.selectAll("text.node-label")
+            .style("display", d => {
+              // TypeScript needs a special accessor pattern for this to work
+              const nodeData = d;
+              return nodeData.id === selectedEntity?.id || nodeData.id === focusedNodeId || 
+                     lodSettings.showLabels ? "block" : "none";
+            })
+            .attr("font-size", lodSettings.labelFontSize);
+          
+          // Show relationship labels only at higher zoom levels
+          vis.selectAll("text.relationship-label")
+            .style("display", lodSettings.showRelationshipLabels ? "block" : "none");
+            
+          // Adjust node size based on zoom
+          vis.selectAll("circle.node")
+            .attr("r", d => {
+              // TypeScript needs a special accessor pattern for this to work
+              const nodeData = d;
+              const baseSize = nodeSizeScale(nodeData);
+              // Adjust size inversely to zoom to maintain visual size
+              return baseSize / Math.sqrt(scale);
+            });
+            
+          // Adjust stroke width based on zoom
+          vis.selectAll("circle.node")
+            .attr("stroke-width", d => {
+              // TypeScript needs a special accessor pattern for this to work
+              const nodeData = d;
+              if (nodeData.id === selectedEntity?.id) return 2.5 / Math.sqrt(scale);
+              if (nodeData.id === focusedNodeId) return 2 / Math.sqrt(scale);
+              if (visualizationSettings.highlightConnections && 
+                  isConnectedToSelected(nodeData.id)) return 1.5 / Math.sqrt(scale);
+              return lodSettings.nodeBorderWidth;
+            });
+            
+          // Adjust link opacity
+          vis.selectAll("line.link")
+            .attr("stroke-opacity", lodSettings.linkOpacity);
+        }
+      });
+      
+    svg.call(zoom);
+    
+    // Create links
+    const link = vis.append("g")
+      .attr("aria-label", "Graph relationships")
+      .selectAll("line")
+      .data(linksToRender)
+      .join("line")
+      .attr("class", "link")
+      .attr("stroke", "#999")
+      .attr("stroke-opacity", 0.6)
+      .attr("stroke-width", 1.5)
+      .attr("aria-label", d => {
+        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+        const sourceName = nodesToRender.find(node => node.id === sourceId)?.name || sourceId;
+        const targetName = nodesToRender.find(node => node.id === targetId)?.name || targetId;
+        return `Relationship: ${sourceName} ${d.type} ${targetName}`;
+      });
+    
+    // Create nodes with dynamic size
+    const node = vis.append("g")
+      .attr("aria-label", "Graph nodes")
+      .selectAll("circle")
+      .data(nodesToRender)
+      .join("circle")
+      .attr("class", "node")
+      .attr("r", d => nodeSizeScale(d))
+      .attr("fill", d => entityColors[d.type] || entityColors.default)
+      .attr("stroke", d => getNodeStrokeColor(d))
+      .attr("stroke-width", d => {
+        if (d.id === selectedEntity?.id) return 2;
+        if (d.id === focusedNodeId) return 1.5;
+        return 1; 
+      })
+      .attr("tabindex", d => (d.id === selectedEntity?.id || d.id === focusedNodeId) ? 0 : -1)
+      .attr("role", "button")
+      .attr("aria-label", d => `${d.type} node: ${d.name}`)
+      .attr("aria-pressed", d => d.id === selectedEntity?.id ? "true" : "false")
+      .call(drag(simulation))
+      .on("click", (event, d) => {
+        // Update selected entity when node is clicked
+        handleSelectEntity(d);
+        
+        // Set focus to this node
+        setFocusedNodeId(d.id);
+        
+        // Announce selection to screen readers
+        announceToScreenReader(`Selected ${d.type}: ${d.name}`);
+      })
+      .on("keydown", (event, d) => {
+        // Handle keyboard actions on nodes
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleSelectEntity(d);
+          announceToScreenReader(`Selected ${d.type}: ${d.name}`);
+        }
+      })
+      .on("focus", (event, d) => {
+        // Update focused node when keyboard focus changes
+        setFocusedNodeId(d.id);
+        
+        // Highlight node visually
+        d3.select(event.currentTarget)
+          .attr("stroke-width", 2)
+          .attr("stroke", "#000");
+      })
+      .on("blur", (event, d) => {
+        // Reset focus styling unless this is the selected node
+        if (d.id !== selectedEntity?.id) {
+          d3.select(event.currentTarget)
+            .attr("stroke-width", 1)
+            .attr("stroke", getNodeStrokeColor(d));
+        }
+      });
+    
+    // Add labels if enabled
+    if (visualizationSettings.showLabels) {
+      const label = vis.append("g")
+        .attr("aria-hidden", "true") // Hide from screen readers (node has aria-label already)
+        .selectAll("text")
+        .data(nodesToRender)
+        .join("text")
+        .attr("class", "node-label")
+        .text(d => d.name)
+        .attr("font-size", 10)
+        .attr("dx", 12)
+        .attr("dy", 4)
+        .attr("opacity", 0.9)
+        .attr("fill", visualizationSettings.darkMode ? "#fff" : "#000")
+        .attr("stroke", visualizationSettings.darkMode ? "#000" : "#fff")
+        .attr("stroke-width", 0.3)
+        .attr("stroke-opacity", 0.8);
+    }
+      
+    // Add relationship labels if enabled
+    if (visualizationSettings.showRelationshipLabels) {
+      vis.append("g")
+        .attr("aria-hidden", "true") // Hide from screen readers (link has aria-label already)
+        .selectAll("text")
+        .data(linksToRender)
+        .join("text")
+        .attr("class", "relationship-label")
+        .text(d => d.type)
+        .attr("font-size", 8)
+        .attr("fill", "#666")
+        .attr("text-anchor", "middle")
+        .attr("dy", -3);
+    }
+    
+    // Add titles for hover
+    node.append("title")
+      .text(d => `${d.name} (${d.type})`);
+    
+    // Create an element for screen reader announcements
+    const announcer = d3.select("body")
+      .selectAll("#sr-announcer")
+      .data([0]) // Ensure we only create this once
+      .join("div")
+      .attr("id", "sr-announcer")
+      .attr("role", "status")
+      .attr("aria-live", "polite")
+      .style("position", "absolute")
+      .style("width", "1px")
+      .style("height", "1px")
+      .style("padding", "0")
+      .style("margin", "-1px")
+      .style("overflow", "hidden")
+      .style("clip", "rect(0, 0, 0, 0)")
+      .style("white-space", "nowrap")
+      .style("border", "0");
+    
+    // Set up keyboard navigation for the SVG
+    svg.on("keydown", (event) => {
+      // Handle arrow keys, Enter, space, etc.
+      switch (event.key) {
+        case "ArrowRight":
+          navigateToNode(1);
+          event.preventDefault();
+          break;
+          
+        case "ArrowLeft":
+          navigateToNode(-1);
+          event.preventDefault();
+          break;
+          
+        case "Home":
+          navigateToFirstNode();
+          event.preventDefault();
+          break;
+          
+        case "End":
+          navigateToLastNode();
+          event.preventDefault();
+          break;
+          
+        case "+":
+        case "=":
+          zoomIn();
+          event.preventDefault();
+          break;
+          
+        case "-":
+          zoomOut();
+          event.preventDefault();
+          break;
+          
+        case "0":
+          resetZoom();
+          event.preventDefault();
+          break;
+          
+        case "s":
+          if (focusedNodeId) {
+            // Select the currently focused node
+            const focusedNode = nodesToRender.find(n => n.id === focusedNodeId);
+            if (focusedNode) {
+              handleSelectEntity(focusedNode);
+              announceToScreenReader(`Selected ${focusedNode.type}: ${focusedNode.name}`);
+            }
+          }
+          event.preventDefault();
+          break;
+      }
+    });
+    
+    // Helper functions for keyboard navigation
+    function navigateToNode(direction: 1 | -1) {
+      const nextNode = getNavigableNode(focusedNodeId, nodesToRender, direction);
+      if (nextNode) {
+        // Focus the node
+        setFocusedNodeId(nextNode.id);
+        
+        // Find and focus the DOM element
+        const nodeElement = svg.selectAll("circle.node").filter(d => d.id === nextNode.id).node();
+        if (nodeElement) {
+          nodeElement.focus();
+          
+          // Pan to node
+          const x = (nodesToRender[nextNode.index].x || 0);
+          const y = (nodesToRender[nextNode.index].y || 0);
+          const transform = d3.zoomTransform(svg.node());
+          
+          // Announce to screen readers
+          const focusedNode = nodesToRender[nextNode.index];
+          announceToScreenReader(`Focused ${focusedNode.type}: ${focusedNode.name}`);
+          
+          // Pan to make node visible
+          svg.transition().duration(300).call(
+            zoom.transform,
+            d3.zoomIdentity
+              .translate(width / 2 - x * transform.k, height / 2 - y * transform.k)
+              .scale(transform.k)
+          );
+        }
+      }
+    }
+    
+    function navigateToFirstNode() {
+      if (nodesToRender.length > 0) {
+        setFocusedNodeId(nodesToRender[0].id);
+        const nodeElement = svg.selectAll("circle.node").filter(d => d.id === nodesToRender[0].id).node();
+        if (nodeElement) {
+          nodeElement.focus();
+          announceToScreenReader(`Focused first node: ${nodesToRender[0].name}`);
+        }
+      }
+    }
+    
+    function navigateToLastNode() {
+      if (nodesToRender.length > 0) {
+        const lastIndex = nodesToRender.length - 1;
+        setFocusedNodeId(nodesToRender[lastIndex].id);
+        const nodeElement = svg.selectAll("circle.node").filter(d => d.id === nodesToRender[lastIndex].id).node();
+        if (nodeElement) {
+          nodeElement.focus();
+          announceToScreenReader(`Focused last node: ${nodesToRender[lastIndex].name}`);
+        }
+      }
+    }
+    
+    function zoomIn() {
+      const currentTransform = d3.zoomTransform(svg.node());
+      svg.transition().duration(300).call(
+        zoom.transform,
+        currentTransform.scale(currentTransform.k * 1.3)
+      );
+      announceToScreenReader("Zoomed in");
+    }
+    
+    function zoomOut() {
+      const currentTransform = d3.zoomTransform(svg.node());
+      svg.transition().duration(300).call(
+        zoom.transform,
+        currentTransform.scale(currentTransform.k / 1.3)
+      );
+      announceToScreenReader("Zoomed out");
+    }
+    
+    function resetZoom() {
+      svg.transition().duration(500).call(
+        zoom.transform,
+        d3.zoomIdentity
+      );
+      announceToScreenReader("Zoom reset");
+    }
+    
+    // Helper function for screen reader announcements
+    function announceToScreenReader(message: string) {
+      announcer.text(message);
+    }
+    
+    // Update positions on tick
+    simulation.on("tick", () => {
+      link
+        .attr("x1", d => (d.source).x)
+        .attr("y1", d => (d.source).y)
+        .attr("x2", d => (d.target).x)
+        .attr("y2", d => (d.target).y);
+    
+      node
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+    
+      if (visualizationSettings.showLabels) {
+        vis.selectAll("text.node-label")
+          .attr("x", d => d.x)
+          .attr("y", d => d.y);
+      }
+      
+      if (visualizationSettings.showRelationshipLabels) {
+        vis.selectAll("text.relationship-label")
+          .attr("x", d => ((d.source).x + (d.target).x) / 2)
+          .attr("y", d => ((d.source).y + (d.target).y) / 2);
+      }
+      
+      // Track FPS for benchmarking
+      if (benchmarkMode) {
+        const now = performance.now();
+        const elapsed = now - lastFrameTimeRef.current;
+        
+        if (lastFrameTimeRef.current !== 0) {
+          frameDurationsRef.current.push(elapsed);
+          if (frameDurationsRef.current.length > 100) {
+            frameDurationsRef.current.shift();
+          }
+        }
+        
+        lastFrameTimeRef.current = now;
+        frameCountRef.current++;
+        
+        // Update benchmark results every 30 frames
+        if (frameCountRef.current % 30 === 0) {
+          const avg = frameDurationsRef.current.reduce((a, b) => a + b, 0) / 
+                      Math.max(1, frameDurationsRef.current.length);
+          const fps = 1000 / avg;
+          
+          setBenchmarkResults({
+            renderTime: performance.now() - startTime,
+            frameRate: fps,
+            nodeCount: nodesToRender.length,
+            linkCount: linksToRender.length
+          });
+        }
+      }
+    });
+    
+    // Run simulation for a fixed number of steps for large graphs
+    if (nodesToRender.length > 500) {
+      simulation.stop();
+      for (let i = 0; i < forceParams.iterations; ++i) simulation.tick();
+    }
+    
+    const endTime = performance.now();
+    
+    if (benchmarkMode) {
+      setBenchmarkResults(prev => ({
+        ...(prev || {}),
+        renderTime: endTime - startTime,
+        nodeCount: nodesToRender.length,
+        linkCount: linksToRender.length
+      }));
+    }
+    
+    // Helper function to get stroke color
+    function getNodeStrokeColor(d: Entity): string {
+      if (d.id === selectedEntity?.id) return "#000";
+      if (d.id === focusedNodeId) return "#444";
+      if (visualizationSettings.highlightConnections && isConnectedToSelected(d.id)) return "#555";
+      return "#fff";
+    }
+    
+    // Helper function to check if node is connected to selected
+    function isConnectedToSelected(nodeId: string): boolean {
+      if (!selectedEntity) return false;
+      
+      return !!linksToRender.find(link => {
+        const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+        const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+        return (sourceId === selectedEntity.id && targetId === nodeId) || 
+               (targetId === selectedEntity.id && sourceId === nodeId);
+      });
+    }
+    
+    // Force cluster function for type-based clustering
+    function forceCluster() {
+      const strength = 0.15;
+      let nodes: Entity[];
+    
+      function force(alpha: number) {
+        // Group nodes by type
+        const centroids: Record<string, {x: number, y: number}> = {};
+        const typeGroups: Record<string, Entity[]> = {};
+        
+        nodes.forEach(d => {
+          if (!typeGroups[d.type]) {
+            typeGroups[d.type] = [];
+          }
+          typeGroups[d.type].push(d);
+        });
+        
+        // Calculate centroid for each group
+        Object.keys(typeGroups).forEach(type => {
+          const group = typeGroups[type];
+          let x = 0, y = 0;
+          
+          group.forEach(node => {
+            x += node.x || 0;
+            y += node.y || 0;
+          });
+          
+          centroids[type] = {
+            x: x / group.length,
+            y: y / group.length
+          };
+        });
+        
+        // Apply forces toward centroids
+        nodes.forEach(d => {
+          const centroid = centroids[d.type];
+          if (d.vx !== undefined && d.vy !== undefined && centroid) {
+            d.vx += (centroid.x - (d.x || 0)) * strength * alpha;
+            d.vy += (centroid.y - (d.y || 0)) * strength * alpha;
+          }
+        });
+      }
+      
+      force.initialize = function(_nodes: Entity[]) { 
+        nodes = _nodes;
+      };
+      
+      return force;
+    }
+    
+    // Define drag behavior
+    function drag(simulation: d3.Simulation<Entity, undefined>) {
+      function dragstarted(event: any) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        event.subject.fx = event.subject.x;
+        event.subject.fy = event.subject.y;
+      }
+      
+      function dragged(event: any) {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+      }
+      
+      function dragended(event: any) {
+        if (!event.active) simulation.alphaTarget(0);
+        event.subject.fx = null;
+        event.subject.fy = null;
+      }
+      
+      return d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended);
+    }
+  }, [filteredGraphData, loadedNodeCount, selectedEntity, visualizationSettings, benchmarkMode, focusedNodeId]);
+  
+  // Handle keyboard navigation for graph container
+  const handleGraphKeydown = (event: React.KeyboardEvent) => {
+    // Only handle keyboard when graph is loaded
+    if (!filteredGraphData || !svgRef.current) return;
+    
+    // Pass keyboard events to the SVG
+    const svgElement = svgRef.current;
+    if (svgElement) {
+      // Focus SVG if it's not already focused
+      if (document.activeElement !== svgElement) {
+        svgElement.focus();
+      }
+    }
+  };
+
+  const fetchEntityDetails = async (entityId: string) => {
     setLoading(true);
     try {
       const data = await knowledgeGraphService.getEntityDetails(entityId);
@@ -182,8 +799,8 @@ const KnowledgeGraphPage = () => {
       setLoading(false);
     }
   };
-
-  const fetchRelatedEntities = async (entityId) => {
+  
+  const fetchRelatedEntities = async (entityId: string) => {
     setGraphLoading(true);
     try {
       const data = await knowledgeGraphService.getRelatedEntities(entityId);
@@ -192,14 +809,14 @@ const KnowledgeGraphPage = () => {
       // Prepare data for D3 graph
       const nodes = [
         { id: selectedEntity.id, name: selectedEntity.name, type: selectedEntity.type },
-        ...data.entities.map(entity => ({ 
+        ...data.entities.map((entity) => ({ 
           id: entity.id, 
           name: entity.name, 
           type: entity.type 
         }))
       ];
       
-      const links = data.relationships.map(rel => ({
+      const links = data.relationships.map((rel) => ({
         source: rel.source,
         target: rel.target,
         type: rel.type
@@ -250,7 +867,7 @@ const KnowledgeGraphPage = () => {
       setGraphLoading(false);
     }
   };
-
+  
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
     
@@ -263,6 +880,7 @@ const KnowledgeGraphPage = () => {
       setEntityDetails(null);
       setRelatedEntities([]);
       setGraphData(null);
+      setFilteredGraphData(null);
     } catch (err) {
       console.error('Search error:', err);
       
@@ -291,6 +909,7 @@ const KnowledgeGraphPage = () => {
       setEntityDetails(null);
       setRelatedEntities([]);
       setGraphData(null);
+      setFilteredGraphData(null);
       
       // Show message about using mock data
       setError('Using mock data for demonstration. In production, this would call the actual API.');
@@ -298,9 +917,53 @@ const KnowledgeGraphPage = () => {
       setLoading(false);
     }
   };
-
-  const handleSelectEntity = (entity) => {
+  
+  const handleSelectEntity = (entity: Entity) => {
     setSelectedEntity(entity);
+  };
+  
+  const handleLoadMoreNodes = () => {
+    if (!filteredGraphData) return;
+    
+    const newLoadedCount = Math.min(
+      loadedNodeCount + progressiveLoadingStep,
+      filteredGraphData.nodes.length
+    );
+    setLoadedNodeCount(newLoadedCount);
+  };
+  
+  // Generate test data for benchmarking
+  const generateBenchmarkData = () => {
+    setGraphLoading(true);
+    
+    // Generate test data
+    const testData = generateTestData(testDataSize);
+    
+    // Setup for visualization
+    setSearchResults([]);
+    
+    // Use first node as selected entity
+    const firstNode = testData.nodes[0];
+    setSelectedEntity(firstNode);
+    setEntityDetails({
+      ...firstNode,
+      description: "Test node for benchmarking large graph performance.",
+      properties: {
+        complexity: "High",
+        domain: "Performance Testing",
+        testSize: testDataSize
+      }
+    });
+    
+    setRelatedEntities(testData.nodes.slice(1, 20));
+    setGraphData(testData);
+    
+    // Reset benchmark measurements
+    frameCountRef.current = 0;
+    lastFrameTimeRef.current = 0;
+    frameDurationsRef.current = [];
+    
+    setGraphLoading(false);
   };
   
   // Handle export graph data
@@ -326,9 +989,11 @@ const KnowledgeGraphPage = () => {
         
         // Simple CSV format for links
         const linkHeader = 'source,target,type\n';
-        const linkRows = graphData.links.map(link => 
-          `${link.source.id || link.source},${link.target.id || link.target},${link.type}`
-        ).join('\n');
+        const linkRows = graphData.links.map(link => {
+          const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+          const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+          return `${sourceId},${targetId},${link.type}`;
+        }).join('\n');
         
         exportData = `# Nodes\n${nodeHeader}${nodeRows}\n\n# Links\n${linkHeader}${linkRows}`;
         mimeType = 'text/csv';
@@ -341,8 +1006,8 @@ const KnowledgeGraphPage = () => {
         ).join('\n');
         
         const linkQueries = graphData.links.map(link => {
-          const sourceId = link.source.id || link.source;
-          const targetId = link.target.id || link.target;
+          const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+          const targetId = typeof link.target === 'object' ? link.target.id : link.target;
           return `MATCH (a), (b) WHERE a.id = "${sourceId}" AND b.id = "${targetId}" CREATE (a)-[:${link.type}]->(b)`;
         }).join('\n');
         
@@ -361,848 +1026,20 @@ const KnowledgeGraphPage = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `knowledge_graph_${selectedEntity.id}.${fileExtension}`;
+    link.download = `knowledge_graph_${selectedEntity?.id}.${fileExtension}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // Force cluster function for type-based clustering
-  const forceCluster = () => {
-    const strength = 0.15;
-    let nodes;
-
-    function force(alpha) {
-      // Group nodes by type
-      const centroids = {};
-      const typeGroups = {};
-      
-      nodes.forEach(d => {
-        if (!typeGroups[d.type]) {
-          typeGroups[d.type] = [];
-        }
-        typeGroups[d.type].push(d);
-      });
-      
-      // Calculate centroid for each group
-      Object.keys(typeGroups).forEach(type => {
-        const group = typeGroups[type];
-        let x = 0, y = 0;
-        
-        group.forEach(node => {
-          x += node.x;
-          y += node.y;
-        });
-        
-        centroids[type] = {
-          x: x / group.length,
-          y: y / group.length
-        };
-      });
-      
-      // Apply forces toward centroids
-      nodes.forEach(d => {
-        const centroid = centroids[d.type];
-        d.vx += (centroid.x - d.x) * strength * alpha;
-        d.vy += (centroid.y - d.y) * strength * alpha;
-      });
-    }
-    
-    force.initialize = (_) => nodes = _;
-    
-    return force;
-  };
-
-  const renderGraph = () => {
-    if (!svgRef.current || !graphData) return;
-
-    // Performance measurement
-    const startTime = performance.now();
-
-    // Clear previous graph
-    d3.select(svgRef.current).selectAll("*").remove();
-
-    const width = graphContainerRef.current.clientWidth;
-    const height = Math.max(500, graphContainerRef.current.clientHeight);
-    
-    // Apply color theme based on settings
-    if (visualizationSettings.darkMode || accessibilitySettings.highContrastMode) {
-      const bgColor = accessibilitySettings.highContrastMode ? "#000000" : "#1a1a1a";
-      d3.select(svgRef.current).style("background-color", bgColor);
-    } else {
-      d3.select(svgRef.current).style("background-color", "transparent");
-    }
-
-    // Add accessibility attributes
-    const svg = d3.select(svgRef.current)
-      .attr("width", width)
-      .attr("height", height)
-      .attr("role", "img")
-      .attr("tabindex", "0")
-      .attr("aria-label", `Knowledge graph visualization with ${graphData.nodes.length} nodes and ${graphData.links.length} links`);
-    
-    // Create main container groups
-    const container = svg.append("g").attr("class", "graph-container");
-    const linksGroup = container.append("g").attr("class", "links");
-    const nodesGroup = container.append("g").attr("class", "nodes");
-    const labelsGroup = container.append("g").attr("class", "labels");
-    
-    // Add zoom behavior
-    const zoom = d3.zoom()
-      .scaleExtent([0.1, 8])
-      .on("zoom", (event) => {
-        container.attr("transform", event.transform);
-        
-        // Store current zoom level for level-of-detail rendering
-        const newZoom = event.transform.k;
-        setCurrentZoom(newZoom);
-        
-        if (visualizationSettings.levelOfDetail) {
-          // Update visual elements based on zoom level
-          const lod = calculateLevelOfDetail(newZoom, graphData.nodes.length);
-          
-          // Apply level of detail changes
-          nodesGroup.selectAll("circle")
-            .attr("stroke-width", lod.nodeBorderWidth)
-            .attr("opacity", lod.nodeOpacity)
-            .attr("r", d => {
-              const baseSize = d.id === selectedEntity?.id 
-                ? visualizationSettings.nodeSize + 3 
-                : visualizationSettings.nodeSize;
-              return baseSize * lod.nodeRadiusMultiplier;
-            });
-          
-          linksGroup.selectAll("line")
-            .attr("stroke-opacity", lod.linkOpacity);
-          
-          // Show/hide labels based on zoom level
-          labelsGroup.style("display", lod.showLabels ? "block" : "none");
-          if (lod.showLabels) {
-            labelsGroup.selectAll("text")
-              .attr("font-size", lod.labelFontSize);
-          }
-        }
-      });
-    
-    svg.call(zoom);
-    zoomRef.current = zoom;
-    
-    // Store optimal force simulation parameters
-    const forceParams = createOptimizedForceParameters(
-      graphData.nodes,
-      visualizationSettings
-    );
-
-    // Define simulation with optimized settings
-    const simulation = d3.forceSimulation(graphData.nodes)
-      .alpha(0.3)
-      .alphaDecay(forceParams.alphaDecay)
-      .alphaMin(forceParams.alphaMin)
-      .velocityDecay(forceParams.velocityDecay)
-      .force("link", d3.forceLink(graphData.links)
-        .id(d => d.id)
-        .distance(forceParams.linkDistance))
-      .force("charge", d3.forceManyBody()
-        .strength(forceParams.chargeStrength))
-      .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collision", d3.forceCollide()
-        .radius(forceParams.collisionRadius));
-      
-    // Add cluster force if enabled
-    if (visualizationSettings.clusterByType) {
-      simulation
-        .force("x", d3.forceX(width / 2).strength(0.1))
-        .force("y", d3.forceY(height / 2).strength(0.1))
-        .force("cluster", forceCluster());
-    }
-    
-    // Create dynamic node size scale based on connection count
-    const nodeSizeScale = createNodeSizeScale(
-      graphData.nodes, 
-      graphData.links, 
-      accessibilitySettings.largeNodeSize 
-        ? visualizationSettings.nodeSize * 1.5 
-        : visualizationSettings.nodeSize
-    );
-
-    // Get color mapping for nodes based on accessibility settings
-    const getNodeColor = (node) => {
-      let baseColor = entityColors[node.type] || entityColors.default;
-      
-      // Apply color blind modes
-      if (accessibilitySettings.colorBlindMode !== 'none') {
-        switch (accessibilitySettings.colorBlindMode) {
-          case 'deuteranopia': // Red-green color blindness
-            if (baseColor === '#4285F4') return '#4285F4'; // Keep blue
-            if (baseColor === '#EA4335') return '#FFA500'; // Red -> Orange
-            if (baseColor === '#34A853') return '#FFEA00'; // Green -> Yellow
-            return baseColor;
-          case 'protanopia': // Another type of red-green color blindness
-            if (baseColor === '#4285F4') return '#4285F4'; // Keep blue
-            if (baseColor === '#EA4335') return '#FFD700'; // Red -> Gold
-            if (baseColor === '#34A853') return '#CDDC39'; // Green -> Lime
-            return baseColor;
-          case 'tritanopia': // Blue-yellow color blindness
-            if (baseColor === '#4285F4') return '#7B1FA2'; // Blue -> Purple
-            if (baseColor === '#FBBC05') return '#FF5722'; // Yellow -> Orange-red
-            return baseColor;
-          default:
-            return baseColor;
-        }
-      }
-      
-      // Apply high contrast mode if enabled
-      if (accessibilitySettings.highContrastMode) {
-        // Brighten colors for high contrast
-        if (baseColor === '#757575') return '#FFFFFF'; // Default gray to white
-        return baseColor;
-      }
-      
-      return baseColor;
-    };
-
-    // Create links with improved styling
-    const link = linksGroup
-      .selectAll("line")
-      .data(graphData.links)
-      .join("line")
-      .attr("stroke", d => visualizationSettings.darkMode ? "#666" : "#999")
-      .attr("stroke-opacity", visualizationSettings.darkMode ? 0.8 : 0.6)
-      .attr("stroke-width", 1.5)
-      .attr("data-source", d => typeof d.source === 'object' ? d.source.id : d.source)
-      .attr("data-target", d => typeof d.target === 'object' ? d.target.id : d.target)
-      .attr("data-type", d => d.type)
-      .attr("aria-label", d => {
-        const source = typeof d.source === 'object' ? d.source.name : 'unknown';
-        const target = typeof d.target === 'object' ? d.target.name : 'unknown';
-        return `Relationship: ${source} ${d.type} ${target}`;
-      });
-
-    // Create nodes with accessibility attributes
-    const node = nodesGroup
-      .selectAll("circle")
-      .data(graphData.nodes)
-      .join("circle")
-      .attr("r", d => nodeSizeScale(d))
-      .attr("fill", d => getNodeColor(d))
-      .attr("stroke", d => {
-        if (d.id === focusedNodeId) return "#ffeb3b"; // Yellow highlight for keyboard focus
-        if (visualizationSettings.highlightConnections && d.id === selectedEntity?.id) {
-          return accessibilitySettings.highContrastMode ? "#FFFFFF" : "#000000";
-        }
-        return "none";
-      })
-      .attr("stroke-width", d => d.id === focusedNodeId ? 3 : 2)
-      .attr("data-id", d => d.id)
-      .attr("data-type", d => d.type)
-      .attr("tabindex", -1) // For keyboard navigation
-      .attr("role", "button")
-      .attr("aria-label", d => `${d.name}, ${d.type}`)
-      .call(drag(simulation));
-
-    // Add labels with proper scaling
-    if (visualizationSettings.showLabels) {
-      const labelFontSize = Math.max(
-        10, 
-        accessibilitySettings.minimumLabelSize
-      );
-      
-      const label = labelsGroup
-        .selectAll("text")
-        .data(graphData.nodes)
-        .join("text")
-        .attr("class", "node-label")
-        .text(d => d.name)
-        .attr("font-size", labelFontSize)
-        .attr("dx", d => nodeSizeScale(d) + 4)
-        .attr("dy", 4)
-        .attr("opacity", 0.9)
-        .attr("fill", accessibilitySettings.highContrastMode 
-          ? "#FFFFFF" 
-          : (visualizationSettings.darkMode ? "#fff" : "#000"))
-        .attr("stroke", accessibilitySettings.highContrastMode
-          ? "#000000"
-          : (visualizationSettings.darkMode ? "#000" : "#fff"))
-        .attr("stroke-width", 0.3)
-        .attr("stroke-opacity", 0.8)
-        .attr("pointer-events", "none") // Don't interfere with node clicks
-        .attr("aria-hidden", "true"); // Labels are presentational
-    }
-      
-    // Add relationship labels if enabled
-    if (visualizationSettings.showRelationshipLabels) {
-      labelsGroup
-        .selectAll(".relationship-label")
-        .data(graphData.links)
-        .join("text")
-        .attr("class", "relationship-label")
-        .text(d => d.type)
-        .attr("font-size", accessibilitySettings.minimumLabelSize * 0.8)
-        .attr("fill", accessibilitySettings.highContrastMode 
-          ? "#FFFFFF" 
-          : "#666")
-        .attr("text-anchor", "middle")
-        .attr("dy", -3)
-        .attr("pointer-events", "none")
-        .attr("aria-hidden", "true");
-    }
-
-    // Add interaction handlers
-    node
-      .on("click", (event, d) => {
-        // Find the entity in searchResults or use the node directly
-        const clickedEntity = searchResults.find(entity => entity.id === d.id) || d;
-        handleSelectEntity(clickedEntity);
-        
-        // Announce selection to screen readers
-        if (accessibilitySettings.screenReaderAnnouncements !== 'minimal') {
-          const announcement = document.getElementById('sr-announcement');
-          if (announcement) {
-            announcement.textContent = `Selected ${d.type}: ${d.name}`;
-          }
-        }
-      })
-      .on("mouseover", function(event, d) {
-        d3.select(this).attr("stroke-width", 3);
-        
-        // Highlight connected nodes and links
-        if (visualizationSettings.highlightConnections) {
-          const connectedNodeIds = new Set();
-          link.each(function(l) {
-            if (l.source.id === d.id || l.target.id === d.id) {
-              const targetId = l.source.id === d.id ? l.target.id : l.source.id;
-              connectedNodeIds.add(targetId);
-              d3.select(this).attr("stroke", "#ff5722").attr("stroke-width", 2);
-            }
-          });
-          
-          node.each(function(n) {
-            if (connectedNodeIds.has(n.id)) {
-              d3.select(this).attr("stroke", "#ff5722").attr("stroke-width", 2);
-            }
-          });
-        }
-      })
-      .on("mouseout", function(event, d) {
-        d3.select(this).attr("stroke-width", d.id === focusedNodeId ? 3 : 
-          (visualizationSettings.highlightConnections && d.id === selectedEntity?.id ? 2 : 0));
-        
-        // Reset highlights
-        link.attr("stroke", visualizationSettings.darkMode ? "#666" : "#999")
-            .attr("stroke-width", 1.5);
-        
-        node.each(function(n) {
-          if (n.id !== selectedEntity?.id && n.id !== focusedNodeId) {
-            d3.select(this).attr("stroke", "none");
-          } else if (n.id === selectedEntity?.id) {
-            d3.select(this).attr("stroke", accessibilitySettings.highContrastMode ? "#FFFFFF" : "#000000");
-          }
-        });
-      });
-      
-    // Progressive loading animation if enabled
-    if (visualizationSettings.progressiveLoading && !accessibilitySettings.reducedMotion) {
-      // Start with nodes invisible
-      node.attr("opacity", 0);
-      link.attr("opacity", 0);
-      
-      // Fade in nodes and links progressively
-      const delay = Math.min(5, 200 / Math.sqrt(graphData.nodes.length));
-      
-      node.transition()
-        .delay((d, i) => i * delay)
-        .duration(300)
-        .attr("opacity", 1);
-        
-      link.transition()
-        .delay((d, i) => i * delay * 0.5)
-        .duration(200)
-        .attr("opacity", 0.6);
-    }
-
-    // Update positions on tick with improved performance for large graphs
-    simulation.on("tick", () => {
-      // For very large graphs, limit updates for better performance
-      if (graphData.nodes.length > 1000 && !accessibilitySettings.reducedMotion) {
-        // Only update every few ticks
-        if (simulation.alpha() < 0.1 || Math.random() < 0.2) {
-          updatePositions();
-        }
-      } else {
-        updatePositions();
-      }
-    });
-    
-    // Function to update positions of all elements
-    function updatePositions() {
-      link
-        .attr("x1", d => d.source.x)
-        .attr("y1", d => d.source.y)
-        .attr("x2", d => d.target.x)
-        .attr("y2", d => d.target.y);
-
-      node
-        .attr("cx", d => d.x)
-        .attr("cy", d => d.y);
-
-      if (visualizationSettings.showLabels) {
-        labelsGroup.selectAll(".node-label")
-          .attr("x", d => d.x)
-          .attr("y", d => d.y);
-      }
-      
-      if (visualizationSettings.showRelationshipLabels) {
-        labelsGroup.selectAll(".relationship-label")
-          .attr("x", d => (d.source.x + d.target.x) / 2)
-          .attr("y", d => (d.source.y + d.target.y) / 2);
-      }
-    }
-    
-    // For reduced motion, run a static layout instead of animation
-    if (accessibilitySettings.reducedMotion) {
-      // Run simulation steps without animation
-      for (let i = 0; i < forceParams.iterations; i++) {
-        simulation.tick();
-      }
-      updatePositions();
-      simulation.stop();
-    }
-    
-    // Add keyboard navigation handlers (if enabled)
-    if (accessibilitySettings.keyboardNavigationEnabled) {
-      svg.on("keydown", (event) => {
-        if (!graphData.nodes.length) return;
-        
-        switch (event.key) {
-          case "ArrowRight":
-          case "ArrowDown":
-            event.preventDefault();
-            const nextNode = getNavigableNode(focusedNodeId, graphData.nodes, 1);
-            if (nextNode) {
-              setFocusedNodeId(nextNode.id);
-              focusNode(nextNode.id);
-            }
-            break;
-            
-          case "ArrowLeft":
-          case "ArrowUp":
-            event.preventDefault();
-            const prevNode = getNavigableNode(focusedNodeId, graphData.nodes, -1);
-            if (prevNode) {
-              setFocusedNodeId(prevNode.id);
-              focusNode(prevNode.id);
-            }
-            break;
-            
-          case "Home":
-            event.preventDefault();
-            if (graphData.nodes.length > 0) {
-              setFocusedNodeId(graphData.nodes[0].id);
-              focusNode(graphData.nodes[0].id);
-            }
-            break;
-            
-          case "End":
-            event.preventDefault();
-            if (graphData.nodes.length > 0) {
-              setFocusedNodeId(graphData.nodes[graphData.nodes.length - 1].id);
-              focusNode(graphData.nodes[graphData.nodes.length - 1].id);
-            }
-            break;
-            
-          case "Enter":
-          case " ": // Space
-            event.preventDefault();
-            if (focusedNodeId) {
-              const selectedNode = graphData.nodes.find(n => n.id === focusedNodeId);
-              if (selectedNode) {
-                handleSelectEntity(selectedNode);
-              }
-            }
-            break;
-            
-          case "+":
-          case "=":
-            event.preventDefault();
-            zoomRef.current.scaleBy(svg.transition().duration(300), 1.3);
-            break;
-            
-          case "-":
-            event.preventDefault();
-            zoomRef.current.scaleBy(svg.transition().duration(300), 0.7);
-            break;
-            
-          case "0":
-            event.preventDefault();
-            zoomRef.current.transform(svg.transition().duration(500), d3.zoomIdentity);
-            break;
-            
-          case "Escape":
-            event.preventDefault();
-            setFocusedNodeId(null);
-            break;
-        }
-      });
-    }
-    
-    // Helper function to focus a specific node
-    function focusNode(nodeId) {
-      // Update visual highlight
-      node.attr("stroke", d => {
-        if (d.id === nodeId) return "#ffeb3b"; // Yellow highlight
-        if (visualizationSettings.highlightConnections && d.id === selectedEntity?.id) {
-          return accessibilitySettings.highContrastMode ? "#FFFFFF" : "#000000";
-        }
-        return "none";
-      }).attr("stroke-width", d => d.id === nodeId ? 3 : 2);
-      
-      // Announce to screen readers
-      if (accessibilitySettings.screenReaderAnnouncements !== 'minimal') {
-        const focusedNode = graphData.nodes.find(n => n.id === nodeId);
-        if (focusedNode) {
-          const announcement = document.getElementById('sr-announcement');
-          if (announcement) {
-            // For verbose mode, include connected nodes
-            if (accessibilitySettings.screenReaderAnnouncements === 'verbose') {
-              const relatedIds = findRelatedNodes(nodeId, graphData.nodes, graphData.links, 3);
-              const relatedNodes = relatedIds.map(id => {
-                const node = graphData.nodes.find(n => n.id === id);
-                return node ? node.name : '';
-              }).filter(Boolean);
-              
-              const relatedText = relatedNodes.length > 0 
-                ? `. Connected to: ${relatedNodes.join(', ')}` 
-                : '';
-                
-              announcement.textContent = `Focused on ${focusedNode.type}: ${focusedNode.name}${relatedText}`;
-            } else {
-              announcement.textContent = `Focused on ${focusedNode.type}: ${focusedNode.name}`;
-            }
-          }
-        }
-      }
-      
-      // If the node is not visible in the current viewport, center it
-      const focusedNodeElement = node.filter(d => d.id === nodeId).node();
-      if (focusedNodeElement) {
-        const boundingBox = focusedNodeElement.getBoundingClientRect();
-        const containerBox = graphContainerRef.current.getBoundingClientRect();
-        
-        // Check if node is outside visible area
-        if (boundingBox.left < containerBox.left || 
-            boundingBox.right > containerBox.right ||
-            boundingBox.top < containerBox.top ||
-            boundingBox.bottom > containerBox.bottom) {
-          
-          const focusedNode = graphData.nodes.find(n => n.id === nodeId);
-          if (focusedNode && focusedNode.x && focusedNode.y) {
-            const transform = d3.zoomIdentity
-              .translate(width/2 - focusedNode.x, height/2 - focusedNode.y)
-              .scale(currentZoom);
-              
-            zoomRef.current.transform(svg.transition().duration(500), transform);
-          }
-        }
-      }
-    }
-
-    // Define drag behavior
-    function drag(simulation) {
-      function dragstarted(event) {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
-        event.subject.fx = event.subject.x;
-        event.subject.fy = event.subject.y;
-      }
-      
-      function dragged(event) {
-        event.subject.fx = event.x;
-        event.subject.fy = event.y;
-      }
-      
-      function dragended(event) {
-        if (!event.active) simulation.alphaTarget(0);
-        event.subject.fx = null;
-        event.subject.fy = null;
-      }
-      
-      return d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended);
-    }
-    
-    // Record performance metrics
-    const endTime = performance.now();
-    const renderTime = endTime - startTime;
-    
-    if (graphData.nodes.length > 500) {
-      console.log(`Graph rendered in ${renderTime.toFixed(1)}ms (${graphData.nodes.length} nodes, ${graphData.links.length} links)`);
-    }
-  };
-
-  // Create a Web Worker for simulation (if supported and enabled)
-  useEffect(() => {
-    if (visualizationSettings.useWorkerThread && window.Worker && !simulationWorker.current) {
-      try {
-        // Create a simple worker for force simulation
-        const workerCode = `
-          self.onmessage = function(e) {
-            const { nodes, links, iterations, params } = e.data;
-            
-            // Run simulation
-            const positions = runForceSimulation(nodes, links, iterations, params);
-            self.postMessage(positions);
-          };
-
-          function runForceSimulation(nodes, links, iterations, params) {
-            // Simple force-directed layout algorithm
-            // In a real implementation, this would use a proper force simulation library
-            const nodePositions = new Map();
-            
-            // Initialize positions if not provided
-            nodes.forEach(node => {
-              if (!nodePositions.has(node.id)) {
-                nodePositions.set(node.id, {
-                  x: node.x || Math.random() * params.width,
-                  y: node.y || Math.random() * params.height
-                });
-              }
-            });
-            
-            // Run simulation for fixed number of iterations
-            for (let i = 0; i < iterations; i++) {
-              // Apply forces
-              // ... (simplified force calculation)
-            }
-            
-            // Return updated positions
-            return Array.from(nodePositions.entries()).map(([id, pos]) => ({
-              id,
-              x: pos.x,
-              y: pos.y
-            }));
-          }
-        `;
-        
-        const blob = new Blob([workerCode], { type: 'application/javascript' });
-        const workerUrl = URL.createObjectURL(blob);
-        simulationWorker.current = new Worker(workerUrl);
-        
-        // Set up message handler
-        simulationWorker.current.onmessage = (e) => {
-          const positions = e.data;
-          // Update node positions with results from worker
-          if (positions && graphData) {
-            const updatedNodes = graphData.nodes.map(node => {
-              const pos = positions.find(p => p.id === node.id);
-              if (pos) {
-                return { ...node, x: pos.x, y: pos.y };
-              }
-              return node;
-            });
-            
-            setGraphData(prev => ({
-              ...prev,
-              nodes: updatedNodes
-            }));
-          }
-        };
-        
-        // Clean up
-        URL.revokeObjectURL(workerUrl);
-      } catch (error) {
-        console.error('Error creating Web Worker:', error);
-        setNotification({
-          open: true,
-          message: 'Worker threads not supported in your browser. Using main thread.',
-          severity: 'warning'
-        });
-      }
-    }
-    
-    return () => {
-      if (simulationWorker.current) {
-        simulationWorker.current.terminate();
-        simulationWorker.current = null;
-      }
-    };
-  }, [visualizationSettings.useWorkerThread, graphData]);
-
-  // WebGL Renderer setup (if supported and enabled)
-  useEffect(() => {
-    if (visualizationSettings.useWebGL && !rendererRef.current) {
-      try {
-        // Example WebGL setup (would be replaced with Three.js or similar)
-        console.log('WebGL rendering would be enabled here using Three.js or similar');
-        
-        // In a real implementation, this would initialize a WebGL context
-        // and render the graph using WebGL for improved performance with large graphs
-      } catch (error) {
-        console.error('Error initializing WebGL renderer:', error);
-        setNotification({
-          open: true,
-          message: 'WebGL rendering not supported. Using SVG.',
-          severity: 'warning'
-        });
-      }
-    }
-    
-    return () => {
-      // Clean up WebGL resources
-      if (rendererRef.current) {
-        // Dispose of WebGL context and resources
-        rendererRef.current = null;
-      }
-    };
-  }, [visualizationSettings.useWebGL]);
-
-  // Handle loading real-world data for performance testing
-  const handleLoadRealWorldData = async () => {
-    setGraphLoading(true);
-    try {
-      const data = await knowledgeGraphService.getRealWorldGraph();
-      
-      if (data && data.nodes && data.nodes.length > 0) {
-        setGraphData(data);
-        setNotification({
-          open: true,
-          message: `Loaded real-world dataset with ${data.nodes.length} nodes and ${data.links.length} links`,
-          severity: 'success'
-        });
-      } else {
-        throw new Error('Invalid data format');
-      }
-    } catch (error) {
-      console.error('Error loading real-world data:', error);
-      setNotification({
-        open: true,
-        message: 'Failed to load real-world data. Using test data instead.',
-        severity: 'error'
-      });
-      
-      // Fall back to test data
-      const testData = await knowledgeGraphService.getLargeTestGraph('large');
-      setGraphData(testData);
-    } finally {
-      setGraphLoading(false);
-    }
-  };
-
-  // Handle accessibility settings change
-  const handleAccessibilitySettingsChange = (newSettings) => {
-    setAccessibilitySettings(newSettings);
-    setAccessibilityDialogOpen(false);
-    
-    // Apply settings immediately if there's a graph
-    if (graphData) {
-      renderGraph();
-    }
-    
-    // Show confirmation
-    setNotification({
-      open: true,
-      message: 'Accessibility settings updated',
-      severity: 'success'
-    });
-  };
-
   return (
     <Box>
-      {/* Screen reader announcements */}
-      <div 
-        id="sr-announcement" 
-        role="status" 
-        aria-live="polite" 
-        style={{ 
-          position: 'absolute', 
-          width: '1px', 
-          height: '1px', 
-          margin: '-1px',
-          padding: 0,
-          overflow: 'hidden',
-          clip: 'rect(0, 0, 0, 0)',
-          whiteSpace: 'nowrap',
-          border: 0
-        }}
-      />
-      
-      {/* Accessibility Dialog */}
-      {accessibilityDialogOpen && (
-        <Portal>
-          <Box
-            sx={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              bgcolor: 'rgba(0,0,0,0.5)',
-              zIndex: 9999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              p: 2
-            }}
-            onClick={() => setAccessibilityDialogOpen(false)}
-          >
-            <Box 
-              sx={{ 
-                maxWidth: '800px', 
-                width: '100%', 
-                maxHeight: '90vh', 
-                overflowY: 'auto',
-                onClick: e => e.stopPropagation()
-              }}
-              onClick={e => e.stopPropagation()}
-            >
-              <KnowledgeGraphAccessibility 
-                settings={accessibilitySettings}
-                onSettingsChange={handleAccessibilitySettingsChange}
-              />
-            </Box>
-          </Box>
-        </Portal>
-      )}
-      
-      {/* Notifications */}
-      <Snackbar
-        open={notification.open}
-        autoHideDuration={6000}
-        onClose={() => setNotification({ ...notification, open: false })}
-        message={notification.message}
-        severity={notification.severity}
-      />
-      
       <Typography variant="h4" component="h1" gutterBottom>
         Knowledge Graph Explorer
       </Typography>
       <Typography variant="subtitle1" color="text.secondary" paragraph>
         Search, visualize, and explore relationships between AI research entities.
       </Typography>
-      
-      {/* Accessibility and performance buttons */}
-      <Box sx={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: 1 }}>
-        <Tooltip title="Accessibility Settings">
-          <IconButton 
-            color="primary" 
-            onClick={() => setAccessibilityDialogOpen(true)}
-            aria-label="Open accessibility settings"
-          >
-            <AccessibilityIcon />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Load Real-World Test Data">
-          <IconButton 
-            color="primary" 
-            onClick={handleLoadRealWorldData}
-            aria-label="Load real-world test data"
-            disabled={graphLoading}
-          >
-            <SpeedIcon />
-          </IconButton>
-        </Tooltip>
-      </Box>
-      
       {!searchResults.length && !selectedEntity && (
         <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="subtitle2">Getting Started</Typography>
@@ -1233,7 +1070,7 @@ const KnowledgeGraphPage = () => {
               <Select
                 labelId="entity-type-label"
                 value={entityType}
-                onChange={(e) => setEntityType(e.target.value)}
+                onChange={(e: SelectChangeEvent) => setEntityType(e.target.value)}
                 label="Entity Type"
               >
                 <MenuItem value="all">All Types</MenuItem>
@@ -1334,7 +1171,6 @@ const KnowledgeGraphPage = () => {
                                   ...visualizationSettings,
                                   showLabels: e.target.checked
                                 });
-                                if (graphData) renderGraph();
                               }}
                               color="primary"
                             />
@@ -1354,7 +1190,6 @@ const KnowledgeGraphPage = () => {
                                   ...visualizationSettings,
                                   highlightConnections: e.target.checked
                                 });
-                                if (graphData) renderGraph();
                               }}
                               color="primary"
                             />
@@ -1374,7 +1209,6 @@ const KnowledgeGraphPage = () => {
                                   ...visualizationSettings,
                                   showRelationshipLabels: e.target.checked
                                 });
-                                if (graphData) renderGraph();
                               }}
                               color="primary"
                             />
@@ -1394,7 +1228,6 @@ const KnowledgeGraphPage = () => {
                                   ...visualizationSettings,
                                   clusterByType: e.target.checked
                                 });
-                                if (graphData) renderGraph();
                               }}
                               color="primary"
                             />
@@ -1403,93 +1236,6 @@ const KnowledgeGraphPage = () => {
                         />
                       </Tooltip>
                     </Grid>
-                    
-                    {/* Performance optimization settings */}
-                    <Grid item xs={6} md={3}>
-                      <Tooltip title="Adjust detail level based on zoom for better performance">
-                        <FormControlLabel
-                          control={
-                            <Switch 
-                              checked={visualizationSettings.levelOfDetail}
-                              onChange={(e) => {
-                                setVisualizationSettings({
-                                  ...visualizationSettings,
-                                  levelOfDetail: e.target.checked
-                                });
-                                if (graphData) renderGraph();
-                              }}
-                              color="primary"
-                            />
-                          }
-                          label="Level of Detail"
-                        />
-                      </Tooltip>
-                    </Grid>
-                    <Grid item xs={6} md={3}>
-                      <Tooltip title="Progressively load visual elements for better performance">
-                        <FormControlLabel
-                          control={
-                            <Switch 
-                              checked={visualizationSettings.progressiveLoading}
-                              onChange={(e) => {
-                                setVisualizationSettings({
-                                  ...visualizationSettings,
-                                  progressiveLoading: e.target.checked
-                                });
-                                if (graphData) renderGraph();
-                              }}
-                              color="primary"
-                            />
-                          }
-                          label="Progressive Load"
-                        />
-                      </Tooltip>
-                    </Grid>
-                    <Grid item xs={6} md={3}>
-                      <Tooltip title="Use WebGL rendering for large graphs (experimental)">
-                        <FormControlLabel
-                          control={
-                            <Switch 
-                              checked={visualizationSettings.useWebGL}
-                              onChange={(e) => {
-                                setVisualizationSettings({
-                                  ...visualizationSettings,
-                                  useWebGL: e.target.checked
-                                });
-                                // WebGL requires a re-initialization
-                                if (rendererRef.current) {
-                                  rendererRef.current = null;
-                                }
-                                if (graphData) renderGraph();
-                              }}
-                              color="primary"
-                            />
-                          }
-                          label="WebGL (Beta)"
-                        />
-                      </Tooltip>
-                    </Grid>
-                    <Grid item xs={6} md={3}>
-                      <Tooltip title="Use Web Worker for force simulation (experimental)">
-                        <FormControlLabel
-                          control={
-                            <Switch 
-                              checked={visualizationSettings.useWorkerThread}
-                              onChange={(e) => {
-                                setVisualizationSettings({
-                                  ...visualizationSettings,
-                                  useWorkerThread: e.target.checked
-                                });
-                                if (graphData) renderGraph();
-                              }}
-                              color="primary"
-                            />
-                          }
-                          label="Worker Thread"
-                        />
-                      </Tooltip>
-                    </Grid>
-                    
                     <Grid item xs={12} md={6}>
                       <Typography variant="body2" gutterBottom>
                         Node Size: {visualizationSettings.nodeSize}
@@ -1501,7 +1247,6 @@ const KnowledgeGraphPage = () => {
                             ...visualizationSettings,
                             nodeSize: newValue
                           });
-                          if (graphData) renderGraph();
                         }}
                         step={1}
                         marks
@@ -1529,6 +1274,131 @@ const KnowledgeGraphPage = () => {
                         />
                       </Tooltip>
                     </Grid>
+                    
+                    {/* Performance Optimization Settings */}
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" gutterBottom color="primary">
+                        Performance Optimization
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Enable smart filtering for large graphs">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={visualizationSettings.filterThreshold !== undefined && visualizationSettings.filterThreshold > 0}
+                              onChange={(e) => {
+                                setVisualizationSettings({
+                                  ...visualizationSettings,
+                                  filterThreshold: e.target.checked ? 100 : 0
+                                });
+                              }}
+                              color="primary"
+                            />
+                          }
+                          label="Smart Node Filtering"
+                        />
+                      </Tooltip>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Load nodes incrementally for better performance">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={visualizationSettings.progressiveLoading || false}
+                              onChange={(e) => {
+                                setVisualizationSettings({
+                                  ...visualizationSettings,
+                                  progressiveLoading: e.target.checked
+                                });
+                                // Reset to initial load if progressive loading is enabled
+                                if (e.target.checked && filteredGraphData) {
+                                  setLoadedNodeCount(Math.min(progressiveLoadingStep, filteredGraphData.nodes.length));
+                                } else if (filteredGraphData) {
+                                  setLoadedNodeCount(filteredGraphData.nodes.length);
+                                }
+                              }}
+                              color="primary"
+                            />
+                          }
+                          label="Progressive Loading"
+                        />
+                      </Tooltip>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Adjust detail based on zoom level">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={visualizationSettings.levelOfDetail || false}
+                              onChange={(e) => {
+                                setVisualizationSettings({
+                                  ...visualizationSettings,
+                                  levelOfDetail: e.target.checked
+                                });
+                              }}
+                              color="primary"
+                            />
+                          }
+                          label="Level-of-Detail"
+                        />
+                      </Tooltip>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Enable dark mode for the visualization">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={visualizationSettings.darkMode}
+                              onChange={(e) => {
+                                setVisualizationSettings({
+                                  ...visualizationSettings,
+                                  darkMode: e.target.checked
+                                });
+                              }}
+                              color="primary"
+                            />
+                          }
+                          label="Dark Mode"
+                        />
+                      </Tooltip>
+                    </Grid>
+                    
+                    {visualizationSettings.progressiveLoading && filteredGraphData && (
+                      <Grid item xs={12}>
+                        <Box display="flex" alignItems="center" justifyContent="space-between">
+                          <Typography variant="body2">
+                            Showing {loadedNodeCount} of {filteredGraphData.nodes.length} nodes 
+                            ({Math.round(loadedNodeCount / filteredGraphData.nodes.length * 100)}%)
+                          </Typography>
+                          {loadedNodeCount < filteredGraphData.nodes.length && (
+                            <Button 
+                              variant="outlined" 
+                              size="small" 
+                              onClick={handleLoadMoreNodes}
+                              sx={{ ml: 2 }}
+                            >
+                              Load More Nodes
+                            </Button>
+                          )}
+                        </Box>
+                        <Slider
+                          value={loadedNodeCount}
+                          onChange={(e, newValue) => {
+                            setLoadedNodeCount(newValue);
+                          }}
+                          min={Math.min(progressiveLoadingStep, filteredGraphData.nodes.length)}
+                          max={filteredGraphData.nodes.length}
+                          step={Math.max(1, Math.floor(filteredGraphData.nodes.length / 10))}
+                          valueLabelDisplay="auto"
+                          valueLabelFormat={(value) => `${value} nodes`}
+                        />
+                      </Grid>
+                    )}
                   </Grid>
                 </AccordionDetails>
               </Accordion>
@@ -1639,6 +1509,92 @@ const KnowledgeGraphPage = () => {
                         </Tooltip>
                       </Box>
                     </Grid>
+                    
+                    {/* Performance Benchmark Controls */}
+                    <Grid item xs={12}>
+                      <Divider sx={{ my: 2 }} />
+                      <Typography variant="subtitle2" fontWeight="bold" color="primary">
+                        Performance Benchmarking
+                      </Typography>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Enable performance benchmarking mode">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={benchmarkMode}
+                              onChange={(e) => setBenchmarkMode(e.target.checked)}
+                              color="warning"
+                            />
+                          }
+                          label="Benchmark Mode"
+                        />
+                      </Tooltip>
+                    </Grid>
+                    
+                    <Grid item xs={6} md={4}>
+                      <Typography variant="body2" gutterBottom>
+                        Test Data Size: {testDataSize} nodes
+                      </Typography>
+                      <Slider
+                        value={testDataSize}
+                        onChange={(e, newValue) => setTestDataSize(newValue)}
+                        step={100}
+                        marks={[
+                          { value: 100, label: '100' },
+                          { value: 500, label: '500' },
+                          { value: 1000, label: '1K' },
+                          { value: 2000, label: '2K' }
+                        ]}
+                        min={100}
+                        max={2000}
+                        valueLabelDisplay="auto"
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12} md={5}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+                        <Button 
+                          variant="contained" 
+                          color="warning"
+                          startIcon={<SpeedIcon />}
+                          onClick={generateBenchmarkData}
+                          disabled={benchmarkMode === false}
+                          sx={{ mt: 1 }}
+                        >
+                          Generate Test Data & Benchmark
+                        </Button>
+                      </Box>
+                    </Grid>
+                    
+                    {benchmarkResults && (
+                      <Grid item xs={12}>
+                        <Paper sx={{ p: 2, mt: 1, bgcolor: 'warning.light' }}>
+                          <Typography variant="subtitle2" gutterBottom color="warning.dark">
+                            Benchmark Results
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid item xs={3}>
+                              <Typography variant="body2" fontWeight="bold">Render Time:</Typography>
+                              <Typography variant="body2">{benchmarkResults.renderTime.toFixed(2)} ms</Typography>
+                            </Grid>
+                            <Grid item xs={3}>
+                              <Typography variant="body2" fontWeight="bold">Frame Rate:</Typography>
+                              <Typography variant="body2">{benchmarkResults.frameRate.toFixed(1)} FPS</Typography>
+                            </Grid>
+                            <Grid item xs={3}>
+                              <Typography variant="body2" fontWeight="bold">Nodes:</Typography>
+                              <Typography variant="body2">{benchmarkResults.nodeCount}</Typography>
+                            </Grid>
+                            <Grid item xs={3}>
+                              <Typography variant="body2" fontWeight="bold">Links:</Typography>
+                              <Typography variant="body2">{benchmarkResults.linkCount}</Typography>
+                            </Grid>
+                          </Grid>
+                        </Paper>
+                      </Grid>
+                    )}
                   </Grid>
                 </AccordionDetails>
               </Accordion>
@@ -1647,7 +1603,7 @@ const KnowledgeGraphPage = () => {
         </Accordion>
       </Box>
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="info" sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
@@ -1757,7 +1713,7 @@ const KnowledgeGraphPage = () => {
                                     color: key === 'citations' ? 'success.main' : 'text.primary'
                                   }}
                                 >
-                                  {value}
+                                  {value?.toString()}
                                 </Typography>
                               </Paper>
                             </Grid>
@@ -1790,6 +1746,10 @@ const KnowledgeGraphPage = () => {
                 variant="outlined" 
                 sx={{ height: '48vh', p: 2 }}
                 ref={graphContainerRef}
+                onKeyDown={handleGraphKeydown}
+                tabIndex={-1}
+                role="region"
+                aria-label="Knowledge Graph Visualization Area"
               >
                 {graphLoading ? (
                   <Box display="flex" justifyContent="center" alignItems="center" height="100%">
@@ -1797,13 +1757,15 @@ const KnowledgeGraphPage = () => {
                   </Box>
                 ) : selectedEntity ? (
                   <Box position="relative" height="100%">
-                    <Box position="absolute" top={10} right={10} zIndex={1000} bgcolor="rgba(255,255,255,0.7)" borderRadius="4px" p={0.5}>
+                    {/* Control Panel */}
+                    <Box position="absolute" top={10} right={10} zIndex={1000} bgcolor="rgba(255,255,255,0.8)" borderRadius="4px" p={0.5}>
                       <Tooltip title={`Download visualization as ${exportFormat.toUpperCase()}`}>
                         <IconButton 
                           size="small" 
                           sx={{ mr: 1 }} 
                           onClick={handleExportGraph}
                           color="primary"
+                          aria-label="Download visualization"
                         >
                           <DownloadIcon />
                         </IconButton>
@@ -1813,6 +1775,7 @@ const KnowledgeGraphPage = () => {
                           size="small" 
                           sx={{ mr: 1 }}
                           color="primary"
+                          aria-label="Share visualization"
                           onClick={() => {
                             navigator.clipboard.writeText(window.location.href);
                             // Show toast or notification (simplified here)
@@ -1826,6 +1789,7 @@ const KnowledgeGraphPage = () => {
                         <IconButton 
                           size="small"
                           color="primary"
+                          aria-label="View help"
                           onClick={() => {
                             setAdvancedSearchOpen(true);
                           }}
@@ -1835,7 +1799,40 @@ const KnowledgeGraphPage = () => {
                       </Tooltip>
                     </Box>
                     
-                    {analysisSettings.showCentralityMetrics && (
+                    {/* Accessibility Keyboard Controls */}
+                    <Box 
+                      position="absolute" 
+                      top={10} 
+                      left={10} 
+                      zIndex={1000} 
+                      p={1.5} 
+                      bgcolor="rgba(255,255,255,0.9)" 
+                      borderRadius="4px"
+                      boxShadow="0 1px 3px rgba(0,0,0,0.12)"
+                      border="1px solid rgba(25, 118, 210, 0.3)"
+                      aria-live="polite"
+                    >
+                      <Typography variant="caption" component="div" fontWeight="bold" color="primary.main">
+                        Keyboard Navigation
+                      </Typography>
+                      <Divider sx={{ my: 0.5 }} />
+                      <Box display="grid" gridTemplateColumns="repeat(2, 1fr)" gap={0.5}>
+                        <Typography variant="caption" component="div" fontWeight="medium">←/→:</Typography>
+                        <Typography variant="caption" component="div" color="text.secondary">Navigate nodes</Typography>
+                        
+                        <Typography variant="caption" component="div" fontWeight="medium">Home/End:</Typography>
+                        <Typography variant="caption" component="div" color="text.secondary">First/Last node</Typography>
+                        
+                        <Typography variant="caption" component="div" fontWeight="medium">+/-:</Typography>
+                        <Typography variant="caption" component="div" color="text.secondary">Zoom in/out</Typography>
+                        
+                        <Typography variant="caption" component="div" fontWeight="medium">Enter/Space:</Typography>
+                        <Typography variant="caption" component="div" color="text.secondary">Select node</Typography>
+                      </Box>
+                    </Box>
+                    
+                    {/* Network Metrics Panel (if enabled) */}
+                    {analysisSettings.showCentralityMetrics && filteredGraphData && (
                       <Box 
                         position="absolute" 
                         bottom={10} 
@@ -1846,6 +1843,7 @@ const KnowledgeGraphPage = () => {
                         borderRadius="4px"
                         boxShadow="0 1px 3px rgba(0,0,0,0.12)"
                         border="1px solid rgba(25, 118, 210, 0.3)"
+                        aria-label="Network metrics panel"
                       >
                         <Typography variant="caption" component="div" fontWeight="bold" color="primary.main">
                           Network Metrics
@@ -1853,26 +1851,29 @@ const KnowledgeGraphPage = () => {
                         <Divider sx={{ my: 0.5 }} />
                         <Box display="grid" gridTemplateColumns="repeat(2, 1fr)" gap={1}>
                           <Typography variant="caption" component="div" fontWeight="medium">Nodes:</Typography>
-                          <Typography variant="caption" component="div" color="text.secondary">{graphData?.nodes.length || 0}</Typography>
+                          <Typography variant="caption" component="div" color="text.secondary">{filteredGraphData.nodes.length}</Typography>
                           
                           <Typography variant="caption" component="div" fontWeight="medium">Relationships:</Typography>
-                          <Typography variant="caption" component="div" color="text.secondary">{graphData?.links.length || 0}</Typography>
+                          <Typography variant="caption" component="div" color="text.secondary">{filteredGraphData.links.length}</Typography>
                           
                           <Typography variant="caption" component="div" fontWeight="medium">Density:</Typography>
                           <Typography variant="caption" component="div" color="text.secondary">
-                            {((graphData?.links.length || 0) / ((graphData?.nodes.length || 0) * ((graphData?.nodes.length || 0) - 1) / 2)).toFixed(3)}
+                            {((filteredGraphData.links.length) / 
+                              ((filteredGraphData.nodes.length) * 
+                               ((filteredGraphData.nodes.length) - 1) / 2)).toFixed(3)}
                           </Typography>
                           
                           <Typography variant="caption" component="div" fontWeight="medium">Key Node:</Typography>
-                          <Typography variant="caption" component="div" color="text.secondary">{selectedEntity?.name}</Typography>
+                          <Typography variant="caption" component="div" color="text.secondary">{selectedEntity.name}</Typography>
                         </Box>
                       </Box>
                     )}
                     
+                    {/* Research Frontiers Panel (if enabled) */}
                     {analysisSettings.identifyResearchFrontiers && (
                       <Box 
                         position="absolute" 
-                        top={10} 
+                        top={analysisSettings.showCentralityMetrics ? 150 : 100} 
                         left={10} 
                         zIndex={1000} 
                         p={1.5} 
@@ -1880,6 +1881,7 @@ const KnowledgeGraphPage = () => {
                         borderRadius="4px"
                         boxShadow="0 1px 3px rgba(0,0,0,0.12)"
                         border="1px solid rgba(25, 118, 210, 0.3)"
+                        aria-label="Research frontiers panel"
                       >
                         <Typography variant="caption" component="div" fontWeight="bold" color="primary.main">
                           Research Frontiers
@@ -1908,7 +1910,86 @@ const KnowledgeGraphPage = () => {
                       </Box>
                     )}
                     
-                    <svg ref={svgRef} width="100%" height="100%"></svg>
+                    {/* Text-based alternative view for screen readers */}
+                    <Box 
+                      id="graph-text-alternative"
+                      className="visually-hidden" 
+                      aria-live="polite" 
+                      role="region"
+                      aria-label="Text description of knowledge graph"
+                      sx={{ 
+                        position: 'absolute', 
+                        width: '1px', 
+                        height: '1px', 
+                        padding: 0, 
+                        margin: '-1px', 
+                        overflow: 'hidden', 
+                        clip: 'rect(0, 0, 0, 0)', 
+                        whiteSpace: 'nowrap', 
+                        border: 0 
+                      }}
+                    >
+                      {filteredGraphData && selectedEntity ? (
+                        <>
+                          <div>Knowledge graph centered on {selectedEntity.type}: {selectedEntity.name}</div>
+                          <div>The graph contains {filteredGraphData.nodes.length} nodes and {filteredGraphData.links.length} connections.</div>
+                          <div>Related entities: {filteredGraphData.links
+                            .filter(link => {
+                              const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                              const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                              return sourceId === selectedEntity.id || targetId === selectedEntity.id;
+                            })
+                            .map(link => {
+                              const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                              const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                              const otherNodeId = sourceId === selectedEntity.id ? targetId : sourceId;
+                              const otherNode = filteredGraphData.nodes.find(node => node.id === otherNodeId);
+                              return otherNode ? `${otherNode.name} (${otherNode.type})` : '';
+                            })
+                            .filter(Boolean)
+                            .join(', ')}
+                          </div>
+                        </>
+                      ) : (
+                        <div>No knowledge graph visualization available. Please select an entity first.</div>
+                      )}
+                    </Box>
+                    
+                    {/* Progressive loading indicator if enabled */}
+                    {visualizationSettings.progressiveLoading && filteredGraphData && 
+                      loadedNodeCount < filteredGraphData.nodes.length && (
+                      <Box 
+                        position="absolute" 
+                        bottom={10} 
+                        right={10} 
+                        zIndex={1000} 
+                        p={1} 
+                        bgcolor="rgba(255,255,255,0.9)" 
+                        borderRadius="4px"
+                        boxShadow="0 1px 3px rgba(0,0,0,0.12)"
+                        border="1px solid rgba(25, 118, 210, 0.3)"
+                        display="flex"
+                        alignItems="center"
+                        aria-live="polite"
+                      >
+                        <Typography variant="caption" component="div" sx={{ mr: 1 }}>
+                          {loadedNodeCount} of {filteredGraphData.nodes.length} nodes
+                        </Typography>
+                        <Button 
+                          size="small" 
+                          variant="outlined" 
+                          color="primary" 
+                          onClick={handleLoadMoreNodes}
+                          sx={{ minWidth: 20, py: 0, px: 1 }}
+                          aria-label={`Load more nodes. Currently showing ${loadedNodeCount} of ${filteredGraphData.nodes.length}`}
+                        >
+                          Load More
+                        </Button>
+                      </Box>
+                    )}
+                    
+                    {/* The D3 visualization area */}
+                    <svg width="100%" height="100%" role="img" aria-labelledby="graph-text-alternative"></svg>
                   </Box>
                 ) : (
                   <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100%">
@@ -1988,7 +2069,7 @@ const KnowledgeGraphPage = () => {
                         • Use the search bar to find entities by name or type<br />
                         • Try "transformer", "BERT", or "attention" to explore related concepts<br />
                         • Enable advanced options to customize the visualization<br />
-                        • Use analysis tools to discover research trends and patterns
+                        • Use arrow keys and keyboard to navigate the graph
                       </Typography>
                     </Alert>
                   </Box>

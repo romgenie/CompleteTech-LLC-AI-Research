@@ -10,6 +10,7 @@ import { useAuth } from './contexts/AuthContext';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Login = lazy(() => import('./pages/Login'));
 const ResearchPage = lazy(() => import('./pages/ResearchPage'));
+// KnowledgeGraphPage is now working with JavaScript
 const KnowledgeGraphPage = lazy(() => import('./pages/KnowledgeGraphPage'));
 const ImplementationPage = lazy(() => import('./pages/ImplementationPage'));
 const NotFound = lazy(() => import('./pages/NotFound'));

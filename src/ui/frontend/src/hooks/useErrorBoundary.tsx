@@ -57,11 +57,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     if (hasError) {
       // Check if a custom fallback component was provided
       if (fallback) {
-        return React.cloneElement(fallback, {
-          error,
-          errorInfo,
-          reset: this.reset
-        });
+        // Just return the fallback without passing props
+        // The fallback component should handle its own UI
+        return fallback;
       }
 
       // Default fallback UI

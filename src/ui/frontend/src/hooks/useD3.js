@@ -8,7 +8,7 @@ import * as d3 from 'd3';
  * @param {Array} dependencies - Array of dependencies to trigger re-rendering
  * @returns {React.MutableRefObject} - Ref to attach to the DOM element for the visualization
  */
-function useD3(renderChartFn, dependencies = []) {
+export function useD3(renderChartFn, dependencies = []) {
   const ref = useRef();
 
   useEffect(() => {
@@ -28,6 +28,28 @@ function useD3(renderChartFn, dependencies = []) {
   }, dependencies);
 
   return ref;
+}
+
+/**
+ * Custom hook for SVG-based D3 visualizations
+ * 
+ * @param {Function} renderFn - Function that renders D3 visualization when called with a d3.Selection of an SVG element
+ * @param {Array} dependencies - Dependencies array to control when to re-render
+ * @returns {React.MutableRefObject} - Ref object to attach to an SVG element
+ */
+export function useSvgD3(renderFn, dependencies = []) {
+  return useD3(renderFn, dependencies);
+}
+
+/**
+ * Custom hook for div-based D3 visualizations
+ * 
+ * @param {Function} renderFn - Function that renders D3 visualization when called with a d3.Selection of a div element
+ * @param {Array} dependencies - Dependencies array to control when to re-render
+ * @returns {React.MutableRefObject} - Ref object to attach to a div element
+ */
+export function useDivD3(renderFn, dependencies = []) {
+  return useD3(renderFn, dependencies);
 }
 
 export default useD3;

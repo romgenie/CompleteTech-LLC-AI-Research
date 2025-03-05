@@ -21,10 +21,7 @@ interface VisualizationSettings {
   [key: string]: any;
 }
 
-interface NodeFocusInfo {
-  id: string;
-  index: number;
-}
+// NodeFocusInfo moved to export interface below
 
 /**
  * Filters nodes in large graphs based on importance metrics
