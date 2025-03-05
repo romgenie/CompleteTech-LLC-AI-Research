@@ -10,16 +10,21 @@ import uuid
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, BackgroundTasks, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import JSONResponse
 
 from ..models.paper import Paper, PaperStatus, add_processing_event
 from ..models.state_machine import PaperStateMachine, StateTransitionException
 from ..db.models import PaperModel
 from ..tasks.processing_tasks import process_paper, cancel_processing_task
+from ..websocket.connection import manager
+from ..websocket.events import create_system_event
 
 # Create router
 router = APIRouter(prefix="/papers", tags=["Paper Processing"])
+
+# Create WebSocket router
+ws_router = APIRouter(tags=["WebSocket"])
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -629,3 +634,259 @@ async def search_papers(
                 "message": f"Error searching papers: {str(e)}"
             }
         )
+
+
+@ws_router.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time paper processing updates.
+    
+    Establishes a WebSocket connection for receiving real-time updates
+    about all paper processing events.
+    
+    Args:
+        websocket: The WebSocket connection
+    """
+    client_id = str(uuid.uuid4())
+    
+    try:
+        await manager.connect(websocket, client_id)
+        logger.info(f"WebSocket client {client_id} connected")
+        
+        # Send welcome message
+        welcome_event = create_system_event(
+            message="Connected to Paper Processing WebSocket",
+            event_type="connection",
+            metadata={
+                "client_id": client_id,
+                "connection_time": datetime.utcnow().isoformat()
+            }
+        )
+        await manager.send_personal_message(welcome_event, websocket)
+        
+        # Handle messages from the client
+        while True:
+            try:
+                data = await websocket.receive_json()
+                
+                # Process any commands from the client
+                if "command" in data:
+                    command = data["command"]
+                    
+                    if command == "subscribe":
+                        # Subscribe to a specific paper's updates
+                        if "paper_id" in data:
+                            paper_id = data["paper_id"]
+                            await manager.subscribe_to_paper(client_id, paper_id)
+                            
+                            paper_model = PaperModel.get_by_id(paper_id)
+                            if paper_model:
+                                paper = paper_model.to_domain()
+                                
+                                response_event = create_system_event(
+                                    message=f"Subscribed to paper {paper_id}",
+                                    event_type="subscription",
+                                    metadata={
+                                        "paper_id": paper_id,
+                                        "paper_status": paper.status.value,
+                                        "subscription_time": datetime.utcnow().isoformat()
+                                    }
+                                )
+                            else:
+                                response_event = create_system_event(
+                                    message=f"Subscribed to paper {paper_id}, but paper not found",
+                                    event_type="subscription",
+                                    metadata={
+                                        "paper_id": paper_id,
+                                        "paper_exists": False,
+                                        "subscription_time": datetime.utcnow().isoformat()
+                                    }
+                                )
+                                
+                            await manager.send_personal_message(response_event, websocket)
+                    
+                    elif command == "unsubscribe":
+                        # Unsubscribe from a specific paper's updates
+                        if "paper_id" in data:
+                            paper_id = data["paper_id"]
+                            await manager.unsubscribe_from_paper(client_id, paper_id)
+                            
+                            response_event = create_system_event(
+                                message=f"Unsubscribed from paper {paper_id}",
+                                event_type="unsubscription",
+                                metadata={
+                                    "paper_id": paper_id,
+                                    "unsubscription_time": datetime.utcnow().isoformat()
+                                }
+                            )
+                            await manager.send_personal_message(response_event, websocket)
+                    
+                    elif command == "ping":
+                        # Simple ping command to keep connection alive
+                        response_event = create_system_event(
+                            message="pong",
+                            event_type="ping_response",
+                            metadata={
+                                "timestamp": datetime.utcnow().isoformat()
+                            }
+                        )
+                        await manager.send_personal_message(response_event, websocket)
+                        
+                    else:
+                        # Unknown command
+                        response_event = create_system_event(
+                            message=f"Unknown command: {command}",
+                            event_type="error",
+                            metadata={
+                                "command": command,
+                                "timestamp": datetime.utcnow().isoformat()
+                            }
+                        )
+                        await manager.send_personal_message(response_event, websocket)
+                
+                else:
+                    # Invalid message format
+                    response_event = create_system_event(
+                        message="Invalid message format",
+                        event_type="error",
+                        metadata={
+                            "received_data": str(data),
+                            "timestamp": datetime.utcnow().isoformat()
+                        }
+                    )
+                    await manager.send_personal_message(response_event, websocket)
+            
+            except WebSocketDisconnect:
+                logger.info(f"WebSocket client {client_id} disconnected")
+                await manager.disconnect(client_id)
+                break
+                
+            except Exception as e:
+                logger.error(f"Error processing WebSocket message from client {client_id}: {e}")
+                try:
+                    error_event = create_system_event(
+                        message=f"Error processing message: {str(e)}",
+                        event_type="error",
+                        metadata={
+                            "timestamp": datetime.utcnow().isoformat()
+                        }
+                    )
+                    await manager.send_personal_message(error_event, websocket)
+                except:
+                    # If we can't send the error message, disconnect
+                    await manager.disconnect(client_id)
+                    break
+    
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket client {client_id} disconnected during handshake")
+    
+    except Exception as e:
+        logger.error(f"Error establishing WebSocket connection: {e}")
+        try:
+            await websocket.close(code=status.WS_1011_INTERNAL_ERROR)
+        except:
+            pass
+
+
+@ws_router.websocket("/ws/{paper_id}")
+async def paper_websocket_endpoint(websocket: WebSocket, paper_id: str):
+    """
+    WebSocket endpoint for real-time updates about a specific paper.
+    
+    Establishes a WebSocket connection for receiving real-time updates
+    about a specific paper's processing events.
+    
+    Args:
+        websocket: The WebSocket connection
+        paper_id: The ID of the paper to subscribe to
+    """
+    client_id = str(uuid.uuid4())
+    
+    try:
+        # Connect the client
+        await manager.connect(websocket, client_id)
+        logger.info(f"WebSocket client {client_id} connected for paper {paper_id}")
+        
+        # Subscribe to the specified paper
+        await manager.subscribe_to_paper(client_id, paper_id)
+        
+        # Verify the paper exists and get current status
+        paper_model = PaperModel.get_by_id(paper_id)
+        
+        if paper_model:
+            paper = paper_model.to_domain()
+            
+            # Send initial status message
+            welcome_event = create_system_event(
+                message=f"Connected to paper {paper_id} WebSocket",
+                event_type="connection",
+                metadata={
+                    "client_id": client_id,
+                    "paper_id": paper_id,
+                    "paper_status": paper.status.value,
+                    "connection_time": datetime.utcnow().isoformat()
+                }
+            )
+        else:
+            # Paper not found, but still subscribe in case it's created later
+            welcome_event = create_system_event(
+                message=f"Connected to paper {paper_id} WebSocket, but paper not found",
+                event_type="connection",
+                metadata={
+                    "client_id": client_id,
+                    "paper_id": paper_id,
+                    "paper_exists": False,
+                    "connection_time": datetime.utcnow().isoformat()
+                }
+            )
+        
+        await manager.send_personal_message(welcome_event, websocket)
+        
+        # Keep the connection alive, handling ping messages
+        while True:
+            try:
+                data = await websocket.receive_json()
+                
+                # Only process ping commands on this endpoint
+                if "command" in data and data["command"] == "ping":
+                    response_event = create_system_event(
+                        message="pong",
+                        event_type="ping_response",
+                        metadata={
+                            "paper_id": paper_id,
+                            "timestamp": datetime.utcnow().isoformat()
+                        }
+                    )
+                    await manager.send_personal_message(response_event, websocket)
+            
+            except WebSocketDisconnect:
+                logger.info(f"WebSocket client {client_id} for paper {paper_id} disconnected")
+                await manager.disconnect(client_id)
+                break
+                
+            except Exception as e:
+                logger.error(f"Error processing WebSocket message from client {client_id}: {e}")
+                try:
+                    error_event = create_system_event(
+                        message=f"Error processing message: {str(e)}",
+                        event_type="error",
+                        metadata={
+                            "paper_id": paper_id,
+                            "timestamp": datetime.utcnow().isoformat()
+                        }
+                    )
+                    await manager.send_personal_message(error_event, websocket)
+                except:
+                    # If we can't send the error message, disconnect
+                    await manager.disconnect(client_id)
+                    break
+    
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket client {client_id} for paper {paper_id} disconnected during handshake")
+    
+    except Exception as e:
+        logger.error(f"Error establishing WebSocket connection for paper {paper_id}: {e}")
+        try:
+            await websocket.close(code=status.WS_1011_INTERNAL_ERROR)
+        except:
+            pass

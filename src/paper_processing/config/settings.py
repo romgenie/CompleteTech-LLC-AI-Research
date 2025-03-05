@@ -250,6 +250,86 @@ class ExtractionSettings(BaseModel):
     )
     
 
+class KnowledgeGraphSettings(BaseModel):
+    """Knowledge Graph connection settings."""
+    
+    host: str = Field(
+        default="localhost",
+        description="Neo4j host for Knowledge Graph"
+    )
+    port: int = Field(
+        default=7687,
+        description="Neo4j port for Knowledge Graph",
+        ge=1,
+        le=65535
+    )
+    user: str = Field(
+        default="neo4j",
+        description="Neo4j username for Knowledge Graph"
+    )
+    password: str = Field(
+        default="password",
+        description="Neo4j password for Knowledge Graph"
+    )
+    database: str = Field(
+        default="neo4j",
+        description="Neo4j database name for Knowledge Graph"
+    )
+    encryption: bool = Field(
+        default=False,
+        description="Whether to use encryption for Neo4j connection"
+    )
+    max_connection_pool_size: int = Field(
+        default=50,
+        description="Maximum connection pool size for Neo4j",
+        ge=1
+    )
+    connection_timeout: int = Field(
+        default=30,
+        description="Connection timeout in seconds",
+        ge=1
+    )
+
+
+class TemporalEvolutionSettings(BaseModel):
+    """Temporal Evolution Layer settings."""
+    
+    enabled: bool = Field(
+        default=True,
+        description="Whether to enable Temporal Evolution Layer integration"
+    )
+    host: str = Field(
+        default="localhost",
+        description="Neo4j host for Temporal Evolution Layer"
+    )
+    port: int = Field(
+        default=7687,
+        description="Neo4j port for Temporal Evolution Layer",
+        ge=1,
+        le=65535
+    )
+    user: str = Field(
+        default="neo4j",
+        description="Neo4j username for Temporal Evolution Layer"
+    )
+    password: str = Field(
+        default="password",
+        description="Neo4j password for Temporal Evolution Layer"
+    )
+    database: str = Field(
+        default="neo4j",
+        description="Neo4j database name for Temporal Evolution Layer"
+    )
+    encryption: bool = Field(
+        default=False,
+        description="Whether to use encryption for Neo4j connection"
+    )
+    use_same_connection: bool = Field(
+        default=True,
+        description="Whether to use the same Neo4j connection as Knowledge Graph"
+    )
+    
+
 class IntegrationSettings(BaseModel):
     """Integration settings."""
     
@@ -334,6 +414,14 @@ class Settings(BaseSettings):
         default_factory=ExtractionSettings,
         description="Extraction settings"
     )
+    knowledge_graph: KnowledgeGraphSettings = Field(
+        default_factory=KnowledgeGraphSettings,
+        description="Knowledge Graph settings"
+    )
+    temporal_evolution: TemporalEvolutionSettings = Field(
+        default_factory=TemporalEvolutionSettings,
+        description="Temporal Evolution Layer settings"
+    )
     integration: IntegrationSettings = Field(
         default_factory=IntegrationSettings,
         description="Integration settings"
@@ -391,3 +479,27 @@ def get_settings() -> Settings:
         The current settings instance
     """
     return settings
+
+
+# Convenience constants for common settings
+
+# Knowledge Graph
+KNOWLEDGE_GRAPH_HOST = settings.knowledge_graph.host
+KNOWLEDGE_GRAPH_PORT = settings.knowledge_graph.port
+KNOWLEDGE_GRAPH_USER = settings.knowledge_graph.user
+KNOWLEDGE_GRAPH_PASSWORD = settings.knowledge_graph.password
+KNOWLEDGE_GRAPH_DATABASE = settings.knowledge_graph.database
+
+# Temporal Evolution Layer
+TEMPORAL_EVOLUTION_ENABLED = settings.temporal_evolution.enabled
+TEMPORAL_EVOLUTION_HOST = settings.temporal_evolution.host if not settings.temporal_evolution.use_same_connection else KNOWLEDGE_GRAPH_HOST
+TEMPORAL_EVOLUTION_PORT = settings.temporal_evolution.port if not settings.temporal_evolution.use_same_connection else KNOWLEDGE_GRAPH_PORT
+TEMPORAL_EVOLUTION_USER = settings.temporal_evolution.user if not settings.temporal_evolution.use_same_connection else KNOWLEDGE_GRAPH_USER
+TEMPORAL_EVOLUTION_PASSWORD = settings.temporal_evolution.password if not settings.temporal_evolution.use_same_connection else KNOWLEDGE_GRAPH_PASSWORD
+TEMPORAL_EVOLUTION_DATABASE = settings.temporal_evolution.database if not settings.temporal_evolution.use_same_connection else KNOWLEDGE_GRAPH_DATABASE
+
+# Extraction settings
+ENTITY_CONFIDENCE_THRESHOLD = settings.extraction.entity_confidence_threshold
+RELATIONSHIP_CONFIDENCE_THRESHOLD = settings.extraction.relationship_confidence_threshold
+MAX_ENTITIES = settings.extraction.max_entities_per_paper
+MAX_RELATIONSHIPS = settings.extraction.max_relationships_per_paper
