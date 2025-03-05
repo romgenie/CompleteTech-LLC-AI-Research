@@ -53,6 +53,7 @@ from src.api.routers import (
     comments,
     versions,
 )
+from research_implementation.api.planning import router as planning_router
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
@@ -60,6 +61,7 @@ app.include_router(health.router, prefix="/health", tags=["Health"])
 app.include_router(knowledge_graph.router, prefix="/knowledge", tags=["Knowledge Graph"])
 app.include_router(research_orchestration.router, prefix="/research", tags=["Research"])
 app.include_router(research_implementation.router, prefix="/implementation", tags=["Implementation"])
+app.include_router(planning_router, prefix="/implementation/planning", tags=["Implementation Planning"])
 
 # Include collaboration routers
 app.include_router(workspaces.router, prefix="/collaboration", tags=["Team Collaboration"])
