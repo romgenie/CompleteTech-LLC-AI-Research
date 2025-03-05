@@ -28,6 +28,16 @@ class Task:
     created_at: datetime = field(default_factory=datetime.now)
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+    
+    def __hash__(self):
+        """Make Task hashable by using the id as the hash."""
+        return hash(self.id)
+    
+    def __eq__(self, other):
+        """Compare Tasks by id."""
+        if not isinstance(other, Task):
+            return False
+        return self.id == other.id
 
 class TaskPlanner:
     """
@@ -57,10 +67,11 @@ class TaskPlanner:
         tasks = {}
         
         # Create setup tasks for requirements
+        setup_task_id = None
         if plan.requirements.get("frameworks") or plan.requirements.get("libraries"):
-            task_id = self._generate_task_id()
-            tasks[task_id] = Task(
-                id=task_id,
+            setup_task_id = self._generate_task_id()
+            tasks[setup_task_id] = Task(
+                id=setup_task_id,
                 name="Setup Development Environment",
                 description="Install required frameworks and libraries",
                 component="setup",
@@ -72,6 +83,11 @@ class TaskPlanner:
         for component in plan.components:
             # Core implementation task
             impl_task_id = self._generate_task_id()
+            impl_deps = []
+            # Add dependency on setup task if it exists
+            if setup_task_id:
+                impl_deps.append(setup_task_id)
+                
             tasks[impl_task_id] = Task(
                 id=impl_task_id,
                 name=f"Implement {component.name}",
@@ -79,7 +95,7 @@ class TaskPlanner:
                 component=component.name,
                 estimated_hours=self._estimate_component_effort(component),
                 priority=self._calculate_priority(component),
-                dependencies=[]  # Will be updated after all tasks are created
+                dependencies=impl_deps  # Will be updated further after all tasks are created
             )
             
             # Testing task
