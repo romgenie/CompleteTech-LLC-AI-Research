@@ -51,6 +51,11 @@ import {
 import { knowledgeGraphColorSchemes } from '../theme';
 import { useTheme } from '../contexts/ThemeContext';
 import KnowledgeGraphAccessibility from '../components/KnowledgeGraphAccessibility';
+import KnowledgeGraphTableView from '../components/KnowledgeGraphTableView';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import ToggleButton from '@mui/material/ToggleButton';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import BubbleChartIcon from '@mui/icons-material/BubbleChart';
 
 const KnowledgeGraphPage = () => {
   // Search state
@@ -81,7 +86,8 @@ const KnowledgeGraphPage = () => {
     filterThreshold: 100,
     importanceThreshold: 0.5,
     progressiveLoading: false,
-    levelOfDetail: true
+    levelOfDetail: true,
+    tableView: false // Added table view toggle for accessibility
   });
   
   // Analysis settings
@@ -1184,6 +1190,37 @@ const KnowledgeGraphPage = () => {
                     <Typography variant="body2" gutterBottom>
                       <strong>Keyboard navigation:</strong> Use arrow keys to navigate nodes, Enter to select, +/- to zoom.
                     </Typography>
+                    
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        View Mode
+                      </Typography>
+                      <ToggleButtonGroup
+                        value={visualizationSettings.tableView ? 'table' : 'graph'}
+                        exclusive
+                        onChange={(e, newView) => {
+                          if (newView !== null) {
+                            setVisualizationSettings({
+                              ...visualizationSettings,
+                              tableView: newView === 'table'
+                            });
+                          }
+                        }}
+                        aria-label="Graph view mode"
+                      >
+                        <ToggleButton value="graph" aria-label="Graph view">
+                          <BubbleChartIcon sx={{ mr: 1 }} />
+                          Visual Graph
+                        </ToggleButton>
+                        <ToggleButton value="table" aria-label="Table view">
+                          <ViewListIcon sx={{ mr: 1 }} />
+                          Table View
+                        </ToggleButton>
+                      </ToggleButtonGroup>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        Table view provides an accessible alternative for screen readers and easier navigation.
+                      </Typography>
+                    </Box>
                   </Box>
                 </AccordionDetails>
               </Accordion>
@@ -1791,8 +1828,42 @@ const KnowledgeGraphPage = () => {
                   </Box>
                 ) : selectedEntity ? (
                   <Box position="relative" height="100%">
-                    {/* Control Panel */}
-                    <Box position="absolute" top={10} right={10} zIndex={1000} bgcolor="rgba(255,255,255,0.8)" borderRadius="4px" p={0.5}>
+                    {/* Choose which view to render based on tableView setting */}
+                    {visualizationSettings.tableView ? (
+                      <KnowledgeGraphTableView 
+                        graphData={filteredGraphData} 
+                        selectedEntity={selectedEntity}
+                        onSelectEntity={handleSelectEntity}
+                      />
+                    ) : (
+                      <>
+                        {/* View Toggle */}
+                        <Box position="absolute" top={10} left={10} zIndex={1000} bgcolor="rgba(255,255,255,0.8)" borderRadius="4px" p={0.5}>
+                          <ToggleButtonGroup
+                            size="small"
+                            value={visualizationSettings.tableView ? 'table' : 'graph'}
+                            exclusive
+                            onChange={(e, newView) => {
+                              if (newView !== null) {
+                                setVisualizationSettings({
+                                  ...visualizationSettings,
+                                  tableView: newView === 'table'
+                                });
+                              }
+                            }}
+                            aria-label="Graph view mode"
+                          >
+                            <ToggleButton value="graph" aria-label="Visual graph">
+                              <BubbleChartIcon />
+                            </ToggleButton>
+                            <ToggleButton value="table" aria-label="Table view">
+                              <ViewListIcon />
+                            </ToggleButton>
+                          </ToggleButtonGroup>
+                        </Box>
+                        
+                        {/* Control Panel */}
+                        <Box position="absolute" top={10} right={10} zIndex={1000} bgcolor="rgba(255,255,255,0.8)" borderRadius="4px" p={0.5}>
                       <Tooltip title={`Download visualization as ${exportFormat.toUpperCase()}`}>
                         <IconButton 
                           size="small" 

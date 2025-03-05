@@ -273,23 +273,37 @@ export async function loadRealWorldDataset(entityIds: string[]): Promise<{ nodes
       try {
         const data = await knowledgeGraphService.getRelatedEntities(entityId);
         
+        // Type assertion to handle the API response properly
+        const typedData = data as { 
+          entities: Entity[], 
+          relationships: Relationship[] 
+        };
+        
         // Add the central entity
-        if (data.entities.length > 0) {
+        if (typedData.entities && typedData.entities.length > 0) {
           const centralEntity = await knowledgeGraphService.getEntityDetails(entityId);
           if (centralEntity) {
-            uniqueNodes.set(centralEntity.id, centralEntity);
+            // Type assertion for centralEntity
+            const typedCentralEntity = centralEntity as unknown as Entity;
+            if (typedCentralEntity.id) {
+              uniqueNodes.set(typedCentralEntity.id, typedCentralEntity);
+            }
           }
         }
         
         // Add all entities
-        data.entities.forEach((entity: Entity) => {
-          uniqueNodes.set(entity.id, entity);
-        });
+        if (typedData.entities) {
+          typedData.entities.forEach((entity: Entity) => {
+            uniqueNodes.set(entity.id, entity);
+          });
+        }
         
         // Add all relationships
-        data.relationships.forEach((rel: Relationship) => {
-          uniqueLinks.set(rel.id, rel);
-        });
+        if (typedData.relationships) {
+          typedData.relationships.forEach((rel: Relationship) => {
+            uniqueLinks.set(rel.id, rel);
+          });
+        }
       } catch (err) {
         console.error(`Error loading real-world data for entity ${entityId}:`, err);
         // Continue with other entities
