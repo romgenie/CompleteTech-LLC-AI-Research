@@ -10,6 +10,9 @@ import { useAuth } from './contexts/AuthContext';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Login = lazy(() => import('./pages/Login'));
 const ResearchPage = lazy(() => import('./pages/ResearchPage'));
+const ResearchPageOptimized = lazy(() => import('./pages/ResearchPageOptimized'));
+const ResearchStatsPage = lazy(() => import('./pages/ResearchStatsPage'));
+const TagManagementPage = lazy(() => import('./pages/TagManagementPage'));
 // KnowledgeGraphPage is now working with JavaScript
 const KnowledgeGraphPage = lazy(() => import('./pages/KnowledgeGraphPage'));
 const ImplementationPage = lazy(() => import('./pages/ImplementationPage'));
@@ -50,6 +53,30 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <ResearchPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/research/optimized" 
+                element={
+                  <ProtectedRoute>
+                    <ResearchPageOptimized />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/research/stats" 
+                element={
+                  <ProtectedRoute>
+                    <ResearchStatsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/research/tags" 
+                element={
+                  <ProtectedRoute>
+                    <TagManagementPage />
                   </ProtectedRoute>
                 } 
               />

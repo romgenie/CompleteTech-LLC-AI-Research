@@ -1,241 +1,292 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Box, 
-  Typography, 
-  Grid, 
-  Card, 
-  CardContent, 
-  CardHeader,
+  Typography,
+  Grid,
+  Paper,
+  Card,
+  CardContent,
   CardActions,
   Button,
+  IconButton,
   Divider,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  Tabs,
-  Tab,
   Chip,
-  useTheme,
+  Stack,
+  CircularProgress,
   Alert
 } from '@mui/material';
-import {
-  ArticleOutlined as ArticleIcon,
-  SchemaOutlined as SchemaIcon,
-  CodeOutlined as CodeIcon,
-  TerminalOutlined as TerminalIcon
+import { 
+  Add as AddIcon,
+  ChevronRight as ChevronRightIcon,
+  Folder as FolderIcon,
+  People as PeopleIcon,
+  LibraryBooks as LibraryBooksIcon,
+  AccountTree as AccountTreeIcon,
+  GitHub as GitHubIcon,
+  Science as ScienceIcon,
+  Speed as SpeedIcon
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { ErrorBoundary, ErrorFallback, PaperStatusCard } from '../components';
-import { useFetch } from '../hooks';
-import { mockData } from '../utils/mockData';
+import { Link as RouterLink } from 'react-router-dom';
+import collaborationService from '../services/collaborationService';
 
 /**
- * Dashboard page displaying overview of system capabilities and recent activity
- * 
- * @returns {JSX.Element} Dashboard component
+ * Dashboard component that provides access to main application features
  */
-function Dashboard() {
-  const [activeTab, setActiveTab] = useState(0);
-  const theme = useTheme();
-  const navigate = useNavigate();
-  
-  // Fetch recent papers
-  const { 
-    data: papers, 
-    loading: papersLoading, 
-    error: papersError 
-  } = useFetch('/api/papers/recent', {
-    method: 'GET'
-  }, true, () => mockData.papers.slice(0, 5));
-  
-  // Handle tab change
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-  };
-  
-  // Navigate to paper details
-  const handleViewPaper = (paper) => {
-    navigate(`/implementation?paper=${paper.id}`);
-  };
-  
-  // Navigate to paper implementation
-  const handleImplementPaper = (paper) => {
-    navigate(`/implementation?paper=${paper.id}&tab=implementation`);
-  };
-  
-  // Navigate to knowledge graph for a paper
-  const handleViewGraph = (paper) => {
-    navigate(`/knowledge-graph?paper=${paper.id}`);
-  };
-  
-  // Dashboard statistics
-  const stats = {
-    papers: 42,
-    entities: 1876,
-    relationships: 5432,
-    implementations: 23
-  };
-  
-  // Feature cards
-  const features = [
+const Dashboard = () => {
+  const [recentWorkspaces, setRecentWorkspaces] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch recent workspaces on component mount
+  useEffect(() => {
+    const fetchRecentWorkspaces = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const workspaces = await collaborationService.getWorkspaces();
+        setRecentWorkspaces(workspaces.slice(0, 3)); // Show only the 3 most recent
+      } catch (err) {
+        setError('Failed to load recent workspaces');
+        console.error('Error fetching recent workspaces:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecentWorkspaces();
+  }, []);
+
+  // Featured application modules
+  const featuredModules = [
     {
-      title: 'Research',
-      description: 'Conduct research queries and generate comprehensive reports with up-to-date information from multiple sources.',
-      icon: <ArticleIcon fontSize="large" />,
-      path: '/research',
-      color: theme.palette.primary.main
+      title: 'Research Understanding',
+      description: 'Process research papers and extract key information',
+      icon: <LibraryBooksIcon fontSize="large" color="primary" />,
+      link: '/research/understanding'
     },
     {
       title: 'Knowledge Graph',
-      description: 'Explore the knowledge graph of research entities and relationships, with visualization and query capabilities.',
-      icon: <SchemaIcon fontSize="large" />,
-      path: '/knowledge-graph',
-      color: theme.palette.secondary.main
+      description: 'Explore interconnected research concepts',
+      icon: <AccountTreeIcon fontSize="large" color="primary" />,
+      link: '/knowledge-graph'
     },
     {
-      title: 'Implementation',
-      description: 'Generate code implementations from research papers, with customization and explanation of algorithms.',
-      icon: <CodeIcon fontSize="large" />,
-      path: '/implementation',
-      color: theme.palette.success.main
+      title: 'Research Implementation',
+      description: 'Convert research concepts into actionable code',
+      icon: <ScienceIcon fontSize="large" color="primary" />,
+      link: '/research/implementation'
     }
   ];
-  
+
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Dashboard
-      </Typography>
-      
-      {/* System stats */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <ArticleIcon color="primary" fontSize="large" />
-              <Typography variant="h4">{stats.papers}</Typography>
-              <Typography variant="subtitle1">Papers</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <SchemaIcon color="secondary" fontSize="large" />
-              <Typography variant="h4">{stats.entities}</Typography>
-              <Typography variant="subtitle1">Entities</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <SchemaIcon color="info" fontSize="large" />
-              <Typography variant="h4">{stats.relationships}</Typography>
-              <Typography variant="subtitle1">Relationships</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <CodeIcon color="success" fontSize="large" />
-              <Typography variant="h4">{stats.implementations}</Typography>
-              <Typography variant="subtitle1">Implementations</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-      
-      {/* Feature cards */}
-      <Typography variant="h5" component="h2" gutterBottom>
-        Features
-      </Typography>
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {features.map((feature) => (
-          <Grid item xs={12} md={4} key={feature.title}>
-            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <CardHeader
-                title={feature.title}
-                avatar={React.cloneElement(feature.icon, { 
-                  sx: { color: feature.color } 
-                })}
-              />
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Typography variant="body1">
-                  {feature.description}
-                </Typography>
-              </CardContent>
-              <CardActions>
-                <Button 
-                  size="small" 
-                  onClick={() => navigate(feature.path)}
-                >
-                  Explore
-                </Button>
-              </CardActions>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-      
-      {/* Recent papers */}
-      <Typography variant="h5" component="h2" gutterBottom>
-        Recent Papers
-      </Typography>
-      
-      <ErrorBoundary
-        fallback={
-          <ErrorFallback 
-            message="Failed to load recent papers. Please try again later."
-            resetButtonText="Retry"
-          />
-        }
-      >
-        {papersError ? (
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Research Integration Dashboard
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Welcome to the AI Research Integration Platform. Access your collaborative workspaces, research tools, and knowledge resources.
+        </Typography>
+      </Box>
+
+      {/* Recent Workspaces Section */}
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h5" component="h2">
+            Recent Workspaces
+          </Typography>
+          <Button 
+            component={RouterLink}
+            to="/workspaces"
+            endIcon={<ChevronRightIcon />}
+          >
+            View All
+          </Button>
+        </Box>
+
+        {loading ? (
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
           <Alert severity="error" sx={{ mb: 2 }}>
-            Error loading recent papers: {papersError.message}
+            {error}
           </Alert>
         ) : (
-          <Box sx={{ mb: 4 }}>
-            <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
-              <Tab label="All Papers" />
-              <Tab label="Processing" />
-              <Tab label="Analyzed" />
-              <Tab label="Implemented" />
-            </Tabs>
+          <Grid container spacing={3}>
+            {recentWorkspaces.map(workspace => (
+              <Grid item xs={12} sm={6} md={4} key={workspace.id}>
+                <Card>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                      <FolderIcon color="primary" sx={{ mr: 1 }} />
+                      <Box>
+                        <Typography variant="h6" component="h3">
+                          {workspace.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Last updated: {new Date(workspace.updated_at).toLocaleDateString()}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Typography variant="body2" sx={{ mb: 1 }} noWrap>
+                      {workspace.description}
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Chip 
+                        icon={<PeopleIcon />} 
+                        label={`${workspace.members_count} members`} 
+                        size="small"
+                        variant="outlined"
+                      />
+                      <Chip 
+                        icon={<AccountTreeIcon />}
+                        label={`${workspace.projects_count} projects`}
+                        size="small"
+                        variant="outlined"
+                      />
+                    </Box>
+                  </CardContent>
+                  <CardActions>
+                    <Button 
+                      size="small" 
+                      component={RouterLink} 
+                      to={`/workspaces/${workspace.id}`}
+                    >
+                      Open
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Grid>
+            ))}
             
-            {papers && papers.length > 0 ? (
-              papers
-                .filter(paper => {
-                  if (activeTab === 0) return true;
-                  if (activeTab === 1) return ['uploaded', 'queued', 'processing', 'extracting_entities', 'extracting_relationships', 'building_knowledge_graph'].includes(paper.status);
-                  if (activeTab === 2) return ['analyzed', 'implementation_ready'].includes(paper.status);
-                  if (activeTab === 3) return paper.status === 'implemented';
-                  return true;
-                })
-                .map(paper => (
-                  <PaperStatusCard
-                    key={paper.id}
-                    paper={paper}
-                    onView={handleViewPaper}
-                    onImplement={handleImplementPaper}
-                    onViewGraph={handleViewGraph}
-                  />
-                ))
-            ) : (
-              <Paper sx={{ p: 3, textAlign: 'center' }}>
-                <Typography variant="body1" color="text.secondary">
-                  No papers available.
-                </Typography>
-              </Paper>
-            )}
-          </Box>
+            {/* Create New Workspace Card */}
+            <Grid item xs={12} sm={6} md={4}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', py: 2 }}>
+                <CardContent sx={{ textAlign: 'center' }}>
+                  <IconButton 
+                    component={RouterLink}
+                    to="/workspaces/new"
+                    size="large"
+                    sx={{ 
+                      mb: 2,
+                      bgcolor: 'primary.light',
+                      color: 'primary.contrastText',
+                      '&:hover': {
+                        bgcolor: 'primary.main',
+                      }
+                    }}
+                  >
+                    <AddIcon fontSize="large" />
+                  </IconButton>
+                  <Typography variant="h6" component="h3">
+                    Create New Workspace
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
         )}
-      </ErrorBoundary>
+      </Box>
+
+      {/* Featured Modules Section */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
+          Featured Modules
+        </Typography>
+
+        <Grid container spacing={3}>
+          {featuredModules.map((module, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                    <Box sx={{ mb: 2 }}>
+                      {module.icon}
+                    </Box>
+                    <Typography variant="h6" component="h3" gutterBottom>
+                      {module.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {module.description}
+                    </Typography>
+                  </Box>
+                </CardContent>
+                <CardActions sx={{ justifyContent: 'center' }}>
+                  <Button 
+                    size="small" 
+                    component={RouterLink} 
+                    to={module.link}
+                  >
+                    Explore
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+
+      {/* Quick Actions Section */}
+      <Box>
+        <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
+          Quick Actions
+        </Typography>
+
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Button
+              component={RouterLink}
+              to="/workspaces/new"
+              variant="outlined"
+              startIcon={<AddIcon />}
+              fullWidth
+              sx={{ justifyContent: 'flex-start', py: 1.5 }}
+            >
+              Create Workspace
+            </Button>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Button
+              component={RouterLink}
+              to="/research/understanding/upload"
+              variant="outlined"
+              startIcon={<LibraryBooksIcon />}
+              fullWidth
+              sx={{ justifyContent: 'flex-start', py: 1.5 }}
+            >
+              Process Paper
+            </Button>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Button
+              component={RouterLink}
+              to="/knowledge-graph/search"
+              variant="outlined"
+              startIcon={<AccountTreeIcon />}
+              fullWidth
+              sx={{ justifyContent: 'flex-start', py: 1.5 }}
+            >
+              Search Knowledge
+            </Button>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Button
+              component={RouterLink}
+              to="/research/implementation/new"
+              variant="outlined"
+              startIcon={<ScienceIcon />}
+              fullWidth
+              sx={{ justifyContent: 'flex-start', py: 1.5 }}
+            >
+              Implementation Plan
+            </Button>
+          </Grid>
+        </Grid>
+      </Box>
     </Box>
   );
-}
+};
 
 export default Dashboard;

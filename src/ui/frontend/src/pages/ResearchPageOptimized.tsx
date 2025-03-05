@@ -21,12 +21,15 @@ import {
   Tooltip,
   ListItemSecondaryAction
 } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import HistoryIcon from '@mui/icons-material/History';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import LabelIcon from '@mui/icons-material/Label';
 import { 
   useResearch, 
   useSaveQuery, 
@@ -283,12 +286,36 @@ const ResearchPageOptimized: React.FC = () => {
   
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Research Assistant (Optimized)
-      </Typography>
-      <Typography variant="subtitle1" color="text.secondary" paragraph>
-        Ask research questions and get comprehensive reports with citations and references.
-      </Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Box>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Research Assistant (Optimized)
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary" paragraph>
+            Ask research questions and get comprehensive reports with citations and references.
+          </Typography>
+        </Box>
+        
+        <Box>
+          <Button 
+            component={RouterLink} 
+            to="/research/stats" 
+            variant="outlined"
+            startIcon={<AssessmentIcon />}
+            sx={{ mr: 1 }}
+          >
+            Stats
+          </Button>
+          <Button 
+            component={RouterLink} 
+            to="/research/tags" 
+            variant="outlined"
+            startIcon={<LabelIcon />}
+          >
+            Manage Tags
+          </Button>
+        </Box>
+      </Box>
       
       {/* Filter panel */}
       <ResearchFilterPanel
