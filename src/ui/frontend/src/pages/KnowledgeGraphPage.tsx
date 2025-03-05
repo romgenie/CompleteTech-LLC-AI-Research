@@ -1783,6 +1783,10 @@ const KnowledgeGraphPage: React.FC = () => {
                 variant="outlined" 
                 sx={{ height: '48vh', p: 2 }}
                 ref={graphContainerRef}
+                onKeyDown={handleGraphKeydown}
+                tabIndex={-1}
+                role="region"
+                aria-label="Knowledge Graph Visualization Area"
               >
                 {graphLoading ? (
                   <Box display="flex" justifyContent="center" alignItems="center" height="100%">
@@ -1790,13 +1794,15 @@ const KnowledgeGraphPage: React.FC = () => {
                   </Box>
                 ) : selectedEntity ? (
                   <Box position="relative" height="100%">
-                    <Box position="absolute" top={10} right={10} zIndex={1000} bgcolor="rgba(255,255,255,0.7)" borderRadius="4px" p={0.5}>
+                    {/* Control Panel */}
+                    <Box position="absolute" top={10} right={10} zIndex={1000} bgcolor="rgba(255,255,255,0.8)" borderRadius="4px" p={0.5}>
                       <Tooltip title={`Download visualization as ${exportFormat.toUpperCase()}`}>
                         <IconButton 
                           size="small" 
                           sx={{ mr: 1 }} 
                           onClick={handleExportGraph}
                           color="primary"
+                          aria-label="Download visualization"
                         >
                           <DownloadIcon />
                         </IconButton>
@@ -1806,6 +1812,7 @@ const KnowledgeGraphPage: React.FC = () => {
                           size="small" 
                           sx={{ mr: 1 }}
                           color="primary"
+                          aria-label="Share visualization"
                           onClick={() => {
                             navigator.clipboard.writeText(window.location.href);
                             // Show toast or notification (simplified here)
@@ -1819,6 +1826,7 @@ const KnowledgeGraphPage: React.FC = () => {
                         <IconButton 
                           size="small"
                           color="primary"
+                          aria-label="View help"
                           onClick={() => {
                             setAdvancedSearchOpen(true);
                           }}
@@ -1828,6 +1836,39 @@ const KnowledgeGraphPage: React.FC = () => {
                       </Tooltip>
                     </Box>
                     
+                    {/* Accessibility Keyboard Controls */}
+                    <Box 
+                      position="absolute" 
+                      top={10} 
+                      left={10} 
+                      zIndex={1000} 
+                      p={1.5} 
+                      bgcolor="rgba(255,255,255,0.9)" 
+                      borderRadius="4px"
+                      boxShadow="0 1px 3px rgba(0,0,0,0.12)"
+                      border="1px solid rgba(25, 118, 210, 0.3)"
+                      aria-live="polite"
+                    >
+                      <Typography variant="caption" component="div" fontWeight="bold" color="primary.main">
+                        Keyboard Navigation
+                      </Typography>
+                      <Divider sx={{ my: 0.5 }} />
+                      <Box display="grid" gridTemplateColumns="repeat(2, 1fr)" gap={0.5}>
+                        <Typography variant="caption" component="div" fontWeight="medium">←/→:</Typography>
+                        <Typography variant="caption" component="div" color="text.secondary">Navigate nodes</Typography>
+                        
+                        <Typography variant="caption" component="div" fontWeight="medium">Home/End:</Typography>
+                        <Typography variant="caption" component="div" color="text.secondary">First/Last node</Typography>
+                        
+                        <Typography variant="caption" component="div" fontWeight="medium">+/-:</Typography>
+                        <Typography variant="caption" component="div" color="text.secondary">Zoom in/out</Typography>
+                        
+                        <Typography variant="caption" component="div" fontWeight="medium">Enter/Space:</Typography>
+                        <Typography variant="caption" component="div" color="text.secondary">Select node</Typography>
+                      </Box>
+                    </Box>
+                    
+                    {/* Network Metrics Panel (if enabled) */}
                     {analysisSettings.showCentralityMetrics && filteredGraphData && (
                       <Box 
                         position="absolute" 
@@ -1839,6 +1880,7 @@ const KnowledgeGraphPage: React.FC = () => {
                         borderRadius="4px"
                         boxShadow="0 1px 3px rgba(0,0,0,0.12)"
                         border="1px solid rgba(25, 118, 210, 0.3)"
+                        aria-label="Network metrics panel"
                       >
                         <Typography variant="caption" component="div" fontWeight="bold" color="primary.main">
                           Network Metrics
@@ -1864,10 +1906,11 @@ const KnowledgeGraphPage: React.FC = () => {
                       </Box>
                     )}
                     
+                    {/* Research Frontiers Panel (if enabled) */}
                     {analysisSettings.identifyResearchFrontiers && (
                       <Box 
                         position="absolute" 
-                        top={10} 
+                        top={analysisSettings.showCentralityMetrics ? 150 : 100} 
                         left={10} 
                         zIndex={1000} 
                         p={1.5} 
@@ -1875,6 +1918,7 @@ const KnowledgeGraphPage: React.FC = () => {
                         borderRadius="4px"
                         boxShadow="0 1px 3px rgba(0,0,0,0.12)"
                         border="1px solid rgba(25, 118, 210, 0.3)"
+                        aria-label="Research frontiers panel"
                       >
                         <Typography variant="caption" component="div" fontWeight="bold" color="primary.main">
                           Research Frontiers
@@ -1903,6 +1947,51 @@ const KnowledgeGraphPage: React.FC = () => {
                       </Box>
                     )}
                     
+                    {/* Text-based alternative view for screen readers */}
+                    <Box 
+                      id="graph-text-alternative"
+                      className="visually-hidden" 
+                      aria-live="polite" 
+                      role="region"
+                      aria-label="Text description of knowledge graph"
+                      sx={{ 
+                        position: 'absolute', 
+                        width: '1px', 
+                        height: '1px', 
+                        padding: 0, 
+                        margin: '-1px', 
+                        overflow: 'hidden', 
+                        clip: 'rect(0, 0, 0, 0)', 
+                        whiteSpace: 'nowrap', 
+                        border: 0 
+                      }}
+                    >
+                      {filteredGraphData && selectedEntity ? (
+                        <>
+                          <div>Knowledge graph centered on {selectedEntity.type}: {selectedEntity.name}</div>
+                          <div>The graph contains {filteredGraphData.nodes.length} nodes and {filteredGraphData.links.length} connections.</div>
+                          <div>Related entities: {filteredGraphData.links
+                            .filter(link => {
+                              const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                              const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                              return sourceId === selectedEntity.id || targetId === selectedEntity.id;
+                            })
+                            .map(link => {
+                              const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                              const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                              const otherNodeId = sourceId === selectedEntity.id ? targetId : sourceId;
+                              const otherNode = filteredGraphData.nodes.find(node => node.id === otherNodeId);
+                              return otherNode ? `${otherNode.name} (${otherNode.type})` : '';
+                            })
+                            .filter(Boolean)
+                            .join(', ')}
+                          </div>
+                        </>
+                      ) : (
+                        <div>No knowledge graph visualization available. Please select an entity first.</div>
+                      )}
+                    </Box>
+                    
                     {/* Progressive loading indicator if enabled */}
                     {visualizationSettings.progressiveLoading && filteredGraphData && 
                       loadedNodeCount < filteredGraphData.nodes.length && (
@@ -1918,6 +2007,7 @@ const KnowledgeGraphPage: React.FC = () => {
                         border="1px solid rgba(25, 118, 210, 0.3)"
                         display="flex"
                         alignItems="center"
+                        aria-live="polite"
                       >
                         <Typography variant="caption" component="div" sx={{ mr: 1 }}>
                           {loadedNodeCount} of {filteredGraphData.nodes.length} nodes
@@ -1928,13 +2018,15 @@ const KnowledgeGraphPage: React.FC = () => {
                           color="primary" 
                           onClick={handleLoadMoreNodes}
                           sx={{ minWidth: 20, py: 0, px: 1 }}
+                          aria-label={`Load more nodes. Currently showing ${loadedNodeCount} of ${filteredGraphData.nodes.length}`}
                         >
                           Load More
                         </Button>
                       </Box>
                     )}
                     
-                    <svg width="100%" height="100%"></svg>
+                    {/* The D3 visualization area */}
+                    <svg width="100%" height="100%" role="img" aria-labelledby="graph-text-alternative"></svg>
                   </Box>
                 ) : (
                   <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100%">
@@ -2014,7 +2106,7 @@ const KnowledgeGraphPage: React.FC = () => {
                         • Use the search bar to find entities by name or type<br />
                         • Try "transformer", "BERT", or "attention" to explore related concepts<br />
                         • Enable advanced options to customize the visualization<br />
-                        • Use analysis tools to discover research trends and patterns
+                        • Use arrow keys and keyboard to navigate the graph
                       </Typography>
                     </Alert>
                   </Box>
