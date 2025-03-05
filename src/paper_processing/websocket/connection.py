@@ -1,179 +1,181 @@
 """
 WebSocket connection management for the Paper Processing Pipeline.
 
-This module handles WebSocket connections for real-time paper processing
-status updates in the Paper Processing Pipeline. It will be implemented
-in upcoming sprints as part of Phase 3.5.
-
-Current Implementation Status:
-- Connection management structure defined ✓
-- Interface with FastAPI defined ✓
-
-Upcoming Development:
-- WebSocket server implementation
-- Client connection tracking
-- Authentication and authorization
-- Connection lifecycle management
+This module handles WebSocket connections for real-time paper processing updates.
+It provides connection managers and event handling for the Paper Processing Pipeline.
 """
 
-from typing import Dict, Set, Optional, Callable, Any
-from fastapi import WebSocket, WebSocketDisconnect
 import logging
 import json
+from typing import Dict, List, Optional, Any, Set
 import asyncio
+from datetime import datetime
 
-from .events import PaperEvent
+from fastapi import WebSocket, WebSocketDisconnect
 
+# Configure logging
 logger = logging.getLogger(__name__)
 
 
 class ConnectionManager:
     """
-    Manages WebSocket connections for paper processing status updates.
+    Connection manager for WebSocket connections.
     
-    This class will handle:
-    - Client connections and disconnections
-    - Broadcasting messages to connected clients
-    - Filtering messages by paper ID and event type
-    - Connection authentication and authorization
+    Manages active WebSocket connections and handles broadcasting messages.
     """
     
     def __init__(self):
         """Initialize the connection manager."""
-        # Maps client IDs to WebSocket connections
-        self.active_connections: Dict[str, WebSocket] = {}
+        # Active connections for general broadcasts
+        self.active_connections: List[WebSocket] = []
         
-        # Maps paper IDs to sets of client IDs subscribed to that paper
-        self.paper_subscriptions: Dict[str, Set[str]] = {}
+        # Connections by paper ID for targeted updates
+        self.paper_connections: Dict[str, Set[WebSocket]] = {}
         
-        # Maps event types to sets of client IDs subscribed to those events
-        self.event_subscriptions: Dict[str, Set[str]] = {}
-        
-        # Maps client IDs to user IDs for authorization
-        self.client_users: Dict[str, str] = {}
+        # Lock for thread-safe operations
+        self._lock = asyncio.Lock()
     
-    async def connect(self, websocket: WebSocket, client_id: str, user_id: str) -> None:
+    async def connect(self, websocket: WebSocket, paper_id: Optional[str] = None):
         """
-        Accept a WebSocket connection.
+        Connect a WebSocket client.
         
         Args:
             websocket: The WebSocket connection
-            client_id: Unique identifier for the client
-            user_id: User ID for authorization
+            paper_id: Optional paper ID to subscribe to specific updates
         """
-        # This is a placeholder for the future implementation
-        # In upcoming sprints, this will:
-        # 1. Accept the WebSocket connection
-        # 2. Store the connection with the client ID
-        # 3. Associate the client with the user ID
-        # 4. Log the connection
-        logger.info(f"WebSocket connection would be accepted for client {client_id} (user {user_id})")
+        # Accept the connection
+        await websocket.accept()
+        
+        async with self._lock:
+            # Add to general connections
+            if websocket not in self.active_connections:
+                self.active_connections.append(websocket)
+            
+            # Add to paper-specific connections if provided
+            if paper_id:
+                if paper_id not in self.paper_connections:
+                    self.paper_connections[paper_id] = set()
+                self.paper_connections[paper_id].add(websocket)
+        
+        logger.info(f"Client connected. Active connections: {len(self.active_connections)}")
     
-    async def disconnect(self, client_id: str) -> None:
+    async def disconnect(self, websocket: WebSocket):
         """
-        Handle a WebSocket disconnection.
+        Disconnect a WebSocket client.
         
         Args:
-            client_id: The ID of the client that disconnected
+            websocket: The WebSocket connection to disconnect
         """
-        # This is a placeholder for the future implementation
-        # In upcoming sprints, this will:
-        # 1. Remove the client from active connections
-        # 2. Remove the client from paper subscriptions
-        # 3. Remove the client from event subscriptions
-        # 4. Log the disconnection
-        logger.info(f"WebSocket disconnection would be handled for client {client_id}")
+        async with self._lock:
+            # Remove from general connections
+            if websocket in self.active_connections:
+                self.active_connections.remove(websocket)
+            
+            # Remove from paper-specific connections
+            for paper_id, connections in list(self.paper_connections.items()):
+                if websocket in connections:
+                    connections.remove(websocket)
+                    # Clean up empty sets
+                    if not connections:
+                        del self.paper_connections[paper_id]
+        
+        logger.info(f"Client disconnected. Active connections: {len(self.active_connections)}")
     
-    async def subscribe_to_paper(self, client_id: str, paper_id: str) -> None:
+    async def subscribe_to_paper(self, websocket: WebSocket, paper_id: str):
         """
-        Subscribe a client to updates for a specific paper.
+        Subscribe a WebSocket client to updates for a specific paper.
         
         Args:
-            client_id: The client to subscribe
-            paper_id: The paper to subscribe to
+            websocket: The WebSocket connection
+            paper_id: Paper ID to subscribe to
         """
-        # This is a placeholder for the future implementation
-        # In upcoming sprints, this will:
-        # 1. Add the client to the paper's subscription set
-        # 2. Log the subscription
-        logger.info(f"Client {client_id} would be subscribed to paper {paper_id}")
+        async with self._lock:
+            if paper_id not in self.paper_connections:
+                self.paper_connections[paper_id] = set()
+            self.paper_connections[paper_id].add(websocket)
+        
+        logger.info(f"Client subscribed to paper {paper_id}")
     
-    async def subscribe_to_event_type(self, client_id: str, event_type: str) -> None:
+    async def unsubscribe_from_paper(self, websocket: WebSocket, paper_id: str):
         """
-        Subscribe a client to updates for a specific event type.
+        Unsubscribe a WebSocket client from updates for a specific paper.
         
         Args:
-            client_id: The client to subscribe
-            event_type: The event type to subscribe to
+            websocket: The WebSocket connection
+            paper_id: Paper ID to unsubscribe from
         """
-        # This is a placeholder for the future implementation
-        # In upcoming sprints, this will:
-        # 1. Add the client to the event type's subscription set
-        # 2. Log the subscription
-        logger.info(f"Client {client_id} would be subscribed to event type {event_type}")
+        async with self._lock:
+            if paper_id in self.paper_connections and websocket in self.paper_connections[paper_id]:
+                self.paper_connections[paper_id].remove(websocket)
+                # Clean up empty sets
+                if not self.paper_connections[paper_id]:
+                    del self.paper_connections[paper_id]
+        
+        logger.info(f"Client unsubscribed from paper {paper_id}")
     
-    async def broadcast(self, event: PaperEvent) -> None:
+    async def broadcast(self, message: Dict[str, Any]):
         """
-        Broadcast an event to all relevant clients.
+        Broadcast a message to all connected clients.
         
         Args:
-            event: The event to broadcast
+            message: The message to broadcast
         """
-        # This is a placeholder for the future implementation
-        # In upcoming sprints, this will:
-        # 1. Determine which clients should receive the event
-        # 2. Convert the event to JSON
-        # 3. Send the event to each relevant client
-        # 4. Log the broadcast
-        logger.info(f"Event {event.event_type} would be broadcast for paper {event.paper_id}")
+        if not self.active_connections:
+            return
+            
+        # Add timestamp if not present
+        if "timestamp" not in message:
+            message["timestamp"] = datetime.utcnow().isoformat()
+            
+        # Convert to JSON
+        message_json = json.dumps(message)
+        
+        # Send to all active connections
+        disconnected = []
+        for connection in self.active_connections:
+            try:
+                await connection.send_text(message_json)
+            except Exception as e:
+                logger.error(f"Error sending message to client: {e}")
+                disconnected.append(connection)
+        
+        # Clean up disconnected clients
+        for connection in disconnected:
+            await self.disconnect(connection)
     
-    async def broadcast_system_event(self, event: PaperEvent) -> None:
+    async def broadcast_to_paper(self, paper_id: str, message: Dict[str, Any]):
         """
-        Broadcast a system event to all connected clients.
+        Broadcast a message to clients subscribed to a specific paper.
         
         Args:
-            event: The system event to broadcast
+            paper_id: The paper ID
+            message: The message to broadcast
         """
-        # This is a placeholder for the future implementation
-        # In upcoming sprints, this will:
-        # 1. Convert the event to JSON
-        # 2. Send the event to all connected clients
-        # 3. Log the broadcast
-        logger.info(f"System event {event.event_type} would be broadcast to all clients")
+        if paper_id not in self.paper_connections or not self.paper_connections[paper_id]:
+            return
+            
+        # Add paper_id and timestamp if not present
+        if "paper_id" not in message:
+            message["paper_id"] = paper_id
+        if "timestamp" not in message:
+            message["timestamp"] = datetime.utcnow().isoformat()
+            
+        # Convert to JSON
+        message_json = json.dumps(message)
+        
+        # Send to subscribed connections
+        disconnected = []
+        for connection in self.paper_connections.get(paper_id, set()):
+            try:
+                await connection.send_text(message_json)
+            except Exception as e:
+                logger.error(f"Error sending message to client: {e}")
+                disconnected.append(connection)
+        
+        # Clean up disconnected clients
+        for connection in disconnected:
+            await self.disconnect(connection)
 
 
 # Global connection manager instance
-manager = ConnectionManager()
-
-
-# This is a placeholder for the future implementation
-async def websocket_endpoint(websocket: WebSocket, client_id: str, user_id: str) -> None:
-    """
-    WebSocket endpoint for paper processing status updates.
-    
-    Args:
-        websocket: The WebSocket connection
-        client_id: Unique identifier for the client
-        user_id: User ID for authorization
-    """
-    # This will be implemented in upcoming sprints
-    try:
-        # Accept connection
-        await manager.connect(websocket, client_id, user_id)
-        
-        # Handle messages
-        while True:
-            # Wait for message from client
-            data = await websocket.receive_text()
-            
-            # Process message
-            # This would handle subscription requests and other client commands
-            
-            # Send acknowledgement
-            await websocket.send_text(json.dumps({
-                "type": "ack",
-                "message": "Message received"
-            }))
-    except WebSocketDisconnect:
-        # Handle disconnection
-        await manager.disconnect(client_id)
+connection_manager = ConnectionManager()
