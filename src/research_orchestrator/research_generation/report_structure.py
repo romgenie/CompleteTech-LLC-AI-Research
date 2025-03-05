@@ -396,12 +396,11 @@ class ReportStructurePlanner:
                 "document_structures"
             )
             
-            # Create default templates directory if it doesn't exist
-            os.makedirs(self.template_dir, exist_ok=True)
-            
-            # Create default templates if none exist
-            if not os.listdir(self.template_dir):
-                self._create_default_templates()
+        # Create default templates directory if it doesn't exist
+        os.makedirs(self.template_dir, exist_ok=True)
+        
+        # Always create default templates to ensure they exist
+        self._create_default_templates()
     
     def _create_default_templates(self) -> None:
         """Create default document structure templates."""
@@ -1580,7 +1579,9 @@ class ReportStructurePlanner:
         
         # Update metadata
         template.metadata["generated_for"] = topic
-        template.metadata["generation_date"] = str(Path.ctime(Path.cwd()))
+        # Use datetime for generation date instead of Path.ctime
+        from datetime import datetime
+        template.metadata["generation_date"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         # Add custom sections if provided
         if custom_sections:
