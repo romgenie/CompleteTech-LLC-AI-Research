@@ -1,4 +1,4 @@
-import { Entity, Relationship } from '../types';
+import { Entity, Relationship, EntityType } from '../types';
 
 interface GraphData {
   nodes: Entity[];
@@ -17,7 +17,13 @@ interface VisualizationSettings {
   timeBasedLayout?: boolean;
   filterThreshold?: number;
   importanceThreshold?: number;
+  levelOfDetail?: boolean;
   [key: string]: any;
+}
+
+interface NodeFocusInfo {
+  id: string;
+  index: number;
 }
 
 /**
@@ -164,30 +170,52 @@ export function createOptimizedForceParameters(
   linkDistance: number;
   chargeStrength: number;
   collisionRadius: number;
+  alphaMin: number;
+  iterations: number;
 } {
   // Calculate optimal parameters based on graph size
   const nodeCount = nodes.length;
   const isLargeGraph = nodeCount > 500;
   const isVeryLargeGraph = nodeCount > 1000;
+  const isExtremeGraph = nodeCount > 5000;
   
   // Adjust decay and strength based on graph size
-  const alphaDecay = isVeryLargeGraph ? 0.035 : (isLargeGraph ? 0.028 : 0.0228);
-  const velocityDecay = isVeryLargeGraph ? 0.5 : (isLargeGraph ? 0.4 : 0.4);
+  const alphaDecay = isExtremeGraph ? 0.04 : isVeryLargeGraph ? 0.035 : (isLargeGraph ? 0.028 : 0.0228);
+  const velocityDecay = isExtremeGraph ? 0.6 : isVeryLargeGraph ? 0.5 : (isLargeGraph ? 0.4 : 0.4);
   const forceStrength = settings.forceStrength || 500;
   const baseForceStrength = isVeryLargeGraph ? forceStrength * 1.5 : forceStrength;
   
-  // Calculate link distance
-  const linkDistance = isVeryLargeGraph 
-    ? settings.nodeSize * 15
-    : isLargeGraph 
-      ? settings.nodeSize * 12
-      : settings.nodeSize * 10;
+  // Calculate link distance - increase distance for larger graphs
+  const linkDistance = isExtremeGraph
+    ? settings.nodeSize * 20
+    : isVeryLargeGraph 
+      ? settings.nodeSize * 15
+      : isLargeGraph 
+        ? settings.nodeSize * 12
+        : settings.nodeSize * 10;
   
   // Calculate charge strength (repulsion between nodes)
-  const chargeStrength = -baseForceStrength / Math.sqrt(nodeCount);
+  // Use stronger scaling for large graphs to prevent clumping
+  const chargeStrength = isExtremeGraph 
+    ? -baseForceStrength / Math.pow(nodeCount, 0.4)
+    : isVeryLargeGraph
+      ? -baseForceStrength / Math.pow(nodeCount, 0.33)
+      : -baseForceStrength / Math.sqrt(nodeCount);
   
   // Calculate collision radius
-  const collisionRadius = settings.nodeSize * 1.5;
+  const collisionRadius = settings.nodeSize * (isExtremeGraph ? 2 : 1.5);
+  
+  // Lower alphaMin for large graphs to stabilize faster
+  const alphaMin = isExtremeGraph ? 0.01 : isVeryLargeGraph ? 0.005 : 0.001;
+  
+  // Number of iterations for static layout
+  const iterations = isExtremeGraph 
+    ? 10 
+    : isVeryLargeGraph 
+      ? 30 
+      : isLargeGraph 
+        ? 50 
+        : 100;
   
   return {
     alphaDecay,
@@ -195,7 +223,9 @@ export function createOptimizedForceParameters(
     forceStrength: baseForceStrength,
     linkDistance,
     chargeStrength,
-    collisionRadius
+    collisionRadius,
+    alphaMin,
+    iterations
   };
 }
 
@@ -210,7 +240,7 @@ export function generateTestData(nodeCount: number): GraphData {
   const links: Relationship[] = [];
   
   // Entity types for variety
-  const entityTypes: string[] = ['MODEL', 'DATASET', 'ALGORITHM', 'PAPER', 'AUTHOR', 'CODE', 'FRAMEWORK'];
+  const entityTypes: EntityType[] = ['MODEL', 'DATASET', 'ALGORITHM', 'PAPER', 'AUTHOR', 'CODE', 'FRAMEWORK'];
   
   // Relationship types for variety
   const relationshipTypes: string[] = ['USES', 'AUTHORED_BY', 'CITES', 'EVALUATED_ON', 'BUILDS_ON', 'TRAINED_ON'];
@@ -221,7 +251,7 @@ export function generateTestData(nodeCount: number): GraphData {
     nodes.push({
       id: `node-${i}`,
       name: `Test Node ${i} (${entityType})`,
-      type: entityType as any,
+      type: entityType,
       importance: Math.random()
     });
   }
@@ -282,4 +312,217 @@ export function generateTestData(nodeCount: number): GraphData {
   }
   
   return { nodes, links };
+}
+
+/**
+ * Calculate level of detail parameters based on zoom level
+ * 
+ * @param scale - Current zoom scale (from d3.zoom transform)
+ * @param nodeCount - Total number of nodes in the graph
+ * @returns Object with visibility thresholds for different elements
+ */
+export function calculateLevelOfDetail(scale: number, nodeCount: number): {
+  showLabels: boolean;
+  showRelationshipLabels: boolean;
+  nodeBorderWidth: number;
+  linkOpacity: number;
+  labelFontSize: number;
+} {
+  // Base thresholds
+  const labelThreshold = nodeCount > 1000 ? 1.5 : nodeCount > 500 ? 1.2 : 0.8;
+  const relationshipLabelThreshold = nodeCount > 1000 ? 3.0 : nodeCount > 500 ? 2.5 : 2.0;
+  
+  // Scale border width and opacity based on zoom level
+  const baseBorderWidth = 1;
+  const nodeBorderWidth = Math.min(3, baseBorderWidth / Math.sqrt(scale));
+  
+  // Adjust opacity - links become more transparent when zoomed out
+  const linkOpacity = scale < 0.5 ? 0.3 : scale < 1 ? 0.5 : 0.7;
+  
+  // Adjust font size
+  const baseFontSize = 10;
+  const labelFontSize = scale > 2 ? baseFontSize : baseFontSize * Math.max(0.8, scale);
+  
+  return {
+    showLabels: scale > labelThreshold,
+    showRelationshipLabels: scale > relationshipLabelThreshold,
+    nodeBorderWidth,
+    linkOpacity,
+    labelFontSize
+  };
+}
+
+/**
+ * Creates a pre-computed node index map for keyboard navigation
+ * 
+ * @param nodes - Graph nodes to create index map for
+ * @returns Map of node IDs to their index positions
+ */
+export function createNodeIndexMap(nodes: Entity[]): Map<string, number> {
+  const indexMap = new Map<string, number>();
+  
+  nodes.forEach((node, index) => {
+    indexMap.set(node.id, index);
+  });
+  
+  return indexMap;
+}
+
+/**
+ * Get the next or previous navigable node in the graph
+ * 
+ * @param currentNodeId - Currently focused node ID
+ * @param nodes - All graph nodes
+ * @param direction - Navigation direction (1 for next, -1 for previous)
+ * @returns NodeFocusInfo with ID and index of the next node to focus
+ */
+export function getNavigableNode(
+  currentNodeId: string | null,
+  nodes: Entity[],
+  direction: 1 | -1
+): NodeFocusInfo | null {
+  if (!nodes.length) return null;
+  
+  // If no current node, start with the first or last node
+  if (!currentNodeId) {
+    const targetIndex = direction === 1 ? 0 : nodes.length - 1;
+    return {
+      id: nodes[targetIndex].id,
+      index: targetIndex
+    };
+  }
+  
+  // Find current node index
+  const currentIndex = nodes.findIndex(node => node.id === currentNodeId);
+  
+  // If not found, start at beginning
+  if (currentIndex === -1) {
+    return {
+      id: nodes[0].id,
+      index: 0
+    };
+  }
+  
+  // Calculate next index with wraparound
+  const nextIndex = (currentIndex + direction + nodes.length) % nodes.length;
+  
+  return {
+    id: nodes[nextIndex].id,
+    index: nextIndex
+  };
+}
+
+/**
+ * Find related nodes to show when a node is focused
+ * 
+ * @param nodeId - The ID of the node to find related nodes for
+ * @param nodes - All nodes in the graph
+ * @param links - All links in the graph
+ * @param maxCount - Maximum number of related nodes to return
+ * @returns Array of node IDs that are related to the focused node
+ */
+export function findRelatedNodes(
+  nodeId: string,
+  nodes: Entity[],
+  links: Relationship[],
+  maxCount: number = 5
+): string[] {
+  // Find all directly connected nodes
+  const connectedNodeIds = new Set<string>();
+  
+  links.forEach(link => {
+    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+    
+    if (sourceId === nodeId) {
+      connectedNodeIds.add(targetId);
+    } else if (targetId === nodeId) {
+      connectedNodeIds.add(sourceId);
+    }
+  });
+  
+  // Convert to array and limit to maxCount
+  return Array.from(connectedNodeIds).slice(0, maxCount);
+}
+
+/**
+ * Process and optimize node attributes for large graphs
+ * 
+ * @param nodes - Graph nodes
+ * @param links - Graph links
+ * @param selectedNodeId - Currently selected node ID
+ * @returns Object with optimized color and node importance maps
+ */
+export function optimizeNodeAttributes(
+  nodes: Entity[], 
+  links: Relationship[],
+  selectedNodeId: string | null
+): {
+  colorMap: Map<string, string>;
+  sizeMap: Map<string, number>;
+  importantNodeIds: Set<string>;
+} {
+  // Create maps for faster lookups
+  const colorMap = new Map<string, string>();
+  const sizeMap = new Map<string, number>();
+  const importantNodeIds = new Set<string>();
+  
+  // Calculate node degrees for sizing
+  const degreeMap = new Map<string, number>();
+  
+  // Color mapping for entity types
+  const entityColors: Record<string, string> = {
+    MODEL: '#4285F4',
+    DATASET: '#34A853',
+    ALGORITHM: '#EA4335',
+    PAPER: '#FBBC05',
+    AUTHOR: '#9C27B0',
+    CODE: '#00ACC1',
+    FRAMEWORK: '#FF9800',
+    METRIC: '#795548',
+    METHOD: '#607D8B',
+    TASK: '#9E9E9E'
+  };
+  
+  // Calculate node degrees
+  links.forEach(link => {
+    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+    
+    degreeMap.set(sourceId, (degreeMap.get(sourceId) || 0) + 1);
+    degreeMap.set(targetId, (degreeMap.get(targetId) || 0) + 1);
+  });
+  
+  // Find max degree for sizing
+  const maxDegree = Math.max(1, ...Array.from(degreeMap.values()));
+  
+  // Process each node
+  nodes.forEach(node => {
+    // Set color based on entity type
+    const color = node.color || entityColors[node.type] || '#757575';
+    colorMap.set(node.id, color);
+    
+    // Calculate node size based on degree
+    const degree = degreeMap.get(node.id) || 1;
+    
+    // Use logarithmic scale for size to avoid extremely large nodes
+    const sizeFactor = Math.log(degree + 1) / Math.log(maxDegree + 1);
+    const size = 5 + sizeFactor * 10;
+    sizeMap.set(node.id, size);
+    
+    // Mark important nodes (selected node, high-degree nodes, or nodes with importance)
+    if (
+      node.id === selectedNodeId ||
+      node.importance && node.importance > 0.7 ||
+      degree > maxDegree * 0.7
+    ) {
+      importantNodeIds.add(node.id);
+    }
+  });
+  
+  return {
+    colorMap,
+    sizeMap,
+    importantNodeIds
+  };
 }
