@@ -17,6 +17,7 @@ import uuid
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from ..implementation_planning.service import PlanningService
 
 class ImplementationManager:
     """
@@ -92,8 +93,16 @@ class ImplementationManager:
             logger.warning(f"Research Understanding Engine not available: {e}")
             self.research_understanding_engine = None
         
+        # Initialize Implementation Planning System
+        try:
+            planning_dir = self.config.get("planning_storage_dir")
+            self.implementation_planning_system = PlanningService(planning_dir)
+            logger.info("Implementation Planning System initialized")
+        except Exception as e:
+            logger.warning(f"Implementation Planning System not available: {e}")
+            self.implementation_planning_system = None
+        
         # Other components will be initialized as they are implemented
-        self.implementation_planning_system = None
         self.code_generation_pipeline = None
         self.experiment_management_framework = None
         self.research_verification_system = None
@@ -274,9 +283,38 @@ class ImplementationManager:
         if not implementation:
             return {"success": False, "error": "No implementation provided"}
         
-        # TODO: Implement planning system
-        logger.warning("Implementation Planning System not yet implemented")
-        return {"success": False, "error": "Implementation Planning System not yet implemented"}
+        try:
+            # Create implementation plan
+            plan_result = self.implementation_planning_system.create_implementation_plan(
+                understanding=implementation.get("understanding", understanding),
+                options=self.config.get("planning_options", {})
+            )
+            
+            # Update implementation status
+            implementation["phases"]["planning"] = {
+                "status": "completed",
+                "results": plan_result,
+                "completed_at": self._get_timestamp()
+            }
+            implementation["status"] = "planning_completed"
+            implementation["updated_at"] = self._get_timestamp()
+            
+            return plan_result
+            
+        except Exception as e:
+            error = f"Error planning implementation: {str(e)}"
+            logger.error(error)
+            
+            # Update implementation status
+            implementation["phases"]["planning"] = {
+                "status": "failed",
+                "error": error,
+                "failed_at": self._get_timestamp()
+            }
+            implementation["status"] = "planning_failed" 
+            implementation["updated_at"] = self._get_timestamp()
+            
+            return {"success": False, "error": error}
     
     def generate_code(self, 
                     plan: Optional[Dict[str, Any]] = None,
