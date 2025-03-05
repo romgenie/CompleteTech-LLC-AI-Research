@@ -19,6 +19,9 @@ knowledgeGraphApi.interceptors.request.use(
   }
 );
 
+// Add a response timeout for improved UX
+knowledgeGraphApi.defaults.timeout = 15000;
+
 /**
  * Knowledge Graph service for interacting with the knowledge graph API.
  */
@@ -250,6 +253,51 @@ const knowledgeGraphService = {
         { source: "3", target: "1", type: "INSPIRED" }
       ]
     };
+  },
+  
+  /**
+   * Get a larger mock graph for performance testing
+   * 
+   * @param {number} size - Size of the mock graph (small, medium, large)
+   * @returns {Object} - Large graph data for performance testing
+   */
+  getLargeTestGraph: async (size = 'medium') => {
+    try {
+      // Import utils dynamically to avoid circular dependencies
+      const { generateTestData } = await import('../utils/graphUtils');
+      
+      const nodeCounts = {
+        'small': 100,
+        'medium': 500,
+        'large': 1000,
+        'veryLarge': 2000,
+        'extreme': 5000
+      };
+      
+      const nodeCount = nodeCounts[size] || nodeCounts.medium;
+      return generateTestData(nodeCount);
+    } catch (error) {
+      console.error('Error generating test graph:', error);
+      return { nodes: [], links: [] };
+    }
+  },
+  
+  /**
+   * Get real-world graph data with focus on AI research topics
+   * 
+   * @returns {Promise<Object>} - Real-world graph data
+   */
+  getRealWorldGraph: async () => {
+    try {
+      // Try to get data from API
+      const response = await knowledgeGraphApi.get('/graph/research/ai');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching real-world graph:', error);
+      // If API fails, use the mock data with additional nodes
+      const { generateTestData } = await import('../utils/graphUtils');
+      return generateTestData(1000);
+    }
   }
 };
 
