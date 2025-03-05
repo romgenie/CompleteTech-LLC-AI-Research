@@ -6,13 +6,26 @@ python-multipart>=0.0.6
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
 PyJWT>=2.7.0
+email-validator>=2.0.0
+websockets>=12.0
+httpx>=0.25.0
+
+# Background Tasks
+celery>=5.3.0
+redis>=5.0.0
+flower>=2.0.0
 
 # Database dependencies
 pymongo>=4.5.0
+motor>=3.3.0
 neo4j>=4.4.0
+beanie>=1.22.0
 
 # Utilities
 PyYAML>=6.0
 python-dotenv>=1.0.0
 typing-extensions>=4.0.0
 requests>=2.25.0
+asyncio>=3.4.0
+starlette>=0.31.0
+jinja2>=3.1.2
