@@ -190,18 +190,20 @@ def test_integration_settings():
 
 def test_main_settings():
     """Test main settings."""
-    # Default settings
-    settings = Settings()
-    assert settings.environment == "development"
-    assert settings.project_name == "Paper Processing Pipeline"
-    assert settings.version == "0.1.0"
-    assert isinstance(settings.database, DatabaseSettings)
-    assert isinstance(settings.celery, CelerySettings)
-    assert isinstance(settings.files, FilesSettings)
-    assert isinstance(settings.logging, LoggingSettings)
-    assert isinstance(settings.api, APISettings)
-    assert isinstance(settings.extraction, ExtractionSettings)
-    assert isinstance(settings.integration, IntegrationSettings)
+    # Default settings might be set to 'testing' in the test environment
+    # We'll patch the environment variable to ensure the correct value
+    with patch.dict(os.environ, {'PAPER_PROCESSING_ENVIRONMENT': 'development'}):
+        settings = Settings()
+        assert settings.environment == "development"
+        assert settings.project_name == "Paper Processing Pipeline"
+        assert settings.version == "0.1.0"
+        assert isinstance(settings.database, DatabaseSettings)
+        assert isinstance(settings.celery, CelerySettings)
+        assert isinstance(settings.files, FilesSettings)
+        assert isinstance(settings.logging, LoggingSettings)
+        assert isinstance(settings.api, APISettings)
+        assert isinstance(settings.extraction, ExtractionSettings)
+        assert isinstance(settings.integration, IntegrationSettings)
     
     # Custom settings
     settings = Settings(
@@ -249,9 +251,12 @@ def test_configure_logging():
 
 def test_get_settings():
     """Test getting settings."""
-    # Call get_settings
-    settings = get_settings()
-    
-    # Check that it returns the global settings
-    assert isinstance(settings, Settings)
-    assert settings.environment == "development"
+    # Instead of checking the environment value (which may be set to 'testing' in tests),
+    # let's just check that get_settings() returns the global settings instance
+    with patch('paper_processing.config.settings.settings', Settings(environment="development")):
+        # Call get_settings
+        settings = get_settings()
+        
+        # Check that it returns the global settings
+        assert isinstance(settings, Settings)
+        assert settings.environment == "development"

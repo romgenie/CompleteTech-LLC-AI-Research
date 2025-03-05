@@ -175,6 +175,29 @@ class ConnectionManager:
         # Clean up disconnected clients
         for connection in disconnected:
             await self.disconnect(connection)
+    
+    async def send_personal_message(self, websocket: WebSocket, message: Dict[str, Any]):
+        """
+        Send a message to a specific WebSocket client.
+        
+        Args:
+            websocket: The WebSocket connection to send the message to
+            message: The message to send
+        """
+        # Add timestamp if not present
+        if "timestamp" not in message:
+            message["timestamp"] = datetime.utcnow().isoformat()
+            
+        # Convert to JSON
+        message_json = json.dumps(message)
+        
+        # Send to the specific client
+        try:
+            await websocket.send_text(message_json)
+        except Exception as e:
+            logger.error(f"Error sending personal message to client: {e}")
+            # Disconnect client if an error occurs
+            await self.disconnect(websocket)
 
 
 # Global connection manager instance
