@@ -9,6 +9,10 @@ import NotificationCenter from './NotificationCenter';
 import KnowledgeGraphFilter from './KnowledgeGraphFilter';
 import PaperUploadDialog from './PaperUploadDialog';
 import PaperDashboard from './PaperDashboard';
+import FavoriteButton from './FavoriteButton';
+import ResearchFilterPanel from './ResearchFilterPanel';
+import ResearchExportDialog from './ResearchExportDialog';
+import { TagInput, TagList, TagFilter, TagManager } from './Tags';
 
 export {
   Layout,
@@ -21,5 +25,12 @@ export {
   NotificationCenter,
   KnowledgeGraphFilter,
   PaperUploadDialog,
-  PaperDashboard
+  PaperDashboard,
+  FavoriteButton,
+  ResearchFilterPanel,
+  ResearchExportDialog,
+  TagInput,
+  TagList,
+  TagFilter,
+  TagManager
 };

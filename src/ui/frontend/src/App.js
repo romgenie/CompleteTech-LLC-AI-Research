@@ -15,6 +15,11 @@ const KnowledgeGraphPage = lazy(() => import('./pages/KnowledgeGraphPage'));
 const ImplementationPage = lazy(() => import('./pages/ImplementationPage'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
+// Collaboration pages
+const WorkspacesPage = lazy(() => import('./pages/WorkspacesPage'));
+const WorkspaceDetailPage = lazy(() => import('./pages/WorkspaceDetailPage'));
+const ProjectVersionsPage = lazy(() => import('./pages/ProjectVersionsPage'));
+
 function App() {
   const { loading } = useAuth();
 
@@ -61,6 +66,31 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <ImplementationPage />
+                  </ProtectedRoute>
+                } 
+              />
+              {/* Collaboration Routes */}
+              <Route 
+                path="/workspaces" 
+                element={
+                  <ProtectedRoute>
+                    <WorkspacesPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/workspaces/:workspaceId" 
+                element={
+                  <ProtectedRoute>
+                    <WorkspaceDetailPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/workspaces/:workspaceId/projects/:projectId/versions" 
+                element={
+                  <ProtectedRoute>
+                    <ProjectVersionsPage />
                   </ProtectedRoute>
                 } 
               />

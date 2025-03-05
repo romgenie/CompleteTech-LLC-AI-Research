@@ -3,6 +3,7 @@ import useD3 from './useD3';
 import useFetch from './useFetch';
 import useWebSocket from './useWebSocket';
 import useErrorBoundary, { ErrorBoundary } from './useErrorBoundary';
+import useFavorites from './useFavorites';
 
 export {
   useLocalStorage,
@@ -10,5 +11,6 @@ export {
   useFetch,
   useWebSocket,
   useErrorBoundary,
-  ErrorBoundary
+  ErrorBoundary,
+  useFavorites
 };

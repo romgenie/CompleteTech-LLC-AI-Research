@@ -51,6 +51,7 @@ export interface SavedQuery {
   updatedAt?: string;
   notes?: string;
   tags?: string[];
+  isFavorite?: boolean;
 }
 
 /**
@@ -97,9 +98,27 @@ export function useSavedQueries() {
     mockData: () => {
       // Return mock saved queries
       return [
-        { id: '1', query: 'Recent advances in transformer architecture', createdAt: new Date().toISOString() },
-        { id: '2', query: 'Comparison of large language models', createdAt: new Date().toISOString() },
-        { id: '3', query: 'Neural network evolution', createdAt: new Date().toISOString() }
+        { 
+          id: '1', 
+          query: 'Recent advances in transformer architecture', 
+          createdAt: new Date().toISOString(),
+          tags: ['NLP', 'Transformers'],
+          isFavorite: true
+        },
+        { 
+          id: '2', 
+          query: 'Comparison of large language models', 
+          createdAt: new Date().toISOString(),
+          tags: ['LLM', 'Evaluation'],
+          isFavorite: false
+        },
+        { 
+          id: '3', 
+          query: 'Neural network evolution', 
+          createdAt: new Date().toISOString(),
+          tags: ['Neural Networks', 'History'],
+          isFavorite: false
+        }
       ];
     }
   });
@@ -144,7 +163,7 @@ export function useResearch() {
  * Hook to save a query with React Query
  */
 export function useSaveQuery() {
-  return useFetchMutation<SavedQuery, { query: string }>({
+  return useFetchMutation<SavedQuery, { query: string; tags?: string[]; isFavorite?: boolean; notes?: string }>({
     url: '/research/saved-queries',
     method: 'POST',
     mockData: (variables) => {
@@ -152,7 +171,10 @@ export function useSaveQuery() {
       return {
         id: `saved-${Date.now()}`,
         query: variables.query,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        tags: variables.tags || [],
+        isFavorite: variables.isFavorite || false,
+        notes: variables.notes || ''
       };
     }
   });
@@ -196,6 +218,138 @@ export function useResearchTasks(params: Record<string, any> = {}) {
       };
     }
   });
+}
+
+/**
+ * Hook to update a saved query with React Query
+ */
+export function useUpdateSavedQuery() {
+  return useFetchMutation<SavedQuery, { id: string; query?: string; tags?: string[]; notes?: string; isFavorite?: boolean }>({
+    method: 'PATCH',
+    urlFn: ({ id }) => `/research/saved-queries/${id}`,
+    mockData: (variables) => {
+      // Return mock updated query
+      return {
+        id: variables.id,
+        query: variables.query || 'Updated query',
+        tags: variables.tags || [],
+        isFavorite: variables.isFavorite || false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        notes: variables.notes || ''
+      };
+    }
+  });
+}
+
+/**
+ * Hook to get all unique tags from saved queries
+ */
+export function useAllTags() {
+  const savedQueriesQuery = useSavedQueries();
+  
+  const allTags = React.useMemo(() => {
+    if (!savedQueriesQuery.data) return [];
+    
+    const tagSet = new Set<string>();
+    savedQueriesQuery.data.forEach(query => {
+      if (query.tags && query.tags.length > 0) {
+        query.tags.forEach(tag => tagSet.add(tag));
+      }
+    });
+    
+    return Array.from(tagSet).sort();
+  }, [savedQueriesQuery.data]);
+  
+  return {
+    tags: allTags,
+    isLoading: savedQueriesQuery.isLoading,
+    isError: savedQueriesQuery.isError,
+    error: savedQueriesQuery.error
+  };
+}
+
+/**
+ * Hook to get favorite queries
+ */
+export function useFavoriteQueries() {
+  const savedQueriesQuery = useSavedQueries();
+  
+  const favoriteQueries = React.useMemo(() => {
+    if (!savedQueriesQuery.data) return [];
+    return savedQueriesQuery.data.filter(query => query.isFavorite);
+  }, [savedQueriesQuery.data]);
+  
+  return {
+    data: favoriteQueries,
+    isLoading: savedQueriesQuery.isLoading,
+    isError: savedQueriesQuery.isError,
+    error: savedQueriesQuery.error
+  };
+}
+
+/**
+ * Hook to filter queries by tags and other criteria
+ */
+export function useFilteredQueries(filterOptions: {
+  tags?: string[];
+  favorites?: boolean;
+  searchTerm?: string;
+  dateRange?: { from?: Date | null; to?: Date | null };
+}) {
+  const savedQueriesQuery = useSavedQueries();
+  
+  const filteredQueries = React.useMemo(() => {
+    if (!savedQueriesQuery.data) return [];
+    
+    return savedQueriesQuery.data.filter(query => {
+      // Filter by tags
+      if (filterOptions.tags && filterOptions.tags.length > 0) {
+        if (!query.tags || !query.tags.some(tag => filterOptions.tags?.includes(tag))) {
+          return false;
+        }
+      }
+      
+      // Filter by favorites
+      if (filterOptions.favorites && !query.isFavorite) {
+        return false;
+      }
+      
+      // Filter by search term
+      if (filterOptions.searchTerm && filterOptions.searchTerm.trim() !== '') {
+        const term = filterOptions.searchTerm.toLowerCase();
+        if (!query.query.toLowerCase().includes(term)) {
+          return false;
+        }
+      }
+      
+      // Filter by date range
+      if (filterOptions.dateRange) {
+        const createdAt = new Date(query.createdAt);
+        
+        if (filterOptions.dateRange.from && createdAt < filterOptions.dateRange.from) {
+          return false;
+        }
+        
+        if (filterOptions.dateRange.to) {
+          const endDate = new Date(filterOptions.dateRange.to);
+          endDate.setHours(23, 59, 59, 999); // Set to end of day
+          if (createdAt > endDate) {
+            return false;
+          }
+        }
+      }
+      
+      return true;
+    });
+  }, [savedQueriesQuery.data, filterOptions]);
+  
+  return {
+    data: filteredQueries,
+    isLoading: savedQueriesQuery.isLoading,
+    isError: savedQueriesQuery.isError,
+    error: savedQueriesQuery.error
+  };
 }
 
 /**

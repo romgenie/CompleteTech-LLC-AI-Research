@@ -1,6 +1,19 @@
-// Re-export hooks for easier imports
-export { default as useWebSocket } from './useWebSocket';
-export { default as useD3 } from './useD3';
-export { default as useFetch } from './useFetch';
-export { default as useLocalStorage } from './useLocalStorage';
-export { default as useErrorBoundary } from './useErrorBoundary';
+import useLocalStorage from './useLocalStorage';
+import useD3 from './useD3';
+import useFetch from './useFetch';
+import useWebSocket from './useWebSocket';
+import useErrorBoundary, { ErrorBoundary } from './useErrorBoundary';
+import { useFetchQuery, useFetchMutation, usePrefetch } from './useQueryFetch';
+
+export {
+  useLocalStorage,
+  useD3,
+  useFetch,
+  useWebSocket,
+  useErrorBoundary,
+  ErrorBoundary,
+  // React Query hooks
+  useFetchQuery,
+  useFetchMutation,
+  usePrefetch
+};
