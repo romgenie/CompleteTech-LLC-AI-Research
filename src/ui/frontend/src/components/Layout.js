@@ -14,9 +14,7 @@ import {
   Typography,
   Divider,
   Button,
-  useTheme,
   useMediaQuery,
-  Container,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -27,7 +25,9 @@ import {
   Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { NotificationCenter } from './index';
+import ThemeToggle from './ThemeToggle';
 
 // Drawer width for desktop
 const drawerWidth = 240;
@@ -42,8 +42,9 @@ function Layout() {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { themeMode, isDarkMode } = useTheme();
+  // Use the Material-UI hook for breakpoint checking
+  const isMobile = useMediaQuery((theme) => theme.breakpoints.down('md'));
 
   // Navigation items
   const navItems = [
@@ -93,6 +94,11 @@ function Layout() {
       </List>
       <Divider />
       <List>
+        {/* Theme settings in drawer */}
+        <ListItem>
+          <ThemeToggle showLabels={true} />
+        </ListItem>
+        <Divider />
         <ListItem disablePadding>
           <ListItemButton onClick={handleLogout}>
             <ListItemIcon>
@@ -131,6 +137,11 @@ function Layout() {
           <Typography variant="body2" sx={{ mr: 2 }}>
             {currentUser?.username}
           </Typography>
+          
+          {/* Theme Toggle */}
+          <Box sx={{ mr: 2 }}>
+            <ThemeToggle />
+          </Box>
           
           {/* Notification Center */}
           <Box sx={{ mr: 2 }}>

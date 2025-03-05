@@ -48,6 +48,8 @@ import {
   calculateLevelOfDetail,
   getNavigableNode
 } from '../utils/graphUtils';
+import { knowledgeGraphColorSchemes } from '../theme';
+import { useTheme } from '../contexts/ThemeContext';
 import KnowledgeGraphAccessibility from '../components/KnowledgeGraphAccessibility';
 
 const KnowledgeGraphPage = () => {
@@ -107,16 +109,21 @@ const KnowledgeGraphPage = () => {
   const [loadedNodeCount, setLoadedNodeCount] = useState(0);
   const progressiveLoadingStep = 50; // Number of nodes to add each step
   
-  // Colors for different entity types
-  const entityColors = {
-    MODEL: '#4285F4',      // Google Blue
-    DATASET: '#34A853',    // Google Green
-    ALGORITHM: '#EA4335',  // Google Red
-    PAPER: '#FBBC05',      // Google Yellow
-    AUTHOR: '#9C27B0',     // Purple
-    CODE: '#00ACC1',       // Cyan
-    default: '#757575'     // Gray
+  // Get theme context for high contrast settings
+  const { isHighContrast, isDarkMode } = useTheme();
+  
+  // Select appropriate color scheme based on theme settings
+  const getColorScheme = () => {
+    if (isHighContrast) {
+      return isDarkMode 
+        ? knowledgeGraphColorSchemes.highContrastDark
+        : knowledgeGraphColorSchemes.highContrastLight;
+    }
+    return knowledgeGraphColorSchemes.standard;
   };
+  
+  // Colors for different entity types - dynamically updates with theme changes
+  const entityColors = getColorScheme();
 
   // Performance metrics
   const fpsCounterRef = useRef(0);
@@ -132,6 +139,17 @@ const KnowledgeGraphPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEntity]);
+  
+  // Re-render graph when theme changes (for high contrast mode)
+  useEffect(() => {
+    if (filteredGraphData && filteredGraphData.nodes.length > 0) {
+      // Trigger a re-render of the graph with the new color scheme
+      const currentNodeCount = loadedNodeCount;
+      setLoadedNodeCount(0); // Reset to trigger re-render
+      setTimeout(() => setLoadedNodeCount(currentNodeCount), 50); // Restore after brief delay
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHighContrast, isDarkMode]);
   
   useEffect(() => {
     // Apply smart filtering to graph data
@@ -1154,6 +1172,22 @@ const KnowledgeGraphPage = () => {
           </AccordionSummary>
           <AccordionDetails>
             <Box mb={2}>
+              <Accordion defaultExpanded>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography variant="subtitle2" fontWeight="bold" color="primary">Accessibility Settings</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Box mb={2}>
+                    <Typography variant="body2" gutterBottom>
+                      Use high contrast mode in the theme settings (top-right gear icon) for improved visibility.
+                    </Typography>
+                    <Typography variant="body2" gutterBottom>
+                      <strong>Keyboard navigation:</strong> Use arrow keys to navigate nodes, Enter to select, +/- to zoom.
+                    </Typography>
+                  </Box>
+                </AccordionDetails>
+              </Accordion>
+              
               <Accordion defaultExpanded>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                   <Typography variant="subtitle2" fontWeight="bold" color="primary">Visualization Settings</Typography>

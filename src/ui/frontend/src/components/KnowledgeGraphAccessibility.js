@@ -1,5 +1,7 @@
 import React from 'react';
-import { Box, Typography, Paper, List, ListItem, ListItemText } from '@mui/material';
+import { Box, Typography, Paper, List, ListItem, ListItemText, Divider, Chip } from '@mui/material';
+import ContrastIcon from '@mui/icons-material/Contrast';
+import { useTheme } from '../contexts/ThemeContext';
 
 /**
  * Component for accessibility features for the Knowledge Graph
@@ -10,11 +12,26 @@ const KnowledgeGraphAccessibility = ({
   handleSelectEntity,
   zoomLevel
 }) => {
+  // Get theme settings to display accessibility information
+  const { isHighContrast, isDarkMode } = useTheme();
   return (
     <Paper elevation={3} sx={{ p: 2, mb: 2, maxHeight: '300px', overflow: 'auto' }}>
-      <Typography variant="h6" gutterBottom>
-        Accessibility Information
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Typography variant="h6" gutterBottom>
+          Accessibility Information
+        </Typography>
+        
+        {isHighContrast && (
+          <Chip 
+            icon={<ContrastIcon />}
+            label={isDarkMode ? "High Contrast Dark" : "High Contrast Light"} 
+            color="secondary"
+            size="small"
+          />
+        )}
+      </Box>
+      
+      <Divider sx={{ mb: 2 }} />
       
       <Box sx={{ mb: 2 }}>
         <Typography variant="subtitle2">Keyboard Navigation</Typography>
@@ -45,6 +62,16 @@ const KnowledgeGraphAccessibility = ({
           </ListItem>
         </List>
       </Box>
+      
+      {isHighContrast && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle2">High Contrast Mode Active</Typography>
+          <Typography variant="body2">
+            High contrast mode improves visibility by using stronger color differences
+            and clearer visual boundaries between elements.
+          </Typography>
+        </Box>
+      )}
       
       {selectedEntity && (
         <Box>
