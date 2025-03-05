@@ -21,7 +21,7 @@ class TestApiDatabaseInteraction(unittest.TestCase):
         """Set up test environment with mocked databases."""
         # Patch Neo4j and MongoDB connections
         self.neo4j_patcher = patch('knowledge_graph_system.core.db.neo4j_manager.Neo4jManager')
-        self.mongodb_patcher = patch('src.ui.api.database.mongodb_manager.MongoDBManager')
+        self.mongodb_patcher = patch('src.api.dependencies.database.MongoClient')
         
         # Start patchers
         self.mock_neo4j = self.neo4j_patcher.start()
