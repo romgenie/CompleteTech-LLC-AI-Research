@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Container,
   Typography,
@@ -27,7 +27,9 @@ import {
   FormControlLabel,
   Slider,
   Tooltip,
-  IconButton
+  IconButton,
+  Snackbar,
+  Portal
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -35,8 +37,19 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoIcon from '@mui/icons-material/Info';
 import DownloadIcon from '@mui/icons-material/Download';
 import ShareIcon from '@mui/icons-material/Share';
+import AccessibilityIcon from '@mui/icons-material/Accessibility';
+import SpeedIcon from '@mui/icons-material/Speed';
 import * as d3 from 'd3';
 import knowledgeGraphService from '../services/knowledgeGraphService';
+import { 
+  getFilteredNodes, 
+  createNodeSizeScale, 
+  calculateLevelOfDetail,
+  createOptimizedForceParameters,
+  getNavigableNode,
+  findRelatedNodes
+} from '../utils/graphUtils';
+import KnowledgeGraphAccessibility from '../components/KnowledgeGraphAccessibility';
 
 const KnowledgeGraphPage = () => {
   // Search state
@@ -63,6 +76,22 @@ const KnowledgeGraphPage = () => {
     showRelationshipLabels: false,
     timeBasedLayout: false,
     darkMode: false,
+    levelOfDetail: true,
+    useWebGL: false,
+    useWorkerThread: false,
+    progressiveLoading: true,
+  });
+  
+  // Accessibility settings
+  const [accessibilitySettings, setAccessibilitySettings] = useState({
+    highContrastMode: false,
+    largeNodeSize: false,
+    showTextualAlternative: false,
+    keyboardNavigationEnabled: true,
+    reducedMotion: false,
+    colorBlindMode: 'none',
+    minimumLabelSize: 10,
+    screenReaderAnnouncements: 'minimal'
   });
   
   // Analysis settings
@@ -76,8 +105,18 @@ const KnowledgeGraphPage = () => {
     identifyResearchFrontiers: false,
   });
   
-  // Export options
+  // UI state
   const [exportFormat, setExportFormat] = useState('json');
+  const [accessibilityDialogOpen, setAccessibilityDialogOpen] = useState(false);
+  const [performanceInfoOpen, setPerformanceInfoOpen] = useState(false);
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
+  const [focusedNodeId, setFocusedNodeId] = useState(null);
+  const [currentZoom, setCurrentZoom] = useState(1);
+  
+  // Worker refs
+  const simulationWorker = useRef(null);
+  const rendererRef = useRef(null);
+  const zoomRef = useRef(null);
 
   const svgRef = useRef(null);
   const graphContainerRef = useRef(null);
@@ -377,90 +416,325 @@ const KnowledgeGraphPage = () => {
   const renderGraph = () => {
     if (!svgRef.current || !graphData) return;
 
+    // Performance measurement
+    const startTime = performance.now();
+
     // Clear previous graph
     d3.select(svgRef.current).selectAll("*").remove();
 
     const width = graphContainerRef.current.clientWidth;
     const height = Math.max(500, graphContainerRef.current.clientHeight);
     
-    // Apply dark mode if enabled
-    if (visualizationSettings.darkMode) {
-      d3.select(svgRef.current).style("background-color", "#1a1a1a");
+    // Apply color theme based on settings
+    if (visualizationSettings.darkMode || accessibilitySettings.highContrastMode) {
+      const bgColor = accessibilitySettings.highContrastMode ? "#000000" : "#1a1a1a";
+      d3.select(svgRef.current).style("background-color", bgColor);
     } else {
       d3.select(svgRef.current).style("background-color", "transparent");
     }
 
+    // Add accessibility attributes
     const svg = d3.select(svgRef.current)
       .attr("width", width)
-      .attr("height", height);
+      .attr("height", height)
+      .attr("role", "img")
+      .attr("tabindex", "0")
+      .attr("aria-label", `Knowledge graph visualization with ${graphData.nodes.length} nodes and ${graphData.links.length} links`);
+    
+    // Create main container groups
+    const container = svg.append("g").attr("class", "graph-container");
+    const linksGroup = container.append("g").attr("class", "links");
+    const nodesGroup = container.append("g").attr("class", "nodes");
+    const labelsGroup = container.append("g").attr("class", "labels");
+    
+    // Add zoom behavior
+    const zoom = d3.zoom()
+      .scaleExtent([0.1, 8])
+      .on("zoom", (event) => {
+        container.attr("transform", event.transform);
+        
+        // Store current zoom level for level-of-detail rendering
+        const newZoom = event.transform.k;
+        setCurrentZoom(newZoom);
+        
+        if (visualizationSettings.levelOfDetail) {
+          // Update visual elements based on zoom level
+          const lod = calculateLevelOfDetail(newZoom, graphData.nodes.length);
+          
+          // Apply level of detail changes
+          nodesGroup.selectAll("circle")
+            .attr("stroke-width", lod.nodeBorderWidth)
+            .attr("opacity", lod.nodeOpacity)
+            .attr("r", d => {
+              const baseSize = d.id === selectedEntity?.id 
+                ? visualizationSettings.nodeSize + 3 
+                : visualizationSettings.nodeSize;
+              return baseSize * lod.nodeRadiusMultiplier;
+            });
+          
+          linksGroup.selectAll("line")
+            .attr("stroke-opacity", lod.linkOpacity);
+          
+          // Show/hide labels based on zoom level
+          labelsGroup.style("display", lod.showLabels ? "block" : "none");
+          if (lod.showLabels) {
+            labelsGroup.selectAll("text")
+              .attr("font-size", lod.labelFontSize);
+          }
+        }
+      });
+    
+    svg.call(zoom);
+    zoomRef.current = zoom;
+    
+    // Store optimal force simulation parameters
+    const forceParams = createOptimizedForceParameters(
+      graphData.nodes,
+      visualizationSettings
+    );
 
-    // Define simulation with settings from visualization options
+    // Define simulation with optimized settings
     const simulation = d3.forceSimulation(graphData.nodes)
-      .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(100))
-      .force("charge", d3.forceManyBody().strength(-visualizationSettings.forceStrength))
-      .force("center", d3.forceCenter(width / 2, height / 2));
+      .alpha(0.3)
+      .alphaDecay(forceParams.alphaDecay)
+      .alphaMin(forceParams.alphaMin)
+      .velocityDecay(forceParams.velocityDecay)
+      .force("link", d3.forceLink(graphData.links)
+        .id(d => d.id)
+        .distance(forceParams.linkDistance))
+      .force("charge", d3.forceManyBody()
+        .strength(forceParams.chargeStrength))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("collision", d3.forceCollide()
+        .radius(forceParams.collisionRadius));
       
     // Add cluster force if enabled
     if (visualizationSettings.clusterByType) {
-      simulation.force("x", d3.forceX(width / 2).strength(0.1))
-               .force("y", d3.forceY(height / 2).strength(0.1))
-               .force("cluster", forceCluster())
+      simulation
+        .force("x", d3.forceX(width / 2).strength(0.1))
+        .force("y", d3.forceY(height / 2).strength(0.1))
+        .force("cluster", forceCluster());
     }
+    
+    // Create dynamic node size scale based on connection count
+    const nodeSizeScale = createNodeSizeScale(
+      graphData.nodes, 
+      graphData.links, 
+      accessibilitySettings.largeNodeSize 
+        ? visualizationSettings.nodeSize * 1.5 
+        : visualizationSettings.nodeSize
+    );
 
-    // Create links
-    const link = svg.append("g")
+    // Get color mapping for nodes based on accessibility settings
+    const getNodeColor = (node) => {
+      let baseColor = entityColors[node.type] || entityColors.default;
+      
+      // Apply color blind modes
+      if (accessibilitySettings.colorBlindMode !== 'none') {
+        switch (accessibilitySettings.colorBlindMode) {
+          case 'deuteranopia': // Red-green color blindness
+            if (baseColor === '#4285F4') return '#4285F4'; // Keep blue
+            if (baseColor === '#EA4335') return '#FFA500'; // Red -> Orange
+            if (baseColor === '#34A853') return '#FFEA00'; // Green -> Yellow
+            return baseColor;
+          case 'protanopia': // Another type of red-green color blindness
+            if (baseColor === '#4285F4') return '#4285F4'; // Keep blue
+            if (baseColor === '#EA4335') return '#FFD700'; // Red -> Gold
+            if (baseColor === '#34A853') return '#CDDC39'; // Green -> Lime
+            return baseColor;
+          case 'tritanopia': // Blue-yellow color blindness
+            if (baseColor === '#4285F4') return '#7B1FA2'; // Blue -> Purple
+            if (baseColor === '#FBBC05') return '#FF5722'; // Yellow -> Orange-red
+            return baseColor;
+          default:
+            return baseColor;
+        }
+      }
+      
+      // Apply high contrast mode if enabled
+      if (accessibilitySettings.highContrastMode) {
+        // Brighten colors for high contrast
+        if (baseColor === '#757575') return '#FFFFFF'; // Default gray to white
+        return baseColor;
+      }
+      
+      return baseColor;
+    };
+
+    // Create links with improved styling
+    const link = linksGroup
       .selectAll("line")
       .data(graphData.links)
       .join("line")
-      .attr("stroke", "#999")
-      .attr("stroke-opacity", 0.6)
-      .attr("stroke-width", 1.5);
+      .attr("stroke", d => visualizationSettings.darkMode ? "#666" : "#999")
+      .attr("stroke-opacity", visualizationSettings.darkMode ? 0.8 : 0.6)
+      .attr("stroke-width", 1.5)
+      .attr("data-source", d => typeof d.source === 'object' ? d.source.id : d.source)
+      .attr("data-target", d => typeof d.target === 'object' ? d.target.id : d.target)
+      .attr("data-type", d => d.type)
+      .attr("aria-label", d => {
+        const source = typeof d.source === 'object' ? d.source.name : 'unknown';
+        const target = typeof d.target === 'object' ? d.target.name : 'unknown';
+        return `Relationship: ${source} ${d.type} ${target}`;
+      });
 
-    // Create nodes
-    const node = svg.append("g")
+    // Create nodes with accessibility attributes
+    const node = nodesGroup
       .selectAll("circle")
       .data(graphData.nodes)
       .join("circle")
-      .attr("r", d => d.id === selectedEntity.id ? visualizationSettings.nodeSize + 3 : visualizationSettings.nodeSize)
-      .attr("fill", d => entityColors[d.type] || entityColors.default)
-      .attr("stroke", d => visualizationSettings.highlightConnections && d.id === selectedEntity.id ? "#000" : "none")
-      .attr("stroke-width", 2)
+      .attr("r", d => nodeSizeScale(d))
+      .attr("fill", d => getNodeColor(d))
+      .attr("stroke", d => {
+        if (d.id === focusedNodeId) return "#ffeb3b"; // Yellow highlight for keyboard focus
+        if (visualizationSettings.highlightConnections && d.id === selectedEntity?.id) {
+          return accessibilitySettings.highContrastMode ? "#FFFFFF" : "#000000";
+        }
+        return "none";
+      })
+      .attr("stroke-width", d => d.id === focusedNodeId ? 3 : 2)
+      .attr("data-id", d => d.id)
+      .attr("data-type", d => d.type)
+      .attr("tabindex", -1) // For keyboard navigation
+      .attr("role", "button")
+      .attr("aria-label", d => `${d.name}, ${d.type}`)
       .call(drag(simulation));
 
-    // Add labels if enabled
-    const label = visualizationSettings.showLabels ? svg.append("g")
-      .selectAll("text")
-      .data(graphData.nodes)
-      .join("text")
-      .text(d => d.name)
-      .attr("font-size", 10)
-      .attr("dx", 12)
-      .attr("dy", 4)
-      .attr("opacity", 0.9)
-      .attr("fill", visualizationSettings.darkMode ? "#fff" : "#000")
-      .attr("stroke", visualizationSettings.darkMode ? "#000" : "#fff")
-      .attr("stroke-width", 0.3)
-      .attr("stroke-opacity", 0.8) : null;
+    // Add labels with proper scaling
+    if (visualizationSettings.showLabels) {
+      const labelFontSize = Math.max(
+        10, 
+        accessibilitySettings.minimumLabelSize
+      );
+      
+      const label = labelsGroup
+        .selectAll("text")
+        .data(graphData.nodes)
+        .join("text")
+        .attr("class", "node-label")
+        .text(d => d.name)
+        .attr("font-size", labelFontSize)
+        .attr("dx", d => nodeSizeScale(d) + 4)
+        .attr("dy", 4)
+        .attr("opacity", 0.9)
+        .attr("fill", accessibilitySettings.highContrastMode 
+          ? "#FFFFFF" 
+          : (visualizationSettings.darkMode ? "#fff" : "#000"))
+        .attr("stroke", accessibilitySettings.highContrastMode
+          ? "#000000"
+          : (visualizationSettings.darkMode ? "#000" : "#fff"))
+        .attr("stroke-width", 0.3)
+        .attr("stroke-opacity", 0.8)
+        .attr("pointer-events", "none") // Don't interfere with node clicks
+        .attr("aria-hidden", "true"); // Labels are presentational
+    }
       
     // Add relationship labels if enabled
     if (visualizationSettings.showRelationshipLabels) {
-      svg.append("g")
-        .selectAll("text")
+      labelsGroup
+        .selectAll(".relationship-label")
         .data(graphData.links)
         .join("text")
+        .attr("class", "relationship-label")
         .text(d => d.type)
-        .attr("font-size", 8)
-        .attr("fill", "#666")
+        .attr("font-size", accessibilitySettings.minimumLabelSize * 0.8)
+        .attr("fill", accessibilitySettings.highContrastMode 
+          ? "#FFFFFF" 
+          : "#666")
         .attr("text-anchor", "middle")
-        .attr("dy", -3);
+        .attr("dy", -3)
+        .attr("pointer-events", "none")
+        .attr("aria-hidden", "true");
     }
 
-    // Add titles for hover
-    node.append("title")
-      .text(d => `${d.name} (${d.type})`);
+    // Add interaction handlers
+    node
+      .on("click", (event, d) => {
+        // Find the entity in searchResults or use the node directly
+        const clickedEntity = searchResults.find(entity => entity.id === d.id) || d;
+        handleSelectEntity(clickedEntity);
+        
+        // Announce selection to screen readers
+        if (accessibilitySettings.screenReaderAnnouncements !== 'minimal') {
+          const announcement = document.getElementById('sr-announcement');
+          if (announcement) {
+            announcement.textContent = `Selected ${d.type}: ${d.name}`;
+          }
+        }
+      })
+      .on("mouseover", function(event, d) {
+        d3.select(this).attr("stroke-width", 3);
+        
+        // Highlight connected nodes and links
+        if (visualizationSettings.highlightConnections) {
+          const connectedNodeIds = new Set();
+          link.each(function(l) {
+            if (l.source.id === d.id || l.target.id === d.id) {
+              const targetId = l.source.id === d.id ? l.target.id : l.source.id;
+              connectedNodeIds.add(targetId);
+              d3.select(this).attr("stroke", "#ff5722").attr("stroke-width", 2);
+            }
+          });
+          
+          node.each(function(n) {
+            if (connectedNodeIds.has(n.id)) {
+              d3.select(this).attr("stroke", "#ff5722").attr("stroke-width", 2);
+            }
+          });
+        }
+      })
+      .on("mouseout", function(event, d) {
+        d3.select(this).attr("stroke-width", d.id === focusedNodeId ? 3 : 
+          (visualizationSettings.highlightConnections && d.id === selectedEntity?.id ? 2 : 0));
+        
+        // Reset highlights
+        link.attr("stroke", visualizationSettings.darkMode ? "#666" : "#999")
+            .attr("stroke-width", 1.5);
+        
+        node.each(function(n) {
+          if (n.id !== selectedEntity?.id && n.id !== focusedNodeId) {
+            d3.select(this).attr("stroke", "none");
+          } else if (n.id === selectedEntity?.id) {
+            d3.select(this).attr("stroke", accessibilitySettings.highContrastMode ? "#FFFFFF" : "#000000");
+          }
+        });
+      });
+      
+    // Progressive loading animation if enabled
+    if (visualizationSettings.progressiveLoading && !accessibilitySettings.reducedMotion) {
+      // Start with nodes invisible
+      node.attr("opacity", 0);
+      link.attr("opacity", 0);
+      
+      // Fade in nodes and links progressively
+      const delay = Math.min(5, 200 / Math.sqrt(graphData.nodes.length));
+      
+      node.transition()
+        .delay((d, i) => i * delay)
+        .duration(300)
+        .attr("opacity", 1);
+        
+      link.transition()
+        .delay((d, i) => i * delay * 0.5)
+        .duration(200)
+        .attr("opacity", 0.6);
+    }
 
-    // Update positions on tick
+    // Update positions on tick with improved performance for large graphs
     simulation.on("tick", () => {
+      // For very large graphs, limit updates for better performance
+      if (graphData.nodes.length > 1000 && !accessibilitySettings.reducedMotion) {
+        // Only update every few ticks
+        if (simulation.alpha() < 0.1 || Math.random() < 0.2) {
+          updatePositions();
+        }
+      } else {
+        updatePositions();
+      }
+    });
+    
+    // Function to update positions of all elements
+    function updatePositions() {
       link
         .attr("x1", d => d.source.x)
         .attr("y1", d => d.source.y)
@@ -471,18 +745,166 @@ const KnowledgeGraphPage = () => {
         .attr("cx", d => d.x)
         .attr("cy", d => d.y);
 
-      if (visualizationSettings.showLabels && label) {
-        label
+      if (visualizationSettings.showLabels) {
+        labelsGroup.selectAll(".node-label")
           .attr("x", d => d.x)
           .attr("y", d => d.y);
       }
       
       if (visualizationSettings.showRelationshipLabels) {
-        svg.selectAll("text:not(.node-label)")
+        labelsGroup.selectAll(".relationship-label")
           .attr("x", d => (d.source.x + d.target.x) / 2)
           .attr("y", d => (d.source.y + d.target.y) / 2);
       }
-    });
+    }
+    
+    // For reduced motion, run a static layout instead of animation
+    if (accessibilitySettings.reducedMotion) {
+      // Run simulation steps without animation
+      for (let i = 0; i < forceParams.iterations; i++) {
+        simulation.tick();
+      }
+      updatePositions();
+      simulation.stop();
+    }
+    
+    // Add keyboard navigation handlers (if enabled)
+    if (accessibilitySettings.keyboardNavigationEnabled) {
+      svg.on("keydown", (event) => {
+        if (!graphData.nodes.length) return;
+        
+        switch (event.key) {
+          case "ArrowRight":
+          case "ArrowDown":
+            event.preventDefault();
+            const nextNode = getNavigableNode(focusedNodeId, graphData.nodes, 1);
+            if (nextNode) {
+              setFocusedNodeId(nextNode.id);
+              focusNode(nextNode.id);
+            }
+            break;
+            
+          case "ArrowLeft":
+          case "ArrowUp":
+            event.preventDefault();
+            const prevNode = getNavigableNode(focusedNodeId, graphData.nodes, -1);
+            if (prevNode) {
+              setFocusedNodeId(prevNode.id);
+              focusNode(prevNode.id);
+            }
+            break;
+            
+          case "Home":
+            event.preventDefault();
+            if (graphData.nodes.length > 0) {
+              setFocusedNodeId(graphData.nodes[0].id);
+              focusNode(graphData.nodes[0].id);
+            }
+            break;
+            
+          case "End":
+            event.preventDefault();
+            if (graphData.nodes.length > 0) {
+              setFocusedNodeId(graphData.nodes[graphData.nodes.length - 1].id);
+              focusNode(graphData.nodes[graphData.nodes.length - 1].id);
+            }
+            break;
+            
+          case "Enter":
+          case " ": // Space
+            event.preventDefault();
+            if (focusedNodeId) {
+              const selectedNode = graphData.nodes.find(n => n.id === focusedNodeId);
+              if (selectedNode) {
+                handleSelectEntity(selectedNode);
+              }
+            }
+            break;
+            
+          case "+":
+          case "=":
+            event.preventDefault();
+            zoomRef.current.scaleBy(svg.transition().duration(300), 1.3);
+            break;
+            
+          case "-":
+            event.preventDefault();
+            zoomRef.current.scaleBy(svg.transition().duration(300), 0.7);
+            break;
+            
+          case "0":
+            event.preventDefault();
+            zoomRef.current.transform(svg.transition().duration(500), d3.zoomIdentity);
+            break;
+            
+          case "Escape":
+            event.preventDefault();
+            setFocusedNodeId(null);
+            break;
+        }
+      });
+    }
+    
+    // Helper function to focus a specific node
+    function focusNode(nodeId) {
+      // Update visual highlight
+      node.attr("stroke", d => {
+        if (d.id === nodeId) return "#ffeb3b"; // Yellow highlight
+        if (visualizationSettings.highlightConnections && d.id === selectedEntity?.id) {
+          return accessibilitySettings.highContrastMode ? "#FFFFFF" : "#000000";
+        }
+        return "none";
+      }).attr("stroke-width", d => d.id === nodeId ? 3 : 2);
+      
+      // Announce to screen readers
+      if (accessibilitySettings.screenReaderAnnouncements !== 'minimal') {
+        const focusedNode = graphData.nodes.find(n => n.id === nodeId);
+        if (focusedNode) {
+          const announcement = document.getElementById('sr-announcement');
+          if (announcement) {
+            // For verbose mode, include connected nodes
+            if (accessibilitySettings.screenReaderAnnouncements === 'verbose') {
+              const relatedIds = findRelatedNodes(nodeId, graphData.nodes, graphData.links, 3);
+              const relatedNodes = relatedIds.map(id => {
+                const node = graphData.nodes.find(n => n.id === id);
+                return node ? node.name : '';
+              }).filter(Boolean);
+              
+              const relatedText = relatedNodes.length > 0 
+                ? `. Connected to: ${relatedNodes.join(', ')}` 
+                : '';
+                
+              announcement.textContent = `Focused on ${focusedNode.type}: ${focusedNode.name}${relatedText}`;
+            } else {
+              announcement.textContent = `Focused on ${focusedNode.type}: ${focusedNode.name}`;
+            }
+          }
+        }
+      }
+      
+      // If the node is not visible in the current viewport, center it
+      const focusedNodeElement = node.filter(d => d.id === nodeId).node();
+      if (focusedNodeElement) {
+        const boundingBox = focusedNodeElement.getBoundingClientRect();
+        const containerBox = graphContainerRef.current.getBoundingClientRect();
+        
+        // Check if node is outside visible area
+        if (boundingBox.left < containerBox.left || 
+            boundingBox.right > containerBox.right ||
+            boundingBox.top < containerBox.top ||
+            boundingBox.bottom > containerBox.bottom) {
+          
+          const focusedNode = graphData.nodes.find(n => n.id === nodeId);
+          if (focusedNode && focusedNode.x && focusedNode.y) {
+            const transform = d3.zoomIdentity
+              .translate(width/2 - focusedNode.x, height/2 - focusedNode.y)
+              .scale(currentZoom);
+              
+            zoomRef.current.transform(svg.transition().duration(500), transform);
+          }
+        }
+      }
+    }
 
     // Define drag behavior
     function drag(simulation) {
@@ -508,16 +930,279 @@ const KnowledgeGraphPage = () => {
         .on("drag", dragged)
         .on("end", dragended);
     }
+    
+    // Record performance metrics
+    const endTime = performance.now();
+    const renderTime = endTime - startTime;
+    
+    if (graphData.nodes.length > 500) {
+      console.log(`Graph rendered in ${renderTime.toFixed(1)}ms (${graphData.nodes.length} nodes, ${graphData.links.length} links)`);
+    }
+  };
+
+  // Create a Web Worker for simulation (if supported and enabled)
+  useEffect(() => {
+    if (visualizationSettings.useWorkerThread && window.Worker && !simulationWorker.current) {
+      try {
+        // Create a simple worker for force simulation
+        const workerCode = `
+          self.onmessage = function(e) {
+            const { nodes, links, iterations, params } = e.data;
+            
+            // Run simulation
+            const positions = runForceSimulation(nodes, links, iterations, params);
+            self.postMessage(positions);
+          };
+
+          function runForceSimulation(nodes, links, iterations, params) {
+            // Simple force-directed layout algorithm
+            // In a real implementation, this would use a proper force simulation library
+            const nodePositions = new Map();
+            
+            // Initialize positions if not provided
+            nodes.forEach(node => {
+              if (!nodePositions.has(node.id)) {
+                nodePositions.set(node.id, {
+                  x: node.x || Math.random() * params.width,
+                  y: node.y || Math.random() * params.height
+                });
+              }
+            });
+            
+            // Run simulation for fixed number of iterations
+            for (let i = 0; i < iterations; i++) {
+              // Apply forces
+              // ... (simplified force calculation)
+            }
+            
+            // Return updated positions
+            return Array.from(nodePositions.entries()).map(([id, pos]) => ({
+              id,
+              x: pos.x,
+              y: pos.y
+            }));
+          }
+        `;
+        
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(blob);
+        simulationWorker.current = new Worker(workerUrl);
+        
+        // Set up message handler
+        simulationWorker.current.onmessage = (e) => {
+          const positions = e.data;
+          // Update node positions with results from worker
+          if (positions && graphData) {
+            const updatedNodes = graphData.nodes.map(node => {
+              const pos = positions.find(p => p.id === node.id);
+              if (pos) {
+                return { ...node, x: pos.x, y: pos.y };
+              }
+              return node;
+            });
+            
+            setGraphData(prev => ({
+              ...prev,
+              nodes: updatedNodes
+            }));
+          }
+        };
+        
+        // Clean up
+        URL.revokeObjectURL(workerUrl);
+      } catch (error) {
+        console.error('Error creating Web Worker:', error);
+        setNotification({
+          open: true,
+          message: 'Worker threads not supported in your browser. Using main thread.',
+          severity: 'warning'
+        });
+      }
+    }
+    
+    return () => {
+      if (simulationWorker.current) {
+        simulationWorker.current.terminate();
+        simulationWorker.current = null;
+      }
+    };
+  }, [visualizationSettings.useWorkerThread, graphData]);
+
+  // WebGL Renderer setup (if supported and enabled)
+  useEffect(() => {
+    if (visualizationSettings.useWebGL && !rendererRef.current) {
+      try {
+        // Example WebGL setup (would be replaced with Three.js or similar)
+        console.log('WebGL rendering would be enabled here using Three.js or similar');
+        
+        // In a real implementation, this would initialize a WebGL context
+        // and render the graph using WebGL for improved performance with large graphs
+      } catch (error) {
+        console.error('Error initializing WebGL renderer:', error);
+        setNotification({
+          open: true,
+          message: 'WebGL rendering not supported. Using SVG.',
+          severity: 'warning'
+        });
+      }
+    }
+    
+    return () => {
+      // Clean up WebGL resources
+      if (rendererRef.current) {
+        // Dispose of WebGL context and resources
+        rendererRef.current = null;
+      }
+    };
+  }, [visualizationSettings.useWebGL]);
+
+  // Handle loading real-world data for performance testing
+  const handleLoadRealWorldData = async () => {
+    setGraphLoading(true);
+    try {
+      const data = await knowledgeGraphService.getRealWorldGraph();
+      
+      if (data && data.nodes && data.nodes.length > 0) {
+        setGraphData(data);
+        setNotification({
+          open: true,
+          message: `Loaded real-world dataset with ${data.nodes.length} nodes and ${data.links.length} links`,
+          severity: 'success'
+        });
+      } else {
+        throw new Error('Invalid data format');
+      }
+    } catch (error) {
+      console.error('Error loading real-world data:', error);
+      setNotification({
+        open: true,
+        message: 'Failed to load real-world data. Using test data instead.',
+        severity: 'error'
+      });
+      
+      // Fall back to test data
+      const testData = await knowledgeGraphService.getLargeTestGraph('large');
+      setGraphData(testData);
+    } finally {
+      setGraphLoading(false);
+    }
+  };
+
+  // Handle accessibility settings change
+  const handleAccessibilitySettingsChange = (newSettings) => {
+    setAccessibilitySettings(newSettings);
+    setAccessibilityDialogOpen(false);
+    
+    // Apply settings immediately if there's a graph
+    if (graphData) {
+      renderGraph();
+    }
+    
+    // Show confirmation
+    setNotification({
+      open: true,
+      message: 'Accessibility settings updated',
+      severity: 'success'
+    });
   };
 
   return (
     <Box>
+      {/* Screen reader announcements */}
+      <div 
+        id="sr-announcement" 
+        role="status" 
+        aria-live="polite" 
+        style={{ 
+          position: 'absolute', 
+          width: '1px', 
+          height: '1px', 
+          margin: '-1px',
+          padding: 0,
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          border: 0
+        }}
+      />
+      
+      {/* Accessibility Dialog */}
+      {accessibilityDialogOpen && (
+        <Portal>
+          <Box
+            sx={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              bgcolor: 'rgba(0,0,0,0.5)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              p: 2
+            }}
+            onClick={() => setAccessibilityDialogOpen(false)}
+          >
+            <Box 
+              sx={{ 
+                maxWidth: '800px', 
+                width: '100%', 
+                maxHeight: '90vh', 
+                overflowY: 'auto',
+                onClick: e => e.stopPropagation()
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <KnowledgeGraphAccessibility 
+                settings={accessibilitySettings}
+                onSettingsChange={handleAccessibilitySettingsChange}
+              />
+            </Box>
+          </Box>
+        </Portal>
+      )}
+      
+      {/* Notifications */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={() => setNotification({ ...notification, open: false })}
+        message={notification.message}
+        severity={notification.severity}
+      />
+      
       <Typography variant="h4" component="h1" gutterBottom>
         Knowledge Graph Explorer
       </Typography>
       <Typography variant="subtitle1" color="text.secondary" paragraph>
         Search, visualize, and explore relationships between AI research entities.
       </Typography>
+      
+      {/* Accessibility and performance buttons */}
+      <Box sx={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: 1 }}>
+        <Tooltip title="Accessibility Settings">
+          <IconButton 
+            color="primary" 
+            onClick={() => setAccessibilityDialogOpen(true)}
+            aria-label="Open accessibility settings"
+          >
+            <AccessibilityIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Load Real-World Test Data">
+          <IconButton 
+            color="primary" 
+            onClick={handleLoadRealWorldData}
+            aria-label="Load real-world test data"
+            disabled={graphLoading}
+          >
+            <SpeedIcon />
+          </IconButton>
+        </Tooltip>
+      </Box>
+      
       {!searchResults.length && !selectedEntity && (
         <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="subtitle2">Getting Started</Typography>
@@ -718,6 +1403,93 @@ const KnowledgeGraphPage = () => {
                         />
                       </Tooltip>
                     </Grid>
+                    
+                    {/* Performance optimization settings */}
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Adjust detail level based on zoom for better performance">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={visualizationSettings.levelOfDetail}
+                              onChange={(e) => {
+                                setVisualizationSettings({
+                                  ...visualizationSettings,
+                                  levelOfDetail: e.target.checked
+                                });
+                                if (graphData) renderGraph();
+                              }}
+                              color="primary"
+                            />
+                          }
+                          label="Level of Detail"
+                        />
+                      </Tooltip>
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Progressively load visual elements for better performance">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={visualizationSettings.progressiveLoading}
+                              onChange={(e) => {
+                                setVisualizationSettings({
+                                  ...visualizationSettings,
+                                  progressiveLoading: e.target.checked
+                                });
+                                if (graphData) renderGraph();
+                              }}
+                              color="primary"
+                            />
+                          }
+                          label="Progressive Load"
+                        />
+                      </Tooltip>
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Use WebGL rendering for large graphs (experimental)">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={visualizationSettings.useWebGL}
+                              onChange={(e) => {
+                                setVisualizationSettings({
+                                  ...visualizationSettings,
+                                  useWebGL: e.target.checked
+                                });
+                                // WebGL requires a re-initialization
+                                if (rendererRef.current) {
+                                  rendererRef.current = null;
+                                }
+                                if (graphData) renderGraph();
+                              }}
+                              color="primary"
+                            />
+                          }
+                          label="WebGL (Beta)"
+                        />
+                      </Tooltip>
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                      <Tooltip title="Use Web Worker for force simulation (experimental)">
+                        <FormControlLabel
+                          control={
+                            <Switch 
+                              checked={visualizationSettings.useWorkerThread}
+                              onChange={(e) => {
+                                setVisualizationSettings({
+                                  ...visualizationSettings,
+                                  useWorkerThread: e.target.checked
+                                });
+                                if (graphData) renderGraph();
+                              }}
+                              color="primary"
+                            />
+                          }
+                          label="Worker Thread"
+                        />
+                      </Tooltip>
+                    </Grid>
+                    
                     <Grid item xs={12} md={6}>
                       <Typography variant="body2" gutterBottom>
                         Node Size: {visualizationSettings.nodeSize}
