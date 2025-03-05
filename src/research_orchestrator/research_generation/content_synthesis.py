@@ -1782,7 +1782,7 @@ This represents a significant advancement over existing methods and provides a f
     
     def generate_knowledge_graph_visualization(self,
                                              query: str,
-                                             chart_type: Union[ChartType, str] = ChartType.NETWORK,
+                                             chart_type: Union[ChartType, str] = "NETWORK",
                                              title: str = "",
                                              file_name: Optional[str] = None,
                                              **kwargs) -> str:

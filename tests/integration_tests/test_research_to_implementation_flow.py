@@ -21,14 +21,14 @@ class TestResearchToImplementationFlow(unittest.TestCase):
     def setUp(self):
         """Set up test environment with mocked external services."""
         # Create patchers for external services to avoid real API calls during testing
-        self.web_search_patcher = patch('src.research_orchestrator.information_gathering.sources.web.search')
-        self.academic_search_patcher = patch('src.research_orchestrator.information_gathering.sources.academic.search')
-        self.llm_generate_patcher = patch('src.research_orchestrator.research_generation.content_synthesis.generate_content')
+        self.web_source_patcher = patch('src.research_orchestrator.information_gathering.sources.web.WebSource.search')
+        self.academic_source_patcher = patch('src.research_orchestrator.information_gathering.sources.academic.AcademicSource.search')
+        self.llm_generate_patcher = patch('src.research_orchestrator.research_generation.content_synthesis.ContentSynthesisEngine.generate_content_for_section')
         self.neo4j_patcher = patch('knowledge_graph_system.core.db.neo4j_manager.Neo4jManager')
         
         # Start the patchers
-        self.mock_web_search = self.web_search_patcher.start()
-        self.mock_academic_search = self.academic_search_patcher.start()
+        self.mock_web_search = self.web_source_patcher.start()
+        self.mock_academic_search = self.academic_source_patcher.start()
         self.mock_llm_generate = self.llm_generate_patcher.start()
         self.mock_neo4j = self.neo4j_patcher.start()
         
@@ -42,9 +42,9 @@ class TestResearchToImplementationFlow(unittest.TestCase):
         self.mock_neo4j_instance.run_query.return_value = self._get_test_graph_results()
         
         # Import actual components (after patching their dependencies)
-        from research_orchestrator.core import ResearchOrchestrator
-        from knowledge_graph_system.core import KnowledgeGraphManager
-        from research_implementation.core import ImplementationManager
+        from src.research_orchestrator.core import ResearchOrchestrator
+        from knowledge_graph_system.core.knowledge_graph_manager import KnowledgeGraphManager
+        from research_implementation.core.implementation_manager import ImplementationManager
         
         # Initialize the components with test configuration
         self.research_orchestrator = ResearchOrchestrator(config={'test_mode': True})
@@ -54,8 +54,8 @@ class TestResearchToImplementationFlow(unittest.TestCase):
     def tearDown(self):
         """Clean up test environment."""
         # Stop all patchers
-        self.web_search_patcher.stop()
-        self.academic_search_patcher.stop()
+        self.web_source_patcher.stop()
+        self.academic_source_patcher.stop()
         self.llm_generate_patcher.stop()
         self.neo4j_patcher.stop()
     

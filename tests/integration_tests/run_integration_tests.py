@@ -32,11 +32,11 @@ def get_backend_test_suite():
     suite = unittest.TestSuite()
     
     # Add research_to_implementation_flow tests
-    from test_research_to_implementation_flow import TestResearchToImplementationFlow
+    from tests.integration_tests.test_research_to_implementation_flow import TestResearchToImplementationFlow
     suite.addTest(loader.loadTestsFromTestCase(TestResearchToImplementationFlow))
     
     # Add api_database_interaction tests
-    from test_api_database_interaction import TestApiDatabaseInteraction
+    from tests.integration_tests.test_api_database_interaction import TestApiDatabaseInteraction
     suite.addTest(loader.loadTestsFromTestCase(TestApiDatabaseInteraction))
     
     return suite

@@ -1470,7 +1470,7 @@ class VisualizationGenerator:
     
     def generate_chart_from_knowledge_graph(self,
                                           query: str,
-                                          chart_type: Union[ChartType, str] = ChartType.NETWORK,
+                                          chart_type: Union[ChartType, str] = "NETWORK",
                                           title: str = "",
                                           file_name: Optional[str] = None,
                                           **kwargs) -> str:

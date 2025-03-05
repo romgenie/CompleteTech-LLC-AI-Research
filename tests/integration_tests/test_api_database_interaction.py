@@ -13,6 +13,7 @@ import unittest
 import os
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
+from datetime import datetime, timedelta
 
 class TestApiDatabaseInteraction(unittest.TestCase):
     """Test interaction between API endpoints and databases."""
@@ -22,10 +23,21 @@ class TestApiDatabaseInteraction(unittest.TestCase):
         # Patch Neo4j and MongoDB connections
         self.neo4j_patcher = patch('knowledge_graph_system.core.db.neo4j_manager.Neo4jManager')
         self.mongodb_patcher = patch('src.api.dependencies.database.MongoClient')
+        self.auth_patcher = patch('src.api.dependencies.auth.get_current_user')
         
         # Start patchers
         self.mock_neo4j = self.neo4j_patcher.start()
         self.mock_mongodb = self.mongodb_patcher.start()
+        self.mock_auth = self.auth_patcher.start()
+        
+        # Mock the auth to return a test user
+        from src.api.dependencies.auth import User
+        self.mock_auth.return_value = User(
+            username="test_user",
+            email="test@example.com",
+            full_name="Test User",
+            disabled=False
+        )
         
         # Configure Neo4j mock
         self.mock_neo4j_instance = self.mock_neo4j.return_value
@@ -67,10 +79,39 @@ class TestApiDatabaseInteraction(unittest.TestCase):
         
         # Mock find_one to return test documents
         def mock_find_one(query):
-            if query.get("_id") == "research_1":
-                return {"_id": "research_1", "title": "Vision Transformer Research", "content": "Research content..."}
-            elif query.get("_id") == "implementation_1":
-                return {"_id": "implementation_1", "title": "ViT Implementation", "code": "import torch..."}
+            if query.get("id") == "research_1":
+                return {
+                    "id": "research_1", 
+                    "query": "Vision Transformer Research",
+                    "status": "completed",
+                    "user": "test_user",
+                    "created_at": datetime.now(),
+                    "updated_at": datetime.now(),
+                    "sources": ["web", "academic"],
+                    "max_results": 10,
+                    "filters": {}
+                }
+            elif query.get("id") == "implementation_1":
+                return {
+                    "id": "implementation_1", 
+                    "title": "ViT Implementation", 
+                    "description": "Implementation of Vision Transformer",
+                    "paper_id": "research_1",
+                    "components": [
+                        {
+                            "name": "Transformer",
+                            "description": "Core transformer component",
+                            "dependencies": []
+                        }
+                    ],
+                    "requirements": {
+                        "frameworks": ["pytorch"],
+                        "libraries": ["transformers"]
+                    },
+                    "created_at": datetime.now(),
+                    "updated_at": datetime.now(),
+                    "user": "test_user"
+                }
             return None
             
         self.mock_collection.find_one.side_effect = mock_find_one
@@ -83,8 +124,28 @@ class TestApiDatabaseInteraction(unittest.TestCase):
         
         def mock_to_list():
             return [
-                {"_id": "research_1", "title": "Vision Transformer Research"},
-                {"_id": "research_2", "title": "Diffusion Models Overview"}
+                {
+                    "id": "research_1", 
+                    "query": "Vision Transformer Research",
+                    "status": "completed",
+                    "user": "test_user",
+                    "created_at": datetime.now(),
+                    "updated_at": datetime.now(),
+                    "sources": ["web", "academic"],
+                    "max_results": 10,
+                    "filters": {}
+                },
+                {
+                    "id": "research_2", 
+                    "query": "Diffusion Models Overview",
+                    "status": "completed",
+                    "user": "test_user",
+                    "created_at": datetime.now(),
+                    "updated_at": datetime.now(),
+                    "sources": ["web", "academic"],
+                    "max_results": 10,
+                    "filters": {}
+                }
             ]
             
         self.mock_cursor.to_list.return_value = mock_to_list()
@@ -96,42 +157,61 @@ class TestApiDatabaseInteraction(unittest.TestCase):
         self.mock_collection.insert_one.return_value = insert_result
         
         # Import and initialize FastAPI app (after patching)
-        from src.ui.api.app import app
+        from src.api.main import app
+        
+        # Create a test token
+        from src.api.dependencies.auth import create_access_token
+        from datetime import timedelta
+        
+        test_token = create_access_token(
+            data={"sub": "test_user"},
+            expires_delta=timedelta(minutes=30)
+        )
         
         # Create test client
         self.client = TestClient(app)
+        
+        # Set authorization header for all requests
+        self.client.headers["Authorization"] = f"Bearer {test_token}"
         
     def tearDown(self):
         """Clean up test environment."""
         self.neo4j_patcher.stop()
         self.mongodb_patcher.stop()
+        self.auth_patcher.stop()
     
     def test_knowledge_graph_entity_endpoints(self):
         """Test knowledge graph entity API endpoints."""
-        # Test GET /api/knowledge-graph/entities
-        response = self.client.get("/api/knowledge-graph/entities")
+        # Test GET /knowledge/entities/
+        response = self.client.get("/knowledge/entities/")
+        print(f"GET /knowledge/entities/ response: {response.status_code}, {response.text}")
         self.assertEqual(response.status_code, 200)
         
         # Verify response contains expected entities
-        entities = response.json()
+        response_data = response.json()
+        self.assertTrue("items" in response_data)
+        entities = response_data["items"]
         self.assertEqual(len(entities), 3)
         self.assertEqual(entities[0]["name"], "Vision Transformer")
         
-        # Test GET /api/knowledge-graph/entities/{entity_id}
-        response = self.client.get("/api/knowledge-graph/entities/1")
+        # Test GET /knowledge/entities/{entity_id}
+        response = self.client.get("/knowledge/entities/1")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["name"], "Vision Transformer")
         
-        # Test POST /api/knowledge-graph/entities
+        # Test POST /knowledge/entities/
         new_entity = {
             "name": "BERT",
-            "type": "MODEL",
+            "label": "MODEL",
             "properties": {
                 "year": 2018,
                 "authors": ["Jacob Devlin", "Ming-Wei Chang"]
-            }
+            },
+            "confidence": 0.95,
+            "source": "test"
         }
-        response = self.client.post("/api/knowledge-graph/entities", json=new_entity)
+        response = self.client.post("/knowledge/entities/", json=new_entity)
+        print(f"POST /knowledge/entities/ response: {response.status_code}, {response.text}")
         self.assertEqual(response.status_code, 201)
         
         # Verify Neo4j method was called correctly
@@ -139,26 +219,31 @@ class TestApiDatabaseInteraction(unittest.TestCase):
     
     def test_knowledge_graph_relationship_endpoints(self):
         """Test knowledge graph relationship API endpoints."""
-        # Test GET /api/knowledge-graph/relationships
-        response = self.client.get("/api/knowledge-graph/relationships")
+        # Test GET /knowledge/relationships/
+        response = self.client.get("/knowledge/relationships/")
         self.assertEqual(response.status_code, 200)
         
         # Verify response contains expected relationships
-        relationships = response.json()
+        response_data = response.json()
+        self.assertTrue("items" in response_data)
+        relationships = response_data["items"]
         self.assertEqual(len(relationships), 1)
-        self.assertEqual(relationships[0]["source"]["name"], "Vision Transformer")
-        self.assertEqual(relationships[0]["target"]["name"], "ImageNet")
+        self.assertEqual(relationships[0]["source_entity"]["name"], "Vision Transformer")
+        self.assertEqual(relationships[0]["target_entity"]["name"], "ImageNet")
         
-        # Test POST /api/knowledge-graph/relationships
+        # Test POST /knowledge/relationships/
         new_relationship = {
             "source_id": "1",
             "target_id": "2",
             "type": "COMPARED_TO",
             "properties": {
                 "performance_difference": "+0.05"
-            }
+            },
+            "confidence": 0.9,
+            "source": "test",
+            "bidirectional": False
         }
-        response = self.client.post("/api/knowledge-graph/relationships", json=new_relationship)
+        response = self.client.post("/knowledge/relationships/", json=new_relationship)
         self.assertEqual(response.status_code, 201)
         
         # Verify Neo4j method was called correctly
@@ -166,26 +251,29 @@ class TestApiDatabaseInteraction(unittest.TestCase):
     
     def test_research_document_endpoints(self):
         """Test research document API endpoints with MongoDB."""
-        # Test GET /api/research/{research_id}
-        response = self.client.get("/api/research/research_1")
+        # Test GET /research/tasks/{task_id}
+        response = self.client.get("/research/tasks/research_1")
+        print(f"GET /research/tasks/research_1 response: {response.status_code}, {response.text}")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["title"], "Vision Transformer Research")
+        self.assertEqual(response.json()["query"], "Vision Transformer Research")
         
-        # Test GET /api/research (list)
-        response = self.client.get("/api/research?limit=10&page=1")
+        # Test GET /research/tasks/ (list)
+        response = self.client.get("/research/tasks/?limit=10&offset=0")
         self.assertEqual(response.status_code, 200)
         
         # Verify response contains expected documents
-        documents = response.json()["items"]
-        self.assertEqual(len(documents), 2)
+        tasks = response.json()
+        self.assertEqual(len(tasks), 2)
         
-        # Test POST /api/research (create)
+        # Test POST /research/queries/ (create)
         new_research = {
-            "title": "Attention Mechanisms in Deep Learning",
             "query": "How do attention mechanisms work?",
-            "content": "Attention mechanisms allow models to focus on specific parts of the input..."
+            "sources": ["web", "academic"],
+            "max_results": 10,
+            "filters": {}
         }
-        response = self.client.post("/api/research", json=new_research)
+        response = self.client.post("/research/queries/", json=new_research)
+        print(f"POST /research/queries/ response: {response.status_code}, {response.text}")
         self.assertEqual(response.status_code, 201)
         
         # Verify MongoDB method was called correctly
@@ -193,19 +281,23 @@ class TestApiDatabaseInteraction(unittest.TestCase):
     
     def test_implementation_endpoints(self):
         """Test implementation API endpoints with MongoDB."""
-        # Test GET /api/implementation/{implementation_id}
-        response = self.client.get("/api/implementation/implementation_1")
+        # Test GET /implementation/{implementation_id}
+        response = self.client.get("/implementation/implementation_1")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["title"], "ViT Implementation")
         
-        # Test POST /api/implementation (create)
+        # Test POST /implementation/ (create)
         new_implementation = {
             "title": "BERT Implementation",
-            "model_id": "2",
-            "code": "import transformers...",
-            "description": "Implementation of BERT model"
+            "description": "Implementation of BERT model",
+            "paper_id": "research_1",
+            "components": [],
+            "requirements": {
+                "frameworks": ["transformers"],
+                "libraries": ["torch"]
+            }
         }
-        response = self.client.post("/api/implementation", json=new_implementation)
+        response = self.client.post("/implementation/", json=new_implementation)
         self.assertEqual(response.status_code, 201)
         
         # Verify MongoDB method was called correctly
@@ -213,11 +305,12 @@ class TestApiDatabaseInteraction(unittest.TestCase):
     
     def test_api_database_end_to_end(self):
         """Test end-to-end flow from API to database and back."""
-        # 1. Create a new research document via API
+        # 1. Create a new research query via API
         new_research = {
-            "title": "Transformer Architecture",
             "query": "How does the transformer architecture work?",
-            "content": "The transformer architecture relies on attention mechanisms..."
+            "sources": ["web", "academic"],
+            "max_results": 10,
+            "filters": {}
         }
         
         # Configure MongoDB to return a specific ID for the new research
@@ -226,60 +319,84 @@ class TestApiDatabaseInteraction(unittest.TestCase):
         self.mock_collection.insert_one.return_value = insert_result
         
         # Create research via API
-        response = self.client.post("/api/research", json=new_research)
+        response = self.client.post("/research/queries/", json=new_research)
         self.assertEqual(response.status_code, 201)
         research_id = response.json()["id"]
         
         # 2. Set up mock to return this research when queried
         def updated_find_one(query):
-            if query.get("_id") == "research_transformer":
-                return {"_id": "research_transformer", "title": "Transformer Architecture", **new_research}
+            if query.get("id") == research_id:
+                return {
+                    "id": research_id, 
+                    "query": "How does the transformer architecture work?",
+                    "status": "completed",
+                    "user": "test_user"
+                }
             return None
             
         self.mock_collection.find_one.side_effect = updated_find_one
         
         # 3. Retrieve the research via API
-        response = self.client.get(f"/api/research/{research_id}")
+        response = self.client.get(f"/research/tasks/{research_id}")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["title"], "Transformer Architecture")
+        self.assertEqual(response.json()["query"], "How does the transformer architecture work?")
         
         # 4. Create entities in knowledge graph extracted from research
         new_entity = {
             "name": "Transformer",
-            "type": "ARCHITECTURE",
+            "label": "ARCHITECTURE",
             "properties": {
                 "year": 2017,
                 "paper": "Attention Is All You Need"
-            }
+            },
+            "confidence": 0.95,
+            "source": "test"
         }
         
         # Configure Neo4j mock for entity creation
-        self.mock_neo4j_instance.add_entity.return_value = "entity_transformer"
+        self.mock_neo4j_instance.add_entity.return_value = {"success": True, "entity_id": "entity_transformer"}
         
         # Create entity via API
-        response = self.client.post("/api/knowledge-graph/entities", json=new_entity)
+        response = self.client.post("/knowledge/entities/", json=new_entity)
         self.assertEqual(response.status_code, 201)
         entity_id = response.json()["id"]
         
         # 5. Create implementation referencing the research and knowledge graph entity
         new_implementation = {
             "title": "Transformer Implementation",
-            "research_id": research_id,
-            "entity_id": entity_id,
-            "code": "import torch\nclass TransformerModel(nn.Module):\n    def __init__(self):\n        super().__init__()\n        # Implementation details..."
+            "description": "Implementation of the Transformer architecture",
+            "paper_id": research_id,
+            "components": [
+                {
+                    "name": "TransformerEncoder",
+                    "description": "Encoder part of the transformer",
+                    "dependencies": []
+                },
+                {
+                    "name": "TransformerDecoder", 
+                    "description": "Decoder part of the transformer",
+                    "dependencies": ["TransformerEncoder"]
+                }
+            ],
+            "requirements": {
+                "frameworks": ["pytorch"],
+                "libraries": ["transformers"]
+            }
         }
         
         # Configure MongoDB for implementation creation
         insert_result.inserted_id = "implementation_transformer"
         
         # Create implementation via API
-        response = self.client.post("/api/implementation", json=new_implementation)
+        response = self.client.post("/implementation/", json=new_implementation)
         self.assertEqual(response.status_code, 201)
-        implementation_id = response.json()["id"]
         
-        # Verify correct interaction between components
-        self.mock_collection.insert_one.assert_called()
+        # Verify that MongoDB insert was called with research and implementation
+        self.assertEqual(self.mock_collection.insert_one.call_count, 2)
+        
+        # Verify that Neo4j was used to add entity
         self.mock_neo4j_instance.add_entity.assert_called_once()
+        implementation_id = response.json()["id"]
 
 if __name__ == '__main__':
     unittest.main()
