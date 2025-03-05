@@ -8,7 +8,7 @@ into structured implementation plans with components, tasks, and requirements.
 from typing import Dict, List, Optional, Any
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +33,8 @@ class ImplementationPlan:
     requirements: Dict[str, Any] = field(default_factory=dict)
     dependencies: Dict[str, List[str]] = field(default_factory=dict)
     estimated_timeline: str = ""
-    created_at: datetime = field(default_factory=datetime.now)
-    updated_at: datetime = field(default_factory=datetime.now)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     status: str = "draft"
 
 class ImplementationPlanner:
@@ -131,7 +131,7 @@ class ImplementationPlanner:
             if hasattr(self.current_plan, key):
                 setattr(self.current_plan, key, value)
                 
-        self.current_plan.updated_at = datetime.now()
+        self.current_plan.updated_at = datetime.now(timezone.utc)
         return self.current_plan
     
     def validate_plan(self, plan: ImplementationPlan) -> Dict[str, Any]:

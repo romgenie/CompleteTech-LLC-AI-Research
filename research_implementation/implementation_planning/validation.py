@@ -7,7 +7,7 @@ planning system, ensuring plans and tasks meet requirements and constraints.
 
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .planner import ImplementationPlan, ImplementationComponent
 from .task_planner import Task
@@ -19,12 +19,92 @@ class ValidationError:
     message: str
     field: Optional[str] = None
     details: Optional[Dict[str, Any]] = None
-    timestamp: datetime = datetime.now()
+    timestamp: datetime = datetime.now(timezone.utc)
 
 class PlanningValidator:
     """
     Validates implementation plans and tasks.
     """
+    
+    @staticmethod
+    def validate_options(options: Dict[str, Any]) -> List[ValidationError]:
+        """
+        Validate planning options.
+        
+        Args:
+            options: Planning options dictionary
+            
+        Returns:
+            List of validation errors
+        """
+        errors = []
+        
+        # Validate language if present
+        if "language" in options and not isinstance(options["language"], str):
+            errors.append(ValidationError(
+                code="INVALID_LANGUAGE",
+                message="Language must be a string",
+                field="language"
+            ))
+            
+        # Validate framework if present
+        if "framework" in options and not isinstance(options["framework"], str):
+            errors.append(ValidationError(
+                code="INVALID_FRAMEWORK",
+                message="Framework must be a string",
+                field="framework"
+            ))
+            
+        # Validate max_tasks if present
+        if "max_tasks" in options:
+            max_tasks = options["max_tasks"]
+            if not isinstance(max_tasks, int) or max_tasks <= 0:
+                errors.append(ValidationError(
+                    code="INVALID_MAX_TASKS",
+                    message="max_tasks must be a positive integer",
+                    field="max_tasks",
+                    details={"value": max_tasks}
+                ))
+                
+        # Validate priority_factors if present
+        if "priority_factors" in options:
+            factors = options["priority_factors"]
+            if not isinstance(factors, dict):
+                errors.append(ValidationError(
+                    code="INVALID_PRIORITY_FACTORS",
+                    message="priority_factors must be a dictionary",
+                    field="priority_factors"
+                ))
+            else:
+                for key, value in factors.items():
+                    if not isinstance(value, (int, float)):
+                        errors.append(ValidationError(
+                            code="INVALID_FACTOR_VALUE",
+                            message=f"Priority factor {key} must be a number",
+                            field=f"priority_factors.{key}",
+                            details={"value": value}
+                        ))
+        
+        # Validate custom_requirements if present
+        if "custom_requirements" in options:
+            requirements = options["custom_requirements"]
+            if not isinstance(requirements, list):
+                errors.append(ValidationError(
+                    code="INVALID_CUSTOM_REQUIREMENTS",
+                    message="custom_requirements must be a list",
+                    field="custom_requirements"
+                ))
+            else:
+                for i, req in enumerate(requirements):
+                    if not isinstance(req, str):
+                        errors.append(ValidationError(
+                            code="INVALID_REQUIREMENT",
+                            message=f"Requirement at index {i} must be a string",
+                            field=f"custom_requirements[{i}]",
+                            details={"value": req}
+                        ))
+        
+        return errors
     
     @staticmethod
     def validate_understanding(understanding: Dict[str, Any]) -> List[ValidationError]:

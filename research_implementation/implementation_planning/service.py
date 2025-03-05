@@ -7,11 +7,11 @@ between different planning components and integrating with other systems.
 
 from typing import Dict, List, Optional, Any
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 
-from .planner import ImplementationPlanner, ImplementationPlan
+from .planner import ImplementationPlanner, ImplementationPlan, ImplementationComponent
 from .task_planner import TaskPlanner, Task
 from .validation import PlanningValidator, ValidationError
 
@@ -79,6 +79,12 @@ class PlanningService:
         validation_errors = self.validator.validate_understanding(understanding)
         if validation_errors:
             raise ValidationError(validation_errors)
+            
+        # Validate options if provided
+        if options:
+            validation_errors = self.validator.validate_options(options)
+            if validation_errors:
+                raise ValidationError(validation_errors)
         
         try:
             # Generate basic implementation plan
@@ -141,8 +147,14 @@ class PlanningService:
                     for t in tasks.values()
                 ],
                 "critical_path": [t.id for t in critical_path],
+                "validation": {
+                    "is_valid": True,
+                    "plan_issues": self.validator.validate_plan(plan),
+                    "task_issues": self.validator.validate_tasks(tasks, plan),
+                    "critical_path_issues": self.validator.validate_critical_path(critical_path, tasks)
+                },
                 "metadata": {
-                    "generated_at": datetime.now().isoformat(),
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
                     "source_paper": understanding.get("paper_id", "unknown"),
                     "planning_options": options or {}
                 }
@@ -213,7 +225,7 @@ class PlanningService:
                 current_plan["plan"][key] = value
                 
         # Update metadata
-        current_plan["metadata"]["updated_at"] = datetime.now().isoformat()
+        current_plan["metadata"]["updated_at"] = datetime.now(timezone.utc).isoformat()
         
         # Validate updated plan
         plan_obj = ImplementationPlan(
@@ -221,7 +233,15 @@ class PlanningService:
             title=current_plan["plan"]["title"],
             description=current_plan["plan"]["description"],
             components=[
-                ImplementationComponent(**c)
+                ImplementationComponent(
+                    name=c["name"],
+                    description=c["description"],
+                    dependencies=c.get("dependencies", []),
+                    requirements=c.get("requirements", {}),
+                    estimated_effort=c.get("estimated_effort", "medium"),
+                    priority=c.get("priority", "medium"),
+                    status=c.get("status", "planned")
+                )
                 for c in current_plan["plan"]["components"]
             ],
             requirements=current_plan["plan"]["requirements"]
@@ -269,8 +289,7 @@ class PlanningService:
             if task["id"] == task_id:
                 task_found = True
                 for key, value in updates.items():
-                    if key in task:
-                        task[key] = value
+                    task[key] = value  # Allow adding new fields like 'assignee'
                 break
                 
         if not task_found:
@@ -278,16 +297,36 @@ class PlanningService:
             return None
             
         # Validate updated tasks
-        tasks = {
-            t["id"]: Task(**t)
-            for t in current_plan["tasks"]
-        }
+        tasks = {}
+        for t in current_plan["tasks"]:
+            # Extract the core fields needed for Task
+            task_kwargs = {
+                "id": t["id"],
+                "name": t["name"],
+                "description": t["description"],
+                "component": t.get("component", ""),
+                "dependencies": t.get("dependencies", []),
+                "estimated_hours": t.get("estimated_hours", 1.0),
+                "priority": t.get("priority", 3),
+                "status": t.get("status", "todo")
+            }
+            
+            # Create the Task
+            tasks[t["id"]] = Task(**task_kwargs)
         plan_obj = ImplementationPlan(
             id=current_plan["plan"]["id"],
             title=current_plan["plan"]["title"],
             description=current_plan["plan"]["description"],
             components=[
-                ImplementationComponent(**c)
+                ImplementationComponent(
+                    name=c["name"],
+                    description=c["description"],
+                    dependencies=c.get("dependencies", []),
+                    requirements=c.get("requirements", {}),
+                    estimated_effort=c.get("estimated_effort", "medium"),
+                    priority=c.get("priority", "medium"),
+                    status=c.get("status", "planned")
+                )
                 for c in current_plan["plan"]["components"]
             ],
             requirements=current_plan["plan"]["requirements"]
@@ -297,7 +336,7 @@ class PlanningService:
             raise ValidationError(validation_errors)
             
         # Update metadata
-        current_plan["metadata"]["updated_at"] = datetime.now().isoformat()
+        current_plan["metadata"]["updated_at"] = datetime.now(timezone.utc).isoformat()
         
         # Save updated plan
         try:
@@ -328,6 +367,93 @@ class PlanningService:
             return False
         except Exception as e:
             raise StorageError(f"Failed to delete plan {plan_id}: {str(e)}")
+    
+    def list_plans(
+        self, 
+        skip: int = 0, 
+        limit: int = 10, 
+        filters: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        List implementation plans with pagination and filtering.
+        
+        Args:
+            skip: Number of plans to skip for pagination
+            limit: Maximum number of plans to return
+            filters: Dictionary of filters to apply
+            
+        Returns:
+            List of plan dictionaries
+            
+        Raises:
+            StorageError: If plan listing fails
+        """
+        try:
+            # Get all plan files
+            plan_files = list(self.storage_dir.glob("*.json"))
+            
+            # Load each plan
+            plans = []
+            for file_path in plan_files:
+                try:
+                    with open(file_path) as f:
+                        plan_data = json.load(f)
+                        plans.append(plan_data)
+                except Exception as e:
+                    logger.warning(f"Failed to load plan {file_path.stem}: {str(e)}")
+            
+            # Apply filters if provided
+            if filters:
+                filtered_plans = []
+                for plan in plans:
+                    include_plan = True
+                    
+                    # Filter by status
+                    if "status" in filters and plan["plan"]["status"] != filters["status"]:
+                        include_plan = False
+                        
+                    # Filter by search term
+                    if "search" in filters:
+                        search_term = filters["search"].lower()
+                        title = plan["plan"]["title"].lower()
+                        description = plan["plan"]["description"].lower()
+                        
+                        if search_term not in title and search_term not in description:
+                            include_plan = False
+                    
+                    if include_plan:
+                        filtered_plans.append(plan)
+                        
+                plans = filtered_plans
+            
+            # Apply pagination
+            paginated_plans = plans[skip:skip + limit]
+            
+            return paginated_plans
+            
+        except Exception as e:
+            raise StorageError(f"Failed to list plans: {str(e)}")
+    
+    def count_plans(self, filters: Optional[Dict[str, Any]] = None) -> int:
+        """
+        Count plans matching the given filters.
+        
+        Args:
+            filters: Dictionary of filters to apply
+            
+        Returns:
+            Number of matching plans
+            
+        Raises:
+            StorageError: If plan counting fails
+        """
+        try:
+            # Get filtered plans
+            filtered_plans = self.list_plans(skip=0, limit=1000, filters=filters)
+            return len(filtered_plans)
+            
+        except Exception as e:
+            raise StorageError(f"Failed to count plans: {str(e)}")
     
     def _save_plan(self, plan_id: str, plan_data: Dict[str, Any]) -> None:
         """Save plan data to storage."""
