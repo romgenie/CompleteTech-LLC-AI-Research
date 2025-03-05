@@ -209,9 +209,17 @@ const KnowledgeGraphPage: React.FC = () => {
     }
   }, [graphData, visualizationSettings.filterThreshold, visualizationSettings.importanceThreshold, selectedEntity, visualizationSettings.progressiveLoading]);
 
+  // Store currently focused node for keyboard navigation
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  
   // Use D3 hook for rendering
   const renderGraph = useSvgD3<SVGSVGElement>((svg) => {
     if (!svg.node() || !filteredGraphData || loadedNodeCount === 0) return;
+    
+    // Store ref for keyboard handlers
+    svgRef.current = svg.node();
     
     const startTime = performance.now();
     
@@ -228,6 +236,11 @@ const KnowledgeGraphPage: React.FC = () => {
       svg.style("background-color", "transparent");
     }
     
+    // Set ARIA attributes for accessibility
+    svg.attr("aria-label", "Knowledge Graph Visualization")
+       .attr("role", "application")
+       .attr("tabindex", "0");
+    
     // Get only the nodes to render based on progressive loading
     const nodesToRender = filteredGraphData.nodes.slice(0, loadedNodeCount);
     const nodeIds = new Set(nodesToRender.map(node => node.id));
@@ -240,7 +253,10 @@ const KnowledgeGraphPage: React.FC = () => {
     });
     
     // Create the visualization container
-    const vis = svg.append("g").attr("class", "visualization");
+    const vis = svg.append("g")
+      .attr("class", "visualization")
+      .attr("aria-label", "Graph visualization containing " + 
+            nodesToRender.length + " nodes and " + linksToRender.length + " relationships");
     
     // Get optimized force simulation parameters
     const forceParams = createOptimizedForceParameters(
@@ -265,7 +281,8 @@ const KnowledgeGraphPage: React.FC = () => {
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force("collision", d3.forceCollide().radius(forceParams.collisionRadius))
       .alphaDecay(forceParams.alphaDecay)
-      .velocityDecay(forceParams.velocityDecay);
+      .velocityDecay(forceParams.velocityDecay)
+      .alphaMin(forceParams.alphaMin);
       
     // Add cluster force if enabled
     if (visualizationSettings.clusterByType) {
@@ -280,21 +297,27 @@ const KnowledgeGraphPage: React.FC = () => {
       .on("zoom", (event) => {
         vis.attr("transform", event.transform);
         
+        // Store current zoom level for accessibility features
+        setZoomLevel(event.transform.k);
+        
         // Level of detail adjustments based on zoom level
         if (visualizationSettings.levelOfDetail) {
           const scale = event.transform.k;
+          const lodSettings = calculateLevelOfDetail(scale, nodesToRender.length);
           
           // Show/hide labels based on zoom level
           vis.selectAll("text.node-label")
             .style("display", d => {
               // TypeScript needs a special accessor pattern for this to work
               const nodeData = d as Entity;
-              return scale > 1.2 || nodeData.id === selectedEntity?.id ? "block" : "none";
-            });
+              return nodeData.id === selectedEntity?.id || nodeData.id === focusedNodeId || 
+                     lodSettings.showLabels ? "block" : "none";
+            })
+            .attr("font-size", lodSettings.labelFontSize);
           
           // Show relationship labels only at higher zoom levels
           vis.selectAll("text.relationship-label")
-            .style("display", scale > 2.5 ? "block" : "none");
+            .style("display", lodSettings.showRelationshipLabels ? "block" : "none");
             
           // Adjust node size based on zoom
           vis.selectAll("circle.node")
@@ -312,10 +335,15 @@ const KnowledgeGraphPage: React.FC = () => {
               // TypeScript needs a special accessor pattern for this to work
               const nodeData = d as Entity;
               if (nodeData.id === selectedEntity?.id) return 2.5 / Math.sqrt(scale);
+              if (nodeData.id === focusedNodeId) return 2 / Math.sqrt(scale);
               if (visualizationSettings.highlightConnections && 
                   isConnectedToSelected(nodeData.id)) return 1.5 / Math.sqrt(scale);
-              return 1 / Math.sqrt(scale);
+              return lodSettings.nodeBorderWidth;
             });
+            
+          // Adjust link opacity
+          vis.selectAll("line.link")
+            .attr("stroke-opacity", lodSettings.linkOpacity);
         }
       });
       
@@ -323,16 +351,25 @@ const KnowledgeGraphPage: React.FC = () => {
     
     // Create links
     const link = vis.append("g")
+      .attr("aria-label", "Graph relationships")
       .selectAll("line")
       .data(linksToRender)
       .join("line")
       .attr("class", "link")
       .attr("stroke", "#999")
       .attr("stroke-opacity", 0.6)
-      .attr("stroke-width", 1.5);
+      .attr("stroke-width", 1.5)
+      .attr("aria-label", d => {
+        const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+        const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+        const sourceName = nodesToRender.find(node => node.id === sourceId)?.name || sourceId;
+        const targetName = nodesToRender.find(node => node.id === targetId)?.name || targetId;
+        return `Relationship: ${sourceName} ${d.type} ${targetName}`;
+      });
     
     // Create nodes with dynamic size
     const node = vis.append("g")
+      .attr("aria-label", "Graph nodes")
       .selectAll("circle")
       .data(nodesToRender)
       .join("circle")
@@ -340,12 +377,56 @@ const KnowledgeGraphPage: React.FC = () => {
       .attr("r", d => nodeSizeScale(d))
       .attr("fill", d => entityColors[d.type] || entityColors.default)
       .attr("stroke", d => getNodeStrokeColor(d))
-      .attr("stroke-width", d => d.id === selectedEntity?.id ? 2 : 1)
-      .call(drag(simulation));
+      .attr("stroke-width", d => {
+        if (d.id === selectedEntity?.id) return 2;
+        if (d.id === focusedNodeId) return 1.5;
+        return 1; 
+      })
+      .attr("tabindex", d => (d.id === selectedEntity?.id || d.id === focusedNodeId) ? 0 : -1)
+      .attr("role", "button")
+      .attr("aria-label", d => `${d.type} node: ${d.name}`)
+      .attr("aria-pressed", d => d.id === selectedEntity?.id ? "true" : "false")
+      .call(drag(simulation))
+      .on("click", (event, d) => {
+        // Update selected entity when node is clicked
+        handleSelectEntity(d);
+        
+        // Set focus to this node
+        setFocusedNodeId(d.id);
+        
+        // Announce selection to screen readers
+        announceToScreenReader(`Selected ${d.type}: ${d.name}`);
+      })
+      .on("keydown", (event, d) => {
+        // Handle keyboard actions on nodes
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleSelectEntity(d);
+          announceToScreenReader(`Selected ${d.type}: ${d.name}`);
+        }
+      })
+      .on("focus", (event, d) => {
+        // Update focused node when keyboard focus changes
+        setFocusedNodeId(d.id);
+        
+        // Highlight node visually
+        d3.select(event.currentTarget)
+          .attr("stroke-width", 2)
+          .attr("stroke", "#000");
+      })
+      .on("blur", (event, d) => {
+        // Reset focus styling unless this is the selected node
+        if (d.id !== selectedEntity?.id) {
+          d3.select(event.currentTarget)
+            .attr("stroke-width", 1)
+            .attr("stroke", getNodeStrokeColor(d));
+        }
+      });
     
     // Add labels if enabled
     if (visualizationSettings.showLabels) {
       const label = vis.append("g")
+        .attr("aria-hidden", "true") // Hide from screen readers (node has aria-label already)
         .selectAll("text")
         .data(nodesToRender)
         .join("text")
@@ -364,6 +445,7 @@ const KnowledgeGraphPage: React.FC = () => {
     // Add relationship labels if enabled
     if (visualizationSettings.showRelationshipLabels) {
       vis.append("g")
+        .attr("aria-hidden", "true") // Hide from screen readers (link has aria-label already)
         .selectAll("text")
         .data(linksToRender)
         .join("text")
@@ -378,6 +460,164 @@ const KnowledgeGraphPage: React.FC = () => {
     // Add titles for hover
     node.append("title")
       .text(d => `${d.name} (${d.type})`);
+    
+    // Create an element for screen reader announcements
+    const announcer = d3.select("body")
+      .selectAll("#sr-announcer")
+      .data([0]) // Ensure we only create this once
+      .join("div")
+      .attr("id", "sr-announcer")
+      .attr("role", "status")
+      .attr("aria-live", "polite")
+      .style("position", "absolute")
+      .style("width", "1px")
+      .style("height", "1px")
+      .style("padding", "0")
+      .style("margin", "-1px")
+      .style("overflow", "hidden")
+      .style("clip", "rect(0, 0, 0, 0)")
+      .style("white-space", "nowrap")
+      .style("border", "0");
+    
+    // Set up keyboard navigation for the SVG
+    svg.on("keydown", (event) => {
+      // Handle arrow keys, Enter, space, etc.
+      switch (event.key) {
+        case "ArrowRight":
+          navigateToNode(1);
+          event.preventDefault();
+          break;
+          
+        case "ArrowLeft":
+          navigateToNode(-1);
+          event.preventDefault();
+          break;
+          
+        case "Home":
+          navigateToFirstNode();
+          event.preventDefault();
+          break;
+          
+        case "End":
+          navigateToLastNode();
+          event.preventDefault();
+          break;
+          
+        case "+":
+        case "=":
+          zoomIn();
+          event.preventDefault();
+          break;
+          
+        case "-":
+          zoomOut();
+          event.preventDefault();
+          break;
+          
+        case "0":
+          resetZoom();
+          event.preventDefault();
+          break;
+          
+        case "s":
+          if (focusedNodeId) {
+            // Select the currently focused node
+            const focusedNode = nodesToRender.find(n => n.id === focusedNodeId);
+            if (focusedNode) {
+              handleSelectEntity(focusedNode);
+              announceToScreenReader(`Selected ${focusedNode.type}: ${focusedNode.name}`);
+            }
+          }
+          event.preventDefault();
+          break;
+      }
+    });
+    
+    // Helper functions for keyboard navigation
+    function navigateToNode(direction: 1 | -1) {
+      const nextNode = getNavigableNode(focusedNodeId, nodesToRender, direction);
+      if (nextNode) {
+        // Focus the node
+        setFocusedNodeId(nextNode.id);
+        
+        // Find and focus the DOM element
+        const nodeElement = svg.selectAll("circle.node").filter((d: any) => d.id === nextNode.id).node() as HTMLElement;
+        if (nodeElement) {
+          nodeElement.focus();
+          
+          // Pan to node
+          const x = (nodesToRender[nextNode.index].x || 0);
+          const y = (nodesToRender[nextNode.index].y || 0);
+          const transform = d3.zoomTransform(svg.node() as any);
+          
+          // Announce to screen readers
+          const focusedNode = nodesToRender[nextNode.index];
+          announceToScreenReader(`Focused ${focusedNode.type}: ${focusedNode.name}`);
+          
+          // Pan to make node visible
+          svg.transition().duration(300).call(
+            zoom.transform,
+            d3.zoomIdentity
+              .translate(width / 2 - x * transform.k, height / 2 - y * transform.k)
+              .scale(transform.k)
+          );
+        }
+      }
+    }
+    
+    function navigateToFirstNode() {
+      if (nodesToRender.length > 0) {
+        setFocusedNodeId(nodesToRender[0].id);
+        const nodeElement = svg.selectAll("circle.node").filter((d: any) => d.id === nodesToRender[0].id).node() as HTMLElement;
+        if (nodeElement) {
+          nodeElement.focus();
+          announceToScreenReader(`Focused first node: ${nodesToRender[0].name}`);
+        }
+      }
+    }
+    
+    function navigateToLastNode() {
+      if (nodesToRender.length > 0) {
+        const lastIndex = nodesToRender.length - 1;
+        setFocusedNodeId(nodesToRender[lastIndex].id);
+        const nodeElement = svg.selectAll("circle.node").filter((d: any) => d.id === nodesToRender[lastIndex].id).node() as HTMLElement;
+        if (nodeElement) {
+          nodeElement.focus();
+          announceToScreenReader(`Focused last node: ${nodesToRender[lastIndex].name}`);
+        }
+      }
+    }
+    
+    function zoomIn() {
+      const currentTransform = d3.zoomTransform(svg.node() as any);
+      svg.transition().duration(300).call(
+        zoom.transform,
+        currentTransform.scale(currentTransform.k * 1.3)
+      );
+      announceToScreenReader("Zoomed in");
+    }
+    
+    function zoomOut() {
+      const currentTransform = d3.zoomTransform(svg.node() as any);
+      svg.transition().duration(300).call(
+        zoom.transform,
+        currentTransform.scale(currentTransform.k / 1.3)
+      );
+      announceToScreenReader("Zoomed out");
+    }
+    
+    function resetZoom() {
+      svg.transition().duration(500).call(
+        zoom.transform,
+        d3.zoomIdentity
+      );
+      announceToScreenReader("Zoom reset");
+    }
+    
+    // Helper function for screen reader announcements
+    function announceToScreenReader(message: string) {
+      announcer.text(message);
+    }
     
     // Update positions on tick
     simulation.on("tick", () => {
@@ -436,9 +676,8 @@ const KnowledgeGraphPage: React.FC = () => {
     
     // Run simulation for a fixed number of steps for large graphs
     if (nodesToRender.length > 500) {
-      const simIterations = Math.min(100, Math.max(20, 300 - nodesToRender.length / 10));
       simulation.stop();
-      for (let i = 0; i < simIterations; ++i) simulation.tick();
+      for (let i = 0; i < forceParams.iterations; ++i) simulation.tick();
     }
     
     const endTime = performance.now();
@@ -455,6 +694,7 @@ const KnowledgeGraphPage: React.FC = () => {
     // Helper function to get stroke color
     function getNodeStrokeColor(d: Entity): string {
       if (d.id === selectedEntity?.id) return "#000";
+      if (d.id === focusedNodeId) return "#444";
       if (visualizationSettings.highlightConnections && isConnectedToSelected(d.id)) return "#555";
       return "#fff";
     }
@@ -545,7 +785,22 @@ const KnowledgeGraphPage: React.FC = () => {
         .on("drag", dragged)
         .on("end", dragended);
     }
-  }, [filteredGraphData, loadedNodeCount, selectedEntity, visualizationSettings, benchmarkMode]);
+  }, [filteredGraphData, loadedNodeCount, selectedEntity, visualizationSettings, benchmarkMode, focusedNodeId]);
+  
+  // Handle keyboard navigation for graph container
+  const handleGraphKeydown = (event: React.KeyboardEvent) => {
+    // Only handle keyboard when graph is loaded
+    if (!filteredGraphData || !svgRef.current) return;
+    
+    // Pass keyboard events to the SVG
+    const svgElement = svgRef.current;
+    if (svgElement) {
+      // Focus SVG if it's not already focused
+      if (document.activeElement !== svgElement) {
+        svgElement.focus();
+      }
+    }
+  };
 
   const fetchEntityDetails = async (entityId: string) => {
     setLoading(true);
