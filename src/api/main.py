@@ -49,6 +49,9 @@ from src.api.routers import (
     knowledge_graph,
     research_orchestration,
     research_implementation,
+    workspaces,
+    comments,
+    versions,
 )
 
 # Include routers
@@ -57,6 +60,11 @@ app.include_router(health.router, prefix="/health", tags=["Health"])
 app.include_router(knowledge_graph.router, prefix="/knowledge", tags=["Knowledge Graph"])
 app.include_router(research_orchestration.router, prefix="/research", tags=["Research"])
 app.include_router(research_implementation.router, prefix="/implementation", tags=["Implementation"])
+
+# Include collaboration routers
+app.include_router(workspaces.router, prefix="/collaboration", tags=["Team Collaboration"])
+app.include_router(comments.router, prefix="/collaboration", tags=["Comments & Annotations"])
+app.include_router(versions.router, prefix="/collaboration", tags=["Version Control"])
 
 # Create a simple test endpoint
 @app.get("/")

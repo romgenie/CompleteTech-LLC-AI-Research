@@ -1,377 +1,733 @@
+/**
+ * Service for handling workspace and project collaboration functionality
+ */
 import axios from 'axios';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL } from '../../config';
+
+// Base API URL for collaboration endpoints
+const COLLAB_API = `${API_BASE_URL}/api/v1/collaboration`;
 
 /**
- * Service for interacting with collaboration APIs
+ * Service for managing workspaces, projects and collaboration features
  */
 class CollaborationService {
+  // Workspace Management
+  
   /**
-   * Base URL for API requests
+   * Get all workspaces for the current user
+   * @param {Object} options - Query options (pagination, sorting, etc)
+   * @returns {Promise<Array>} - List of workspaces
    */
-  baseUrl = `${API_BASE_URL}/collaboration`;
-
-  /**
-   * Get a workspace by ID
-   * 
-   * @param {string} id - Workspace ID
-   * @returns {Promise<Object>} - Workspace data
-   */
-  async getWorkspace(id) {
-    const response = await axios.get(`${this.baseUrl}/workspaces/${id}`);
-    return response.data;
+  async getWorkspaces(options = {}) {
+    try {
+      // For now, return mock data
+      // In real implementation, this would be:
+      // const response = await axios.get(`${COLLAB_API}/workspaces`, { params: options });
+      // return response.data;
+      
+      return [
+        {
+          id: 'ws1',
+          name: 'Research AI Integration',
+          description: 'Collaborative workspace for AI research integration projects',
+          visibility: 'internal',
+          created_at: '2023-10-15T10:30:00Z',
+          updated_at: '2023-11-10T14:22:00Z',
+          projects_count: 3,
+          members_count: 5
+        },
+        {
+          id: 'ws2',
+          name: 'Paper Processing Pipeline',
+          description: 'Development of the paper processing pipeline and information extraction components',
+          visibility: 'private',
+          created_at: '2023-09-20T08:45:00Z',
+          updated_at: '2023-11-05T11:10:00Z',
+          projects_count: 2,
+          members_count: 3
+        },
+        {
+          id: 'ws3',
+          name: 'Knowledge Graph Development',
+          description: 'Implementation of the knowledge graph system',
+          visibility: 'public',
+          created_at: '2023-11-01T14:20:00Z',
+          updated_at: '2023-11-12T15:30:00Z',
+          projects_count: 1,
+          members_count: 4
+        }
+      ];
+    } catch (error) {
+      console.error('Error fetching workspaces:', error);
+      throw error;
+    }
   }
 
   /**
-   * List all workspaces the current user has access to
-   * 
-   * @param {Object} filters - Optional filters
-   * @returns {Promise<Array>} - List of workspaces
+   * Get a specific workspace by ID
+   * @param {string} workspaceId - The ID of the workspace to fetch
+   * @returns {Promise<Object>} - Workspace details
    */
-  async listWorkspaces(filters = {}) {
-    const response = await axios.get(`${this.baseUrl}/workspaces`, { params: filters });
-    return response.data;
+  async getWorkspace(workspaceId) {
+    try {
+      // For now, return mock data
+      // In real implementation, this would be:
+      // const response = await axios.get(`${COLLAB_API}/workspaces/${workspaceId}`);
+      // return response.data;
+      
+      return {
+        id: workspaceId,
+        name: 'Research AI Integration',
+        description: 'Collaborative workspace for AI research integration projects',
+        visibility: 'internal',
+        created_at: '2023-10-15T10:30:00Z',
+        updated_at: '2023-11-10T14:22:00Z',
+        tags: ['AI', 'Research', 'Integration']
+      };
+    } catch (error) {
+      console.error(`Error fetching workspace ${workspaceId}:`, error);
+      throw error;
+    }
   }
 
   /**
    * Create a new workspace
-   * 
-   * @param {Object} workspaceData - Workspace data
+   * @param {Object} workspaceData - The workspace data to create
    * @returns {Promise<Object>} - Created workspace
    */
   async createWorkspace(workspaceData) {
-    const response = await axios.post(`${this.baseUrl}/workspaces`, workspaceData);
-    return response.data;
+    try {
+      // In real implementation, this would be:
+      // const response = await axios.post(`${COLLAB_API}/workspaces`, workspaceData);
+      // return response.data;
+      
+      return {
+        id: 'new-ws-id',
+        ...workspaceData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error creating workspace:', error);
+      throw error;
+    }
   }
 
   /**
-   * Update a workspace
-   * 
-   * @param {string} id - Workspace ID
-   * @param {Object} workspaceData - Updated workspace data
+   * Update an existing workspace
+   * @param {string} workspaceId - The ID of the workspace to update
+   * @param {Object} workspaceData - The updated workspace data
    * @returns {Promise<Object>} - Updated workspace
    */
-  async updateWorkspace(id, workspaceData) {
-    const response = await axios.put(`${this.baseUrl}/workspaces/${id}`, workspaceData);
-    return response.data;
+  async updateWorkspace(workspaceId, workspaceData) {
+    try {
+      // In real implementation, this would be:
+      // const response = await axios.put(`${COLLAB_API}/workspaces/${workspaceId}`, workspaceData);
+      // return response.data;
+      
+      return {
+        id: workspaceId,
+        ...workspaceData,
+        updated_at: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error(`Error updating workspace ${workspaceId}:`, error);
+      throw error;
+    }
   }
 
   /**
    * Delete a workspace
-   * 
-   * @param {string} id - Workspace ID
-   * @returns {Promise<void>}
+   * @param {string} workspaceId - The ID of the workspace to delete
+   * @returns {Promise<boolean>} - Success status
    */
-  async deleteWorkspace(id) {
-    await axios.delete(`${this.baseUrl}/workspaces/${id}`);
+  async deleteWorkspace(workspaceId) {
+    try {
+      // In real implementation, this would be:
+      // await axios.delete(`${COLLAB_API}/workspaces/${workspaceId}`);
+      // return true;
+      
+      console.log(`Workspace ${workspaceId} deleted`);
+      return true;
+    } catch (error) {
+      console.error(`Error deleting workspace ${workspaceId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Get members of a workspace
-   * 
-   * @param {string} workspaceId - Workspace ID
-   * @returns {Promise<Array>} - List of members
+   * Get workspace members
+   * @param {string} workspaceId - The workspace ID
+   * @returns {Promise<Array>} - List of workspace members
    */
   async getWorkspaceMembers(workspaceId) {
-    const response = await axios.get(`${this.baseUrl}/workspaces/${workspaceId}/members`);
-    return response.data;
+    try {
+      // For now, return mock data
+      return [
+        {
+          id: 'user1',
+          name: 'John Doe',
+          role: 'Admin',
+          avatar: 'J'
+        },
+        {
+          id: 'user2',
+          name: 'Jane Smith',
+          role: 'Contributor',
+          avatar: 'J'
+        },
+        {
+          id: 'user3',
+          name: 'Bob Johnson',
+          role: 'Viewer',
+          avatar: 'B'
+        }
+      ];
+    } catch (error) {
+      console.error(`Error fetching members for workspace ${workspaceId}:`, error);
+      throw error;
+    }
   }
 
   /**
    * Add a member to a workspace
-   * 
-   * @param {string} workspaceId - Workspace ID
-   * @param {string} userId - User ID
-   * @param {string} role - Role (member, admin, etc.)
+   * @param {string} workspaceId - The workspace ID
+   * @param {Object} memberData - Member data to add
    * @returns {Promise<Object>} - Added member
    */
-  async addWorkspaceMember(workspaceId, userId, role) {
-    const response = await axios.post(`${this.baseUrl}/workspaces/${workspaceId}/members`, {
-      user_id: userId,
-      role
-    });
-    return response.data;
+  async addWorkspaceMember(workspaceId, memberData) {
+    try {
+      // In real implementation, this would be:
+      // const response = await axios.post(`${COLLAB_API}/workspaces/${workspaceId}/members`, memberData);
+      // return response.data;
+      
+      return {
+        id: 'new-user-id',
+        ...memberData
+      };
+    } catch (error) {
+      console.error(`Error adding member to workspace ${workspaceId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Update a workspace member
-   * 
-   * @param {string} workspaceId - Workspace ID
-   * @param {string} userId - User ID
-   * @param {string} role - New role
+   * Update a workspace member's role
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} memberId - The member ID
+   * @param {string} role - The new role
    * @returns {Promise<Object>} - Updated member
    */
-  async updateWorkspaceMember(workspaceId, userId, role) {
-    const response = await axios.put(`${this.baseUrl}/workspaces/${workspaceId}/members/${userId}`, { role });
-    return response.data;
+  async updateWorkspaceMember(workspaceId, memberId, role) {
+    try {
+      // In real implementation, this would be:
+      // const response = await axios.put(`${COLLAB_API}/workspaces/${workspaceId}/members/${memberId}`, { role });
+      // return response.data;
+      
+      return {
+        id: memberId,
+        role
+      };
+    } catch (error) {
+      console.error(`Error updating member ${memberId} in workspace ${workspaceId}:`, error);
+      throw error;
+    }
   }
 
   /**
    * Remove a member from a workspace
-   * 
-   * @param {string} workspaceId - Workspace ID
-   * @param {string} userId - User ID
-   * @returns {Promise<void>}
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} memberId - The member ID
+   * @returns {Promise<boolean>} - Success status
    */
-  async removeWorkspaceMember(workspaceId, userId) {
-    await axios.delete(`${this.baseUrl}/workspaces/${workspaceId}/members/${userId}`);
+  async removeWorkspaceMember(workspaceId, memberId) {
+    try {
+      // In real implementation, this would be:
+      // await axios.delete(`${COLLAB_API}/workspaces/${workspaceId}/members/${memberId}`);
+      // return true;
+      
+      console.log(`Member ${memberId} removed from workspace ${workspaceId}`);
+      return true;
+    } catch (error) {
+      console.error(`Error removing member ${memberId} from workspace ${workspaceId}:`, error);
+      throw error;
+    }
   }
 
-  /**
-   * Invite a member to a workspace by email
-   * 
-   * @param {string} workspaceId - Workspace ID
-   * @param {string} email - Email address
-   * @param {string} role - Role
-   * @returns {Promise<Object>} - Created invitation
-   */
-  async inviteWorkspaceMember(workspaceId, email, role) {
-    const response = await axios.post(`${this.baseUrl}/workspaces/${workspaceId}/invitations`, {
-      email,
-      role
-    });
-    return response.data;
-  }
+  // Project Management
 
   /**
-   * Get workspace projects
-   * 
-   * @param {string} workspaceId - Workspace ID
+   * Get all projects in a workspace
+   * @param {string} workspaceId - The workspace ID
+   * @param {Object} options - Query options
    * @returns {Promise<Array>} - List of projects
    */
-  async getWorkspaceProjects(workspaceId) {
-    const response = await axios.get(`${this.baseUrl}/workspaces/${workspaceId}/projects`);
-    return response.data;
+  async getProjects(workspaceId, options = {}) {
+    try {
+      // For now, return mock data
+      return [
+        {
+          id: 'proj1',
+          name: 'Knowledge Graph System',
+          description: 'Development of the knowledge graph system for research integration',
+          status: 'in_progress',
+          last_updated: '2023-11-09T08:45:00Z',
+          contributors: 5
+        },
+        {
+          id: 'proj2',
+          name: 'Research Orchestrator',
+          description: 'Implementation of the research orchestration component',
+          status: 'completed',
+          last_updated: '2023-11-02T15:20:00Z',
+          contributors: 3
+        },
+        {
+          id: 'proj3',
+          name: 'Paper Processing Pipeline',
+          description: 'Development of the paper processing and information extraction pipeline',
+          status: 'planning',
+          last_updated: '2023-11-10T09:15:00Z',
+          contributors: 2
+        }
+      ];
+    } catch (error) {
+      console.error(`Error fetching projects for workspace ${workspaceId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Create a team
-   * 
-   * @param {Object} teamData - Team data
-   * @returns {Promise<Object>} - Created team
+   * Get a specific project
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @returns {Promise<Object>} - Project details
    */
-  async createTeam(teamData) {
-    const response = await axios.post(`${this.baseUrl}/teams`, teamData);
-    return response.data;
+  async getProject(workspaceId, projectId) {
+    try {
+      // For now, return mock data
+      return {
+        id: projectId,
+        name: 'Knowledge Graph System',
+        description: 'Development of the knowledge graph system for research integration. This system will store and organize research information in a graph structure that allows for complex querying and knowledge discovery.',
+        status: 'in_progress',
+        created_at: '2023-10-18T09:20:00Z',
+        updated_at: '2023-11-09T08:45:00Z',
+        tags: ['Graph Database', 'Knowledge Representation', 'Research'],
+        workspace_id: workspaceId,
+        completion_percentage: 65,
+        deadline: '2023-12-15T00:00:00Z'
+      };
+    } catch (error) {
+      console.error(`Error fetching project ${projectId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Get user teams
-   * 
-   * @returns {Promise<Array>} - List of teams
+   * Create a new project in a workspace
+   * @param {string} workspaceId - The workspace ID
+   * @param {Object} projectData - The project data
+   * @returns {Promise<Object>} - Created project
    */
-  async getUserTeams() {
-    const response = await axios.get(`${this.baseUrl}/teams`);
-    return response.data;
+  async createProject(workspaceId, projectData) {
+    try {
+      // In real implementation, this would be:
+      // const response = await axios.post(`${COLLAB_API}/workspaces/${workspaceId}/projects`, projectData);
+      // return response.data;
+      
+      return {
+        id: 'new-project-id',
+        workspace_id: workspaceId,
+        ...projectData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error(`Error creating project in workspace ${workspaceId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Create a comment
-   * 
-   * @param {Object} commentData - Comment data
-   * @returns {Promise<Object>} - Created comment
+   * Update an existing project
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @param {Object} projectData - The updated project data
+   * @returns {Promise<Object>} - Updated project
    */
-  async createComment(commentData) {
-    const response = await axios.post(`${this.baseUrl}/comments`, commentData);
-    return response.data;
+  async updateProject(workspaceId, projectId, projectData) {
+    try {
+      // In real implementation, this would be:
+      // const response = await axios.put(`${COLLAB_API}/workspaces/${workspaceId}/projects/${projectId}`, projectData);
+      // return response.data;
+      
+      return {
+        id: projectId,
+        workspace_id: workspaceId,
+        ...projectData,
+        updated_at: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error(`Error updating project ${projectId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Get comments for a target
-   * 
-   * @param {string} targetType - Target type (e.g., 'report', 'project')
-   * @param {string} targetId - Target ID
-   * @returns {Promise<Array>} - List of comments
+   * Delete a project
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @returns {Promise<boolean>} - Success status
    */
-  async listComments(targetType, targetId) {
-    const response = await axios.get(`${this.baseUrl}/comments`, {
-      params: { target_type: targetType, target_id: targetId }
-    });
-    return response.data;
+  async deleteProject(workspaceId, projectId) {
+    try {
+      // In real implementation, this would be:
+      // await axios.delete(`${COLLAB_API}/workspaces/${workspaceId}/projects/${projectId}`);
+      // return true;
+      
+      console.log(`Project ${projectId} in workspace ${workspaceId} deleted`);
+      return true;
+    } catch (error) {
+      console.error(`Error deleting project ${projectId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Get replies to a comment
-   * 
-   * @param {string} commentId - Parent comment ID
-   * @returns {Promise<Array>} - List of replies
+   * Get project contributors
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @returns {Promise<Array>} - List of contributors
    */
-  async getCommentReplies(commentId) {
-    const response = await axios.get(`${this.baseUrl}/comments/${commentId}/replies`);
-    return response.data;
+  async getProjectContributors(workspaceId, projectId) {
+    try {
+      // For now, return mock data
+      return [
+        {
+          id: 'user1',
+          name: 'John Doe',
+          role: 'Project Lead',
+          avatar: 'J',
+          contributions: 18
+        },
+        {
+          id: 'user2',
+          name: 'Jane Smith',
+          role: 'Developer',
+          avatar: 'J',
+          contributions: 12
+        },
+        {
+          id: 'user4',
+          name: 'Alice Johnson',
+          role: 'Knowledge Engineer',
+          avatar: 'A',
+          contributions: 7
+        }
+      ];
+    } catch (error) {
+      console.error(`Error fetching contributors for project ${projectId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Resolve a comment
-   * 
-   * @param {string} commentId - Comment ID
-   * @returns {Promise<Object>} - Updated comment
+   * Add a contributor to a project
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @param {Object} contributorData - Contributor data
+   * @returns {Promise<Object>} - Added contributor
    */
-  async resolveComment(commentId) {
-    const response = await axios.post(`${this.baseUrl}/comments/${commentId}/resolve`);
-    return response.data;
+  async addProjectContributor(workspaceId, projectId, contributorData) {
+    try {
+      // In real implementation, this would be:
+      // const response = await axios.post(`${COLLAB_API}/workspaces/${workspaceId}/projects/${projectId}/contributors`, contributorData);
+      // return response.data;
+      
+      return {
+        id: 'new-contributor-id',
+        ...contributorData,
+        contributions: 0
+      };
+    } catch (error) {
+      console.error(`Error adding contributor to project ${projectId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Get reactions for a comment
-   * 
-   * @param {string} commentId - Comment ID
-   * @returns {Promise<Array>} - List of reactions
+   * Update a project contributor
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @param {string} contributorId - The contributor ID
+   * @param {Object} contributorData - Updated contributor data
+   * @returns {Promise<Object>} - Updated contributor
    */
-  async getCommentReactions(commentId) {
-    const response = await axios.get(`${this.baseUrl}/comments/${commentId}/reactions`);
-    return response.data;
+  async updateProjectContributor(workspaceId, projectId, contributorId, contributorData) {
+    try {
+      // In real implementation, this would be:
+      // const response = await axios.put(`${COLLAB_API}/workspaces/${workspaceId}/projects/${projectId}/contributors/${contributorId}`, contributorData);
+      // return response.data;
+      
+      return {
+        id: contributorId,
+        ...contributorData
+      };
+    } catch (error) {
+      console.error(`Error updating contributor ${contributorId} in project ${projectId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Add a reaction to a comment
-   * 
-   * @param {string} commentId - Comment ID
-   * @param {string} reaction - Reaction type (like, etc.)
-   * @returns {Promise<Object>} - Created reaction
+   * Remove a contributor from a project
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @param {string} contributorId - The contributor ID
+   * @returns {Promise<boolean>} - Success status
    */
-  async addReaction(commentId, reaction) {
-    const response = await axios.post(`${this.baseUrl}/comments/${commentId}/reactions`, { reaction });
-    return response.data;
+  async removeProjectContributor(workspaceId, projectId, contributorId) {
+    try {
+      // In real implementation, this would be:
+      // await axios.delete(`${COLLAB_API}/workspaces/${workspaceId}/projects/${projectId}/contributors/${contributorId}`);
+      // return true;
+      
+      console.log(`Contributor ${contributorId} removed from project ${projectId}`);
+      return true;
+    } catch (error) {
+      console.error(`Error removing contributor ${contributorId} from project ${projectId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Remove a reaction from a comment
-   * 
-   * @param {string} commentId - Comment ID
-   * @param {string} reaction - Reaction type
-   * @returns {Promise<void>}
+   * Get project tasks
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @returns {Promise<Array>} - List of tasks
    */
-  async removeReaction(commentId, reaction) {
-    await axios.delete(`${this.baseUrl}/comments/${commentId}/reactions/${reaction}`);
+  async getProjectTasks(workspaceId, projectId) {
+    try {
+      // For now, return mock data
+      return [
+        {
+          id: 'task1',
+          title: 'Design Database Schema',
+          description: 'Create the schema for the knowledge graph database',
+          status: 'completed',
+          assignee: 'Jane Smith',
+          due_date: '2023-11-02T00:00:00Z'
+        },
+        {
+          id: 'task2',
+          title: 'Implement Graph Query API',
+          description: 'Develop the API for querying the knowledge graph',
+          status: 'in_progress',
+          assignee: 'John Doe',
+          due_date: '2023-11-20T00:00:00Z'
+        },
+        {
+          id: 'task3',
+          title: 'Create Visualization Component',
+          description: 'Develop the visualization component for the knowledge graph',
+          status: 'not_started',
+          assignee: null,
+          due_date: '2023-12-10T00:00:00Z'
+        }
+      ];
+    } catch (error) {
+      console.error(`Error fetching tasks for project ${projectId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Get project versions
-   * 
-   * @param {string} projectId - Project ID
-   * @returns {Promise<Array>} - List of versions
+   * Create a new task in a project
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @param {Object} taskData - The task data
+   * @returns {Promise<Object>} - Created task
    */
-  async getProjectVersions(projectId) {
-    const response = await axios.get(`${this.baseUrl}/versions/${projectId}`);
-    return response.data;
+  async createTask(workspaceId, projectId, taskData) {
+    try {
+      // In real implementation, this would be:
+      // const response = await axios.post(`${COLLAB_API}/workspaces/${workspaceId}/projects/${projectId}/tasks`, taskData);
+      // return response.data;
+      
+      return {
+        id: 'new-task-id',
+        ...taskData,
+        created_at: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error(`Error creating task in project ${projectId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Get a specific version
-   * 
-   * @param {string} versionId - Version ID
-   * @returns {Promise<Object>} - Version data
+   * Update a task
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @param {string} taskId - The task ID
+   * @param {Object} taskData - Updated task data
+   * @returns {Promise<Object>} - Updated task
    */
-  async getVersion(versionId) {
-    const response = await axios.get(`${this.baseUrl}/versions/detail/${versionId}`);
-    return response.data;
+  async updateTask(workspaceId, projectId, taskId, taskData) {
+    try {
+      // In real implementation, this would be:
+      // const response = await axios.put(`${COLLAB_API}/workspaces/${workspaceId}/projects/${projectId}/tasks/${taskId}`, taskData);
+      // return response.data;
+      
+      return {
+        id: taskId,
+        ...taskData,
+        updated_at: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error(`Error updating task ${taskId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Create a new version
-   * 
-   * @param {string} projectId - Project ID
-   * @param {Object} versionData - Version data
-   * @returns {Promise<Object>} - Created version
+   * Delete a task
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @param {string} taskId - The task ID
+   * @returns {Promise<boolean>} - Success status
    */
-  async createVersion(projectId, versionData) {
-    const response = await axios.post(`${this.baseUrl}/versions/${projectId}`, versionData);
-    return response.data;
+  async deleteTask(workspaceId, projectId, taskId) {
+    try {
+      // In real implementation, this would be:
+      // await axios.delete(`${COLLAB_API}/workspaces/${workspaceId}/projects/${projectId}/tasks/${taskId}`);
+      // return true;
+      
+      console.log(`Task ${taskId} in project ${projectId} deleted`);
+      return true;
+    } catch (error) {
+      console.error(`Error deleting task ${taskId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Get project branches
-   * 
-   * @param {string} projectId - Project ID
-   * @returns {Promise<Array>} - List of branches
+   * Get project resources
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @returns {Promise<Array>} - List of resources
    */
-  async getProjectBranches(projectId) {
-    const response = await axios.get(`${this.baseUrl}/branches/${projectId}`);
-    return response.data;
+  async getProjectResources(workspaceId, projectId) {
+    try {
+      // For now, return mock data
+      return [
+        {
+          id: 'res1',
+          name: 'Knowledge Graph Design Doc.pdf',
+          type: 'document',
+          size: '1.2 MB',
+          last_updated: '2023-10-20T14:30:00Z',
+          uploaded_by: 'John Doe'
+        },
+        {
+          id: 'res2',
+          name: 'Database Schema Diagram.png',
+          type: 'image',
+          size: '450 KB',
+          last_updated: '2023-10-25T10:15:00Z',
+          uploaded_by: 'Jane Smith'
+        },
+        {
+          id: 'res3',
+          name: 'https://github.com/example/knowledge-graph-repos',
+          type: 'link',
+          last_updated: '2023-11-01T09:00:00Z',
+          uploaded_by: 'John Doe'
+        }
+      ];
+    } catch (error) {
+      console.error(`Error fetching resources for project ${projectId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Create a branch
-   * 
-   * @param {string} projectId - Project ID
-   * @param {Object} branchData - Branch data
-   * @returns {Promise<Object>} - Created branch
+   * Add a resource to a project
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @param {Object} resourceData - The resource data
+   * @returns {Promise<Object>} - Added resource
    */
-  async createBranch(projectId, branchData) {
-    const response = await axios.post(`${this.baseUrl}/branches/${projectId}`, branchData);
-    return response.data;
+  async addResource(workspaceId, projectId, resourceData) {
+    try {
+      // In real implementation, this would be:
+      // const formData = new FormData();
+      // Object.entries(resourceData).forEach(([key, value]) => {
+      //   formData.append(key, value);
+      // });
+      // const response = await axios.post(`${COLLAB_API}/workspaces/${workspaceId}/projects/${projectId}/resources`, formData, {
+      //   headers: {
+      //     'Content-Type': 'multipart/form-data'
+      //   }
+      // });
+      // return response.data;
+      
+      return {
+        id: 'new-resource-id',
+        ...resourceData,
+        last_updated: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error(`Error adding resource to project ${projectId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Create a merge request
-   * 
-   * @param {string} projectId - Project ID
-   * @param {Object} mergeRequestData - Merge request data
-   * @returns {Promise<Object>} - Created merge request
+   * Add a link resource to a project
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @param {Object} linkData - The link data
+   * @returns {Promise<Object>} - Added link
    */
-  async createMergeRequest(projectId, mergeRequestData) {
-    const response = await axios.post(`${this.baseUrl}/merge-requests/${projectId}`, mergeRequestData);
-    return response.data;
+  async addLinkResource(workspaceId, projectId, linkData) {
+    try {
+      // In real implementation, this would be:
+      // const response = await axios.post(`${COLLAB_API}/workspaces/${workspaceId}/projects/${projectId}/resources/links`, linkData);
+      // return response.data;
+      
+      return {
+        id: 'new-link-id',
+        type: 'link',
+        ...linkData,
+        last_updated: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error(`Error adding link to project ${projectId}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Get project merge requests
-   * 
-   * @param {string} projectId - Project ID
-   * @param {string} status - Optional status filter
-   * @returns {Promise<Array>} - List of merge requests
+   * Delete a resource
+   * @param {string} workspaceId - The workspace ID
+   * @param {string} projectId - The project ID
+   * @param {string} resourceId - The resource ID
+   * @returns {Promise<boolean>} - Success status
    */
-  async getProjectMergeRequests(projectId, status = null) {
-    const params = status ? { status } : {};
-    const response = await axios.get(`${this.baseUrl}/merge-requests/${projectId}`, { params });
-    return response.data;
-  }
-
-  /**
-   * Get merge request details
-   * 
-   * @param {string} mergeRequestId - Merge request ID
-   * @returns {Promise<Object>} - Merge request data
-   */
-  async getMergeRequest(mergeRequestId) {
-    const response = await axios.get(`${this.baseUrl}/merge-requests/detail/${mergeRequestId}`);
-    return response.data;
-  }
-
-  /**
-   * Approve a merge request
-   * 
-   * @param {string} mergeRequestId - Merge request ID
-   * @returns {Promise<Object>} - Updated merge request
-   */
-  async approveMergeRequest(mergeRequestId) {
-    const response = await axios.post(`${this.baseUrl}/merge-requests/${mergeRequestId}/approve`);
-    return response.data;
-  }
-
-  /**
-   * Merge a merge request
-   * 
-   * @param {string} mergeRequestId - Merge request ID
-   * @returns {Promise<Object>} - Updated merge request
-   */
-  async mergeMergeRequest(mergeRequestId) {
-    const response = await axios.post(`${this.baseUrl}/merge-requests/${mergeRequestId}/merge`);
-    return response.data;
-  }
-
-  /**
-   * Get version diff
-   * 
-   * @param {string} versionId - Version ID
-   * @param {string} baseVersionId - Base version ID to compare against
-   * @returns {Promise<Object>} - Diff data
-   */
-  async getVersionDiff(versionId, baseVersionId) {
-    const response = await axios.get(`${this.baseUrl}/versions/diff/${versionId}`, {
-      params: { base_version_id: baseVersionId }
-    });
-    return response.data;
+  async deleteResource(workspaceId, projectId, resourceId) {
+    try {
+      // In real implementation, this would be:
+      // await axios.delete(`${COLLAB_API}/workspaces/${workspaceId}/projects/${projectId}/resources/${resourceId}`);
+      // return true;
+      
+      console.log(`Resource ${resourceId} in project ${projectId} deleted`);
+      return true;
+    } catch (error) {
+      console.error(`Error deleting resource ${resourceId}:`, error);
+      throw error;
+    }
   }
 }
 

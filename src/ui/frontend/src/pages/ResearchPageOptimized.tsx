@@ -16,16 +16,36 @@ import {
   ListItemText,
   Alert,
   Tabs,
-  Tab
+  Tab,
+  IconButton,
+  Tooltip,
+  ListItemSecondaryAction
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import HistoryIcon from '@mui/icons-material/History';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import { useResearch, useSaveQuery, useSavedQueries, useQueryHistory, MockSearchResult } from '../services/researchService';
-import CitationManager from '../components/CitationManager';
+import FilterAltIcon from '@mui/icons-material/FilterAlt';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import { 
+  useResearch, 
+  useSaveQuery, 
+  useSavedQueries, 
+  useQueryHistory, 
+  useUpdateSavedQuery,
+  useAllTags,
+  MockSearchResult 
+} from '../services/researchService';
+import { 
+  CitationManager, 
+  FavoriteButton, 
+  TagManager,
+  ResearchFilterPanel,
+  ResearchExportDialog
+} from '../components';
+import { useFavorites } from '../hooks';
 import { mockData } from '../utils/mockData';
-import { ResearchResult } from '../types';
+import { ResearchFilterOptions, ExportOptions, ResearchResult } from '../types/research';
 
 // Panel for the content of each tab
 interface TabPanelProps {
@@ -57,12 +77,20 @@ const ResearchPageOptimized: React.FC = () => {
   const [tabValue, setTabValue] = useState<number>(0);
   const [selectedReport, setSelectedReport] = useState<MockSearchResult | null>(null);
   const [isCitationOpen, setIsCitationOpen] = useState<boolean>(false);
+  const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
+  const [isExportOpen, setIsExportOpen] = useState<boolean>(false);
+  const [filterOptions, setFilterOptions] = useState<ResearchFilterOptions>({});
   
   // React Query hooks
   const savedQueriesQuery = useSavedQueries();
   const queryHistoryQuery = useQueryHistory();
   const researchMutation = useResearch();
   const saveQueryMutation = useSaveQuery();
+  const updateQueryMutation = useUpdateSavedQuery();
+  const allTagsQuery = useAllTags();
+  
+  // Custom hooks
+  const { isFavorite, toggleFavorite } = useFavorites();
   
   // Handle tab change
   const handleTabChange = (event: React.SyntheticEvent, newValue: number): void => {
@@ -110,6 +138,87 @@ const ResearchPageOptimized: React.FC = () => {
   // Handle citation action
   const handleCitation = (citation: string, style: string): void => {
     console.log(`Added citation in ${style} style:`, citation);
+  };
+  
+  // Handle filter toggle
+  const toggleFilterPanel = (): void => {
+    setIsFilterOpen(!isFilterOpen);
+  };
+  
+  // Handle filter change
+  const handleFilterChange = (filters: ResearchFilterOptions): void => {
+    setFilterOptions(filters);
+  };
+  
+  // Handle export toggle
+  const toggleExportDialog = (): void => {
+    setIsExportOpen(!isExportOpen);
+  };
+  
+  // Handle export action
+  const handleExport = (options: ExportOptions): void => {
+    console.log('Exporting with options:', options);
+    // In a real implementation, this would call an API endpoint
+  };
+  
+  // Handle add tag
+  const handleAddTag = async (itemId: string, tag: string): Promise<void> => {
+    const query = savedQueriesQuery.data?.find(q => q.id === itemId);
+    if (!query) return;
+    
+    const currentTags = query.tags || [];
+    const updatedTags = [...currentTags, tag];
+    
+    try {
+      await updateQueryMutation.mutateAsync({
+        id: itemId,
+        tags: updatedTags
+      });
+      savedQueriesQuery.refetch();
+    } catch (err) {
+      console.error('Error adding tag:', err);
+    }
+  };
+  
+  // Handle remove tag
+  const handleRemoveTag = async (itemId: string, tag: string): Promise<void> => {
+    const query = savedQueriesQuery.data?.find(q => q.id === itemId);
+    if (!query || !query.tags) return;
+    
+    const updatedTags = query.tags.filter(t => t !== tag);
+    
+    try {
+      await updateQueryMutation.mutateAsync({
+        id: itemId,
+        tags: updatedTags
+      });
+      savedQueriesQuery.refetch();
+    } catch (err) {
+      console.error('Error removing tag:', err);
+    }
+  };
+  
+  // Handle favorite toggle
+  const handleToggleFavorite = async (itemId: string): Promise<void> => {
+    const query = savedQueriesQuery.data?.find(q => q.id === itemId);
+    if (!query) return;
+    
+    const newFavoriteStatus = !query.isFavorite;
+    
+    try {
+      await updateQueryMutation.mutateAsync({
+        id: itemId,
+        isFavorite: newFavoriteStatus
+      });
+      
+      // Update local storage favorites
+      toggleFavorite(itemId);
+      
+      // Refresh saved queries
+      savedQueriesQuery.refetch();
+    } catch (err) {
+      console.error('Error toggling favorite status:', err);
+    }
   };
   
   // Render results list
@@ -180,9 +289,24 @@ const ResearchPageOptimized: React.FC = () => {
       <Typography variant="subtitle1" color="text.secondary" paragraph>
         Ask research questions and get comprehensive reports with citations and references.
       </Typography>
+      
+      {/* Filter panel */}
+      <ResearchFilterPanel
+        onFilterChange={handleFilterChange}
+        availableTags={allTagsQuery.tags || []}
+        expanded={isFilterOpen}
+      />
+      
+      {/* Export dialog */}
+      <ResearchExportDialog
+        open={isExportOpen}
+        onClose={toggleExportDialog}
+        onExport={handleExport}
+      />
+      
       <Box mb={4}>
         <Grid container spacing={2}>
-          <Grid item xs={12} md={10}>
+          <Grid item xs={12} md={8}>
             <TextField
               fullWidth
               label="Research Query"
@@ -194,7 +318,7 @@ const ResearchPageOptimized: React.FC = () => {
               disabled={researchMutation.isLoading}
             />
           </Grid>
-          <Grid item xs={6} md={1}>
+          <Grid item xs={12} sm={6} md={1}>
             <Button
               fullWidth
               variant="contained"
@@ -207,7 +331,7 @@ const ResearchPageOptimized: React.FC = () => {
               {researchMutation.isLoading ? 'Searching...' : 'Search'}
             </Button>
           </Grid>
-          <Grid item xs={6} md={1}>
+          <Grid item xs={12} sm={6} md={1}>
             <Button
               fullWidth
               variant="outlined"
@@ -217,6 +341,28 @@ const ResearchPageOptimized: React.FC = () => {
               disabled={saveQueryMutation.isLoading}
             >
               {saveQueryMutation.isLoading ? 'Saving...' : 'Save'}
+            </Button>
+          </Grid>
+          <Grid item xs={6} md={1}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={toggleFilterPanel}
+              sx={{ height: '56px' }}
+              startIcon={<FilterAltIcon />}
+            >
+              Filter
+            </Button>
+          </Grid>
+          <Grid item xs={6} md={1}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={toggleExportDialog}
+              sx={{ height: '56px' }}
+              startIcon={<CloudDownloadIcon />}
+            >
+              Export
             </Button>
           </Grid>
         </Grid>
@@ -256,8 +402,28 @@ const ResearchPageOptimized: React.FC = () => {
                       >
                         <ListItemText 
                           primary={item.query} 
-                          secondary={new Date(item.createdAt).toLocaleDateString()} 
+                          secondary={
+                            <Box>
+                              <Typography variant="caption" display="block">
+                                {new Date(item.createdAt).toLocaleDateString()}
+                              </Typography>
+                              <TagManager
+                                itemId={item.id}
+                                currentTags={item.tags || []}
+                                onAddTag={handleAddTag}
+                                onRemoveTag={handleRemoveTag}
+                                showButton={false}
+                              />
+                            </Box>
+                          }
                         />
+                        <ListItemSecondaryAction>
+                          <FavoriteButton 
+                            isFavorite={!!item.isFavorite}
+                            onToggle={() => handleToggleFavorite(item.id)}
+                            size="small"
+                          />
+                        </ListItemSecondaryAction>
                       </ListItem>
                     ))
                   ) : (
@@ -322,8 +488,16 @@ const ResearchPageOptimized: React.FC = () => {
                       variant="outlined" 
                       startIcon={<PictureAsPdfIcon />}
                       onClick={() => window.open(selectedReport.pdfUrl, '_blank')}
+                      sx={{ mr: 1 }}
                     >
-                      Export PDF
+                      View PDF
+                    </Button>
+                    <Button 
+                      variant="outlined" 
+                      startIcon={<CloudDownloadIcon />}
+                      onClick={toggleExportDialog}
+                    >
+                      Export
                     </Button>
                   </Box>
                 </Box>
@@ -354,12 +528,17 @@ const ResearchPageOptimized: React.FC = () => {
                 <Typography variant="h6" color="text.secondary">
                   Select a research result to view
                 </Typography>
-                <Alert severity="info" sx={{ mt: 3, maxWidth: 400 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Performance Optimizations:</Typography>
-                  <Typography variant="body2">
-                    This page implements React Query for optimized data fetching with caching,
-                    background updates, and efficient state management.
+                <Alert severity="info" sx={{ mt: 3, maxWidth: 500 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>New Features:</Typography>
+                  <Typography variant="body2" paragraph>
+                    This page now implements organization features:
                   </Typography>
+                  <ul>
+                    <li>Tag your research queries for better organization</li>
+                    <li>Add queries to favorites for quick access</li>
+                    <li>Filter research by tags, date and favorites</li>
+                    <li>Export your research in various formats</li>
+                  </ul>
                 </Alert>
               </Box>
             )}
