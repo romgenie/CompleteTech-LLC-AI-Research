@@ -13,20 +13,13 @@ from pathlib import Path
 
 from .planner import ImplementationPlanner, ImplementationPlan, ImplementationComponent
 from .task_planner import TaskPlanner, Task
-from .validation import PlanningValidator, ValidationError
+from .validation import PlanningValidator, ValidationIssue, ValidationError
 
 logger = logging.getLogger(__name__)
 
 class PlanningError(Exception):
     """Base exception for planning errors."""
     pass
-
-class ValidationError(PlanningError):
-    """Raised when validation fails."""
-    def __init__(self, errors: List[ValidationError]):
-        self.errors = errors
-        error_messages = "; ".join(e.message for e in errors)
-        super().__init__(f"Validation failed: {error_messages}")
 
 class StorageError(PlanningError):
     """Raised when storage operations fail."""
@@ -76,40 +69,40 @@ class PlanningService:
             StorageError: If plan storage fails
         """
         # Validate understanding input
-        validation_errors = self.validator.validate_understanding(understanding)
-        if validation_errors:
-            raise ValidationError(validation_errors)
+        validation_issues = self.validator.validate_understanding(understanding)
+        if validation_issues:
+            raise ValidationError(validation_issues)
             
         # Validate options if provided
         if options:
-            validation_errors = self.validator.validate_options(options)
-            if validation_errors:
-                raise ValidationError(validation_errors)
+            validation_issues = self.validator.validate_options(options)
+            if validation_issues:
+                raise ValidationError(validation_issues)
         
         try:
             # Generate basic implementation plan
             plan = self.planner.create_plan(understanding)
             
             # Validate plan
-            validation_errors = self.validator.validate_plan(plan)
-            if validation_errors:
-                raise ValidationError(validation_errors)
+            validation_issues = self.validator.validate_plan(plan)
+            if validation_issues:
+                raise ValidationError(validation_issues)
             
             # Generate tasks
             tasks = self.task_planner.generate_tasks(plan)
             
             # Validate tasks
-            validation_errors = self.validator.validate_tasks(tasks, plan)
-            if validation_errors:
-                raise ValidationError(validation_errors)
+            validation_issues = self.validator.validate_tasks(tasks, plan)
+            if validation_issues:
+                raise ValidationError(validation_issues)
             
             # Calculate critical path
             critical_path = self.task_planner.get_critical_path()
             
             # Validate critical path
-            validation_errors = self.validator.validate_critical_path(critical_path, tasks)
-            if validation_errors:
-                raise ValidationError(validation_errors)
+            validation_issues = self.validator.validate_critical_path(critical_path, tasks)
+            if validation_issues:
+                raise ValidationError(validation_issues)
             
             # Organize results
             result = {
@@ -246,9 +239,9 @@ class PlanningService:
             ],
             requirements=current_plan["plan"]["requirements"]
         )
-        validation_errors = self.validator.validate_plan(plan_obj)
-        if validation_errors:
-            raise ValidationError(validation_errors)
+        validation_issues = self.validator.validate_plan(plan_obj)
+        if validation_issues:
+            raise ValidationError(validation_issues)
         
         # Save updated plan
         try:
@@ -331,9 +324,9 @@ class PlanningService:
             ],
             requirements=current_plan["plan"]["requirements"]
         )
-        validation_errors = self.validator.validate_tasks(tasks, plan_obj)
-        if validation_errors:
-            raise ValidationError(validation_errors)
+        validation_issues = self.validator.validate_tasks(tasks, plan_obj)
+        if validation_issues:
+            raise ValidationError(validation_issues)
             
         # Update metadata
         current_plan["metadata"]["updated_at"] = datetime.now(timezone.utc).isoformat()

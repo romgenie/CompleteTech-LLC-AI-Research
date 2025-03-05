@@ -13,13 +13,20 @@ from .planner import ImplementationPlan, ImplementationComponent
 from .task_planner import Task
 
 @dataclass
-class ValidationError:
-    """Represents a validation error."""
+class ValidationIssue:
+    """Represents a validation issue."""
     code: str
     message: str
     field: Optional[str] = None
     details: Optional[Dict[str, Any]] = None
     timestamp: datetime = datetime.now(timezone.utc)
+
+class ValidationError(Exception):
+    """Exception raised for validation errors."""
+    def __init__(self, issues: List['ValidationIssue']):
+        self.issues = issues
+        issue_messages = "; ".join(issue.message for issue in issues)
+        super().__init__(f"Validation failed: {issue_messages}")
 
 class PlanningValidator:
     """
@@ -27,7 +34,7 @@ class PlanningValidator:
     """
     
     @staticmethod
-    def validate_options(options: Dict[str, Any]) -> List[ValidationError]:
+    def validate_options(options: Dict[str, Any]) -> List[ValidationIssue]:
         """
         Validate planning options.
         
@@ -35,13 +42,13 @@ class PlanningValidator:
             options: Planning options dictionary
             
         Returns:
-            List of validation errors
+            List of validation issues
         """
-        errors = []
+        issues = []
         
         # Validate language if present
         if "language" in options and not isinstance(options["language"], str):
-            errors.append(ValidationError(
+            issues.append(ValidationIssue(
                 code="INVALID_LANGUAGE",
                 message="Language must be a string",
                 field="language"
@@ -49,7 +56,7 @@ class PlanningValidator:
             
         # Validate framework if present
         if "framework" in options and not isinstance(options["framework"], str):
-            errors.append(ValidationError(
+            issues.append(ValidationIssue(
                 code="INVALID_FRAMEWORK",
                 message="Framework must be a string",
                 field="framework"
@@ -59,7 +66,7 @@ class PlanningValidator:
         if "max_tasks" in options:
             max_tasks = options["max_tasks"]
             if not isinstance(max_tasks, int) or max_tasks <= 0:
-                errors.append(ValidationError(
+                issues.append(ValidationIssue(
                     code="INVALID_MAX_TASKS",
                     message="max_tasks must be a positive integer",
                     field="max_tasks",
@@ -70,7 +77,7 @@ class PlanningValidator:
         if "priority_factors" in options:
             factors = options["priority_factors"]
             if not isinstance(factors, dict):
-                errors.append(ValidationError(
+                issues.append(ValidationIssue(
                     code="INVALID_PRIORITY_FACTORS",
                     message="priority_factors must be a dictionary",
                     field="priority_factors"
@@ -78,7 +85,7 @@ class PlanningValidator:
             else:
                 for key, value in factors.items():
                     if not isinstance(value, (int, float)):
-                        errors.append(ValidationError(
+                        issues.append(ValidationIssue(
                             code="INVALID_FACTOR_VALUE",
                             message=f"Priority factor {key} must be a number",
                             field=f"priority_factors.{key}",
@@ -89,7 +96,7 @@ class PlanningValidator:
         if "custom_requirements" in options:
             requirements = options["custom_requirements"]
             if not isinstance(requirements, list):
-                errors.append(ValidationError(
+                issues.append(ValidationIssue(
                     code="INVALID_CUSTOM_REQUIREMENTS",
                     message="custom_requirements must be a list",
                     field="custom_requirements"
@@ -97,17 +104,17 @@ class PlanningValidator:
             else:
                 for i, req in enumerate(requirements):
                     if not isinstance(req, str):
-                        errors.append(ValidationError(
+                        issues.append(ValidationIssue(
                             code="INVALID_REQUIREMENT",
                             message=f"Requirement at index {i} must be a string",
                             field=f"custom_requirements[{i}]",
                             details={"value": req}
                         ))
         
-        return errors
+        return issues
     
     @staticmethod
-    def validate_understanding(understanding: Dict[str, Any]) -> List[ValidationError]:
+    def validate_understanding(understanding: Dict[str, Any]) -> List[ValidationIssue]:
         """
         Validate research paper understanding input.
         
@@ -115,15 +122,15 @@ class PlanningValidator:
             understanding: Paper understanding dictionary
             
         Returns:
-            List of validation errors
+            List of validation issues
         """
-        errors = []
+        issues = []
         
         # Check required fields
         required_fields = ["id", "title", "description"]
         for field in required_fields:
             if field not in understanding:
-                errors.append(ValidationError(
+                issues.append(ValidationIssue(
                     code="MISSING_FIELD",
                     message=f"Missing required field: {field}",
                     field=field
@@ -131,7 +138,7 @@ class PlanningValidator:
         
         # Check components exist
         if not understanding.get("algorithms") and not understanding.get("architecture"):
-            errors.append(ValidationError(
+            issues.append(ValidationIssue(
                 code="NO_COMPONENTS",
                 message="No algorithms or architecture components found",
                 details={"found_fields": list(understanding.keys())}
@@ -140,7 +147,7 @@ class PlanningValidator:
         # Validate algorithms if present
         for algo in understanding.get("algorithms", []):
             if not algo.get("name"):
-                errors.append(ValidationError(
+                issues.append(ValidationIssue(
                     code="INVALID_ALGORITHM",
                     message="Algorithm missing name",
                     field="algorithms"
@@ -149,16 +156,16 @@ class PlanningValidator:
         # Validate architecture if present
         for name, component in understanding.get("architecture", {}).items():
             if not component.get("description"):
-                errors.append(ValidationError(
+                issues.append(ValidationIssue(
                     code="INVALID_COMPONENT",
                     message=f"Architecture component {name} missing description",
                     field="architecture"
                 ))
                 
-        return errors
+        return issues
     
     @staticmethod
-    def validate_plan(plan: ImplementationPlan) -> List[ValidationError]:
+    def validate_plan(plan: ImplementationPlan) -> List[ValidationIssue]:
         """
         Validate an implementation plan.
         
@@ -166,20 +173,20 @@ class PlanningValidator:
             plan: The plan to validate
             
         Returns:
-            List of validation errors
+            List of validation issues
         """
-        errors = []
+        issues = []
         
         # Check required fields
         if not plan.id:
-            errors.append(ValidationError(
+            issues.append(ValidationIssue(
                 code="MISSING_ID",
                 message="Plan missing ID",
                 field="id"
             ))
             
         if not plan.title:
-            errors.append(ValidationError(
+            issues.append(ValidationIssue(
                 code="MISSING_TITLE",
                 message="Plan missing title",
                 field="title"
@@ -187,7 +194,7 @@ class PlanningValidator:
             
         # Check components
         if not plan.components:
-            errors.append(ValidationError(
+            issues.append(ValidationIssue(
                 code="NO_COMPONENTS",
                 message="Plan has no components defined"
             ))
@@ -198,7 +205,7 @@ class PlanningValidator:
                 # Check dependencies
                 for dep in component.dependencies:
                     if dep not in component_names:
-                        errors.append(ValidationError(
+                        issues.append(ValidationIssue(
                             code="INVALID_DEPENDENCY",
                             message=f"Component {component.name} has unknown dependency {dep}",
                             field="dependencies",
@@ -207,7 +214,7 @@ class PlanningValidator:
                         
                 # Check effort estimation
                 if component.estimated_effort not in ["low", "medium", "high"]:
-                    errors.append(ValidationError(
+                    issues.append(ValidationIssue(
                         code="INVALID_EFFORT",
                         message=f"Invalid effort level for component {component.name}",
                         field="estimated_effort",
@@ -216,15 +223,15 @@ class PlanningValidator:
                     
         # Check requirements are defined
         if not plan.requirements:
-            errors.append(ValidationError(
+            issues.append(ValidationIssue(
                 code="NO_REQUIREMENTS",
                 message="Plan has no requirements defined"
             ))
             
-        return errors
+        return issues
     
     @staticmethod
-    def validate_tasks(tasks: Dict[str, Task], plan: ImplementationPlan) -> List[ValidationError]:
+    def validate_tasks(tasks: Dict[str, Task], plan: ImplementationPlan) -> List[ValidationIssue]:
         """
         Validate generated tasks.
         
@@ -233,16 +240,16 @@ class PlanningValidator:
             plan: The implementation plan the tasks were generated from
             
         Returns:
-            List of validation errors
+            List of validation issues
         """
-        errors = []
+        issues = []
         
         if not tasks:
-            errors.append(ValidationError(
+            issues.append(ValidationIssue(
                 code="NO_TASKS",
                 message="No tasks generated from plan"
             ))
-            return errors
+            return issues
             
         # Track task IDs for dependency validation
         task_ids = set(tasks.keys())
@@ -252,7 +259,7 @@ class PlanningValidator:
             # Validate dependencies
             for dep_id in task.dependencies:
                 if dep_id not in task_ids:
-                    errors.append(ValidationError(
+                    issues.append(ValidationIssue(
                         code="INVALID_TASK_DEPENDENCY",
                         message=f"Task {task.name} has unknown dependency {dep_id}",
                         field="dependencies",
@@ -261,7 +268,7 @@ class PlanningValidator:
                     
             # Validate estimated hours
             if task.estimated_hours <= 0:
-                errors.append(ValidationError(
+                issues.append(ValidationIssue(
                     code="INVALID_HOURS",
                     message=f"Invalid estimated hours for task {task.name}",
                     field="estimated_hours",
@@ -270,7 +277,7 @@ class PlanningValidator:
                 
             # Validate priority
             if not 1 <= task.priority <= 5:
-                errors.append(ValidationError(
+                issues.append(ValidationIssue(
                     code="INVALID_PRIORITY",
                     message=f"Invalid priority for task {task.name}",
                     field="priority",
@@ -279,17 +286,17 @@ class PlanningValidator:
                 
             # Validate status
             if task.status not in ["todo", "in_progress", "completed", "blocked"]:
-                errors.append(ValidationError(
+                issues.append(ValidationIssue(
                     code="INVALID_STATUS",
                     message=f"Invalid status for task {task.name}",
                     field="status",
                     details={"task": task.name, "value": task.status}
                 ))
                 
-        return errors
+        return issues
     
     @staticmethod
-    def validate_critical_path(critical_path: List[Task], tasks: Dict[str, Task]) -> List[ValidationError]:
+    def validate_critical_path(critical_path: List[Task], tasks: Dict[str, Task]) -> List[ValidationIssue]:
         """
         Validate a critical path through tasks.
         
@@ -298,16 +305,16 @@ class PlanningValidator:
             tasks: Dictionary of all tasks
             
         Returns:
-            List of validation errors
+            List of validation issues
         """
-        errors = []
+        issues = []
         
         if not critical_path:
-            errors.append(ValidationError(
+            issues.append(ValidationIssue(
                 code="EMPTY_CRITICAL_PATH",
                 message="Critical path is empty"
             ))
-            return errors
+            return issues
             
         # Check path continuity
         for i in range(len(critical_path) - 1):
@@ -316,7 +323,7 @@ class PlanningValidator:
             
             # Next task should depend on current task
             if current.id not in next_task.dependencies:
-                errors.append(ValidationError(
+                issues.append(ValidationIssue(
                     code="INVALID_PATH",
                     message=f"Break in critical path between {current.name} and {next_task.name}",
                     details={
@@ -325,4 +332,4 @@ class PlanningValidator:
                     }
                 ))
                 
-        return errors
+        return issues

@@ -162,8 +162,8 @@ class TaskPlanner:
         """Calculate priority score (1-5) for a component."""
         base_priority = {
             "low": 1,
-            "medium": 2,
-            "high": 3
+            "medium": 3,
+            "high": 4
         }.get(component.priority, 2)
         
         # Increase priority if other components depend on this

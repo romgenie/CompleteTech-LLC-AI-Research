@@ -139,5 +139,64 @@ class TestTaskPlanner(unittest.TestCase):
             max(4, dp_task.estimated_hours * 0.5)
         )
 
+    def test_empty_plan(self):
+        """Test handling of empty implementation plan."""
+        empty_plan = ImplementationPlan(
+            id="empty_1",
+            title="Empty Plan",
+            description="Plan with no components",
+            components=[],
+            requirements={}
+        )
+        tasks = self.task_planner.generate_tasks(empty_plan)
+        self.assertEqual(len(tasks), 0)
+        
+        critical_path = self.task_planner.get_critical_path()
+        self.assertEqual(len(critical_path), 0)
+
+    def test_circular_dependencies(self):
+        """Test handling of circular dependencies in components."""
+        circular_plan = ImplementationPlan(
+            id="circular_1",
+            title="Circular Dependencies",
+            description="Plan with circular component dependencies",
+            components=[
+                ImplementationComponent(
+                    name="ComponentA",
+                    description="Component A",
+                    dependencies=["ComponentB"],
+                    estimated_effort="medium",
+                    priority="high"
+                ),
+                ImplementationComponent(
+                    name="ComponentB",
+                    description="Component B",
+                    dependencies=["ComponentA"],
+                    estimated_effort="medium",
+                    priority="high"
+                )
+            ],
+            requirements={}
+        )
+        tasks = self.task_planner.generate_tasks(circular_plan)
+        
+        # Tasks should still be generated
+        self.assertEqual(len(tasks), 6)  # 3 tasks per component
+        
+        # Critical path should still be calculable
+        critical_path = self.task_planner.get_critical_path()
+        self.assertGreater(len(critical_path), 0)
+
+    def test_task_priority_inheritance(self):
+        """Test that tasks inherit priority from their components."""
+        tasks = self.task_planner.generate_tasks(self.sample_plan)
+        
+        # Find all tasks for DataProcessor (high priority)
+        dp_tasks = [t for t in tasks.values() if t.component == "DataProcessor"]
+        
+        # All tasks should have inherited high priority
+        for task in dp_tasks:
+            self.assertGreater(task.priority, 3, f"Task {task.name} should have high priority")
+
 if __name__ == '__main__':
     unittest.main()
