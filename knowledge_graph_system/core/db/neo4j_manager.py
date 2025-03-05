@@ -368,26 +368,26 @@ class Neo4jManager:
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"Configuration file not found: {config_path}")
         
-        try:
-            with open(config_path, 'r') as f:
+        with open(config_path, 'r') as f:
+            try:
                 config = json.load(f)
-            
-            required_fields = ['uri', 'username', 'password']
-            if not all(field in config for field in required_fields):
-                missing = [field for field in required_fields if field not in config]
-                raise ValueError(f"Missing required fields in configuration: {missing}")
-            
-            return cls(
-                uri=config['uri'],
-                username=config['username'],
-                password=config['password'],
-                database=config.get('database', 'neo4j'),
-                max_connection_lifetime=config.get('max_connection_lifetime', 3600),
-                max_connection_pool_size=config.get('max_connection_pool_size', 50),
-                encrypted=config.get('encrypted', True)
-            )
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON in configuration file: {e}")
+            except Exception as e:
+                raise ValueError(f"Invalid JSON in configuration file: {e}")
+        
+        required_fields = ['uri', 'username', 'password']
+        if not all(field in config for field in required_fields):
+            missing = [field for field in required_fields if field not in config]
+            raise ValueError(f"Missing required fields in configuration: {missing}")
+        
+        return cls(
+            uri=config['uri'],
+            username=config['username'],
+            password=config['password'],
+            database=config.get('database', 'neo4j'),
+            max_connection_lifetime=config.get('max_connection_lifetime', 3600),
+            max_connection_pool_size=config.get('max_connection_pool_size', 50),
+            encrypted=config.get('encrypted', True)
+        )
     
     @classmethod
     def from_env(cls) -> 'Neo4jManager':

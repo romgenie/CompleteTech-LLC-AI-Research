@@ -30,6 +30,7 @@ class RelationType(Enum):
     IMPLEMENTS = auto()          # Implementation relationship
     EXTENDS = auto()             # Extension of existing work
     RELATED_TO = auto()          # General-purpose relationship
+    BASED_ON = auto()            # Based on relationship
     
     # AI research relationships
     TRAINED_ON = auto()          # Model trained on dataset

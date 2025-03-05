@@ -233,7 +233,8 @@ class TestNeo4jManager(unittest.TestCase):
     
     @patch('knowledge_graph_system.core.db.neo4j_manager.os')
     @patch('knowledge_graph_system.core.db.neo4j_manager.json')
-    def test_from_config(self, mock_json, mock_os):
+    @patch('knowledge_graph_system.core.db.neo4j_manager.open', create=True)
+    def test_from_config(self, mock_open, mock_json, mock_os):
         """Test creating Neo4jManager from config file."""
         # Configure mocks
         mock_os.path.exists.return_value = True

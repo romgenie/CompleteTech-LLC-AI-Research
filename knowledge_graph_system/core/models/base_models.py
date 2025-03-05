@@ -120,11 +120,11 @@ class GraphEntity:
                 # Merge properties dictionary
                 self.properties.update(value)
             elif key == 'labels':
-                # Update labels set
+                # Replace labels set with new value
                 if isinstance(value, list):
-                    self.labels.update(set(value))
+                    self.labels = set(value)
                 elif isinstance(value, set):
-                    self.labels.update(value)
+                    self.labels = value
             else:
                 # Update regular attribute
                 setattr(self, key, value)

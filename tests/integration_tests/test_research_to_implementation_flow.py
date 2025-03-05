@@ -21,10 +21,10 @@ class TestResearchToImplementationFlow(unittest.TestCase):
     def setUp(self):
         """Set up test environment with mocked external services."""
         # Create patchers for external services to avoid real API calls during testing
-        self.web_search_patcher = patch('research_orchestrator.information_gathering.web_source.search')
-        self.academic_search_patcher = patch('research_orchestrator.information_gathering.academic_source.search')
-        self.llm_generate_patcher = patch('research_orchestrator.research_generation.content_synthesis.generate_content')
-        self.neo4j_patcher = patch('knowledge_graph_system.core.neo4j_manager.Neo4jManager')
+        self.web_search_patcher = patch('src.research_orchestrator.information_gathering.sources.web.search')
+        self.academic_search_patcher = patch('src.research_orchestrator.information_gathering.sources.academic.search')
+        self.llm_generate_patcher = patch('src.research_orchestrator.research_generation.content_synthesis.generate_content')
+        self.neo4j_patcher = patch('knowledge_graph_system.core.db.neo4j_manager.Neo4jManager')
         
         # Start the patchers
         self.mock_web_search = self.web_search_patcher.start()
