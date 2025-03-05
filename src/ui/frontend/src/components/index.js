@@ -12,6 +12,11 @@ import PaperDashboard from './PaperDashboard';
 import FavoriteButton from './FavoriteButton';
 import ResearchFilterPanel from './ResearchFilterPanel';
 import ResearchExportDialog from './ResearchExportDialog';
+import ResearchStats from './ResearchStats';
+import ResearchRecommendationCard from './ResearchRecommendationCard';
+import ResearchRecommendationList from './ResearchRecommendationList';
+import ResearchInsightCard from './ResearchInsightCard';
+import ResearchInsightList from './ResearchInsightList';
 import { TagInput, TagList, TagFilter, TagManager } from './Tags';
 
 export {
@@ -29,6 +34,11 @@ export {
   FavoriteButton,
   ResearchFilterPanel,
   ResearchExportDialog,
+  ResearchStats,
+  ResearchRecommendationCard,
+  ResearchRecommendationList,
+  ResearchInsightCard,
+  ResearchInsightList,
   TagInput,
   TagList,
   TagFilter,

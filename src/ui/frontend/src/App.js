@@ -12,6 +12,7 @@ const Login = lazy(() => import('./pages/Login'));
 const ResearchPage = lazy(() => import('./pages/ResearchPage'));
 const ResearchPageOptimized = lazy(() => import('./pages/ResearchPageOptimized'));
 const ResearchStatsPage = lazy(() => import('./pages/ResearchStatsPage'));
+const ResearchRecommendationsPage = lazy(() => import('./pages/ResearchRecommendationsPage'));
 const TagManagementPage = lazy(() => import('./pages/TagManagementPage'));
 // KnowledgeGraphPage is now working with JavaScript
 const KnowledgeGraphPage = lazy(() => import('./pages/KnowledgeGraphPage'));
@@ -77,6 +78,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <TagManagementPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/research/recommendations" 
+                element={
+                  <ProtectedRoute>
+                    <ResearchRecommendationsPage />
                   </ProtectedRoute>
                 } 
               />

@@ -138,3 +138,37 @@ export interface ExportOptions {
     includeReferences: boolean;
   };
 }
+
+// Research recommendation types
+export interface ResearchRecommendation {
+  id: string;
+  title: string;
+  description: string;
+  confidence: number; // 0-1 relevance score
+  basedOn: RecommendationSource[];
+  tags?: Tag[];
+  suggestedQueryText?: string;
+}
+
+export type RecommendationSource = 
+  | { type: 'tag'; tagId: string; tagName: string } 
+  | { type: 'query'; queryId: string; queryText: string }
+  | { type: 'history'; patternId: string; patternDescription: string };
+
+export interface ResearchRecommendationGroup {
+  id: string;
+  title: string;
+  description: string;
+  recommendations: ResearchRecommendation[];
+}
+
+// Analysis of user's research behavior
+export interface ResearchInsight {
+  id: string;
+  type: 'trend' | 'gap' | 'pattern' | 'suggestion';
+  title: string;
+  description: string;
+  importance: 'low' | 'medium' | 'high';
+  relatedTags?: Tag[];
+  iconType?: string;
+}

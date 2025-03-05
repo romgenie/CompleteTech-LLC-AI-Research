@@ -30,6 +30,7 @@ import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import LabelIcon from '@mui/icons-material/Label';
+import RecommendIcon from '@mui/icons-material/Recommend';
 import { 
   useResearch, 
   useSaveQuery, 
@@ -311,8 +312,17 @@ const ResearchPageOptimized: React.FC = () => {
             to="/research/tags" 
             variant="outlined"
             startIcon={<LabelIcon />}
+            sx={{ mr: 1 }}
           >
             Manage Tags
+          </Button>
+          <Button 
+            component={RouterLink} 
+            to="/research/recommendations" 
+            variant="outlined"
+            startIcon={<RecommendIcon />}
+          >
+            Recommendations
           </Button>
         </Box>
       </Box>
