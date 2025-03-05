@@ -20,7 +20,8 @@ Upcoming Development:
 import os
 import logging
 from typing import Dict, List, Any, Optional, Union
-from pydantic import BaseSettings, Field, validator, PostgresDsn, AnyHttpUrl, BaseModel
+from pydantic import Field, validator, PostgresDsn, AnyHttpUrl, BaseModel
+from pydantic_settings import BaseSettings
 
 
 class DatabaseSettings(BaseModel):

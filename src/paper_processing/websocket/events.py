@@ -313,6 +313,88 @@ def create_system_status_event(
     )
 
 
+def create_system_event(
+    message: str,
+    event_type: str = "system",
+    metadata: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """
+    Create a system event.
+    
+    Args:
+        message: Human-readable event message
+        event_type: Event type
+        metadata: Additional metadata
+        
+    Returns:
+        System event dict
+    """
+    return {
+        "event_type": event_type,
+        "message": message,
+        "metadata": metadata or {},
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+
+def create_paper_status_event(
+    paper_id: str,
+    status: str,
+    message: str,
+    progress: int,
+    metadata: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """
+    Create a paper status event.
+    
+    Args:
+        paper_id: ID of the paper
+        status: New paper status
+        message: Human-readable event message
+        progress: Processing progress percentage
+        metadata: Additional metadata
+        
+    Returns:
+        Paper status event dict
+    """
+    return {
+        "event_type": "paper_status",
+        "paper_id": paper_id,
+        "timestamp": datetime.utcnow().isoformat(),
+        "data": {
+            "status": status,
+            "message": message,
+            "progress": progress,
+            "metadata": metadata or {}
+        }
+    }
+
+
+def create_error_event(
+    message: str,
+    error_type: str,
+    details: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """
+    Create an error event.
+    
+    Args:
+        message: Human-readable error message
+        error_type: Error type
+        details: Error details
+        
+    Returns:
+        Error event dict
+    """
+    return {
+        "event_type": "error",
+        "message": message,
+        "error_type": error_type,
+        "details": details or {},
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+
 # Import at the end to avoid circular imports
 from .connection import connection_manager
 

@@ -197,7 +197,7 @@ def test_paper_state_machine_init():
     paper.status = PaperStatus.UPLOADED
     
     # Initialize state machine
-    with patch('paper_processing.models.state_machine.get_state') as mock_get_state:
+    with patch('paper_processing.models.state_factory.get_state') as mock_get_state:
         mock_state = MagicMock()
         mock_get_state.return_value = mock_state
         
@@ -218,7 +218,7 @@ def test_paper_state_machine_transition_valid():
     paper.status = PaperStatus.UPLOADED
     
     # Initialize state machine
-    with patch('paper_processing.models.state_machine.get_state') as mock_get_state:
+    with patch('paper_processing.models.state_factory.get_state') as mock_get_state:
         # Mock states
         mock_uploaded_state = MagicMock()
         mock_uploaded_state.status = PaperStatus.UPLOADED
@@ -264,7 +264,7 @@ def test_paper_state_machine_transition_invalid():
     paper.status = PaperStatus.UPLOADED
     
     # Initialize state machine
-    with patch('paper_processing.models.state_machine.get_state') as mock_get_state:
+    with patch('paper_processing.models.state_factory.get_state') as mock_get_state:
         # Mock states
         mock_uploaded_state = MagicMock()
         mock_uploaded_state.status = PaperStatus.UPLOADED
@@ -304,7 +304,7 @@ def test_paper_state_machine_process():
     paper.status = PaperStatus.UPLOADED
     
     # Initialize state machine
-    with patch('paper_processing.models.state_machine.get_state') as mock_get_state:
+    with patch('paper_processing.models.state_factory.get_state') as mock_get_state:
         # Mock states
         mock_uploaded_state = MagicMock()
         mock_uploaded_state.status = PaperStatus.UPLOADED
@@ -336,7 +336,7 @@ def test_paper_state_machine_process_state_change():
     paper.status = PaperStatus.UPLOADED
     
     # Initialize state machine
-    with patch('paper_processing.models.state_machine.get_state') as mock_get_state:
+    with patch('paper_processing.models.state_factory.get_state') as mock_get_state:
         # Mock states
         mock_uploaded_state = MagicMock()
         mock_uploaded_state.status = PaperStatus.UPLOADED

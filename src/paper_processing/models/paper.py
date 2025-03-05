@@ -8,7 +8,7 @@ research papers and their processing state in the system.
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Any, Union
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class PaperStatus(str, Enum):
@@ -135,6 +135,16 @@ class Paper(BaseModel):
         None, 
         description="Additional metadata"
     )
+    
+    @field_validator('year')
+    @classmethod
+    def validate_year(cls, v):
+        """Validate the publication year."""
+        if v is not None:
+            current_year = datetime.now().year
+            if v < 1900 or v > current_year + 1:  # Allow current year + 1 for papers in press
+                raise ValueError(f"Year must be between 1900 and {current_year + 1}")
+        return v
 
     class Config:
         """Pydantic model configuration."""
