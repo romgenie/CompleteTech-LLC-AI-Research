@@ -11,11 +11,13 @@ import os
 import json
 from pathlib import Path
 
-from src.research_orchestrator.knowledge_extraction.document_processing.document_processor import DocumentProcessor
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity_recognizer import Entity, EntityRecognizer
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity_recognizer_factory import EntityRecognizerFactory
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship_extractor import Relationship, RelationshipExtractor
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship_extractor_factory import RelationshipExtractorFactory
+from research_orchestrator.knowledge_extraction.document_processing.document_processor import DocumentProcessor
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity
+from research_orchestrator.knowledge_extraction.entity_recognition.base_recognizer import EntityRecognizer
+from research_orchestrator.knowledge_extraction.entity_recognition.factory import EntityRecognizerFactory
+from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship
+from research_orchestrator.knowledge_extraction.relationship_extraction.base_extractor import RelationshipExtractor
+from research_orchestrator.knowledge_extraction.relationship_extraction.factory import RelationshipExtractorFactory
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -46,6 +48,12 @@ class KnowledgeExtractor:
         self.entity_recognizer = entity_recognizer
         self.relationship_extractor = relationship_extractor
         self.config = self._load_config(config_path) if config_path else {}
+        
+        # Data storage
+        self.documents = {}
+        self.entities = {}
+        self.relationships = {}
+        self.knowledge_graph = {}
         
         # Initialize components if not provided
         self._initialize_components()
@@ -135,6 +143,105 @@ class KnowledgeExtractor:
         except Exception as e:
             logger.error(f"Error extracting knowledge from {input_path}: {e}")
             return {"error": str(e)}
+            
+    def extract_from_document(self, doc_path: str, **kwargs) -> Dict[str, Any]:
+        """
+        Extract knowledge from a document file.
+        
+        Args:
+            doc_path: Path to the document file
+            **kwargs: Additional arguments to pass to the extractors
+            
+        Returns:
+            Dictionary containing extraction results
+        """
+        import datetime
+        
+        try:
+            # Process the document
+            document = self.document_processor.process_document(doc_path)
+            
+            # Store the document
+            self.documents[doc_path] = document
+            
+            # Extract entities
+            entities = self.entity_recognizer.recognize(document.content)
+            self.entities[doc_path] = entities
+            
+            # Extract relationships
+            relationships = self.relationship_extractor.extract_relationships(
+                document.content, entities
+            )
+            self.relationships[doc_path] = relationships
+            
+            # Create knowledge graph
+            graph = self._create_knowledge_graph(entities, relationships, doc_path)
+            self.knowledge_graph[doc_path] = graph
+            
+            # Build result
+            result = {
+                "document_id": doc_path,
+                "document_type": document.document_type,
+                "extraction_time": datetime.datetime.now().isoformat(),
+                "entity_count": len(entities),
+                "relationship_count": len(relationships)
+            }
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error extracting from document {doc_path}: {e}")
+            raise
+            
+    def extract_from_text(self, text: str, doc_id: str = "text_content", **kwargs) -> Dict[str, Any]:
+        """
+        Extract knowledge from text content.
+        
+        Args:
+            text: Text content to process
+            doc_id: Identifier for the document
+            **kwargs: Additional arguments to pass to the extractors
+            
+        Returns:
+            Dictionary containing extraction results
+        """
+        import datetime
+        
+        try:
+            # Process the text
+            document = self.document_processor.process_text(text)
+            
+            # Store the document
+            self.documents[doc_id] = document
+            
+            # Extract entities
+            entities = self.entity_recognizer.recognize(document.content)
+            self.entities[doc_id] = entities
+            
+            # Extract relationships
+            relationships = self.relationship_extractor.extract_relationships(
+                document.content, entities
+            )
+            self.relationships[doc_id] = relationships
+            
+            # Create knowledge graph
+            graph = self._create_knowledge_graph(entities, relationships, doc_id)
+            self.knowledge_graph[doc_id] = graph
+            
+            # Build result
+            result = {
+                "document_id": doc_id,
+                "document_type": "text",
+                "extraction_time": datetime.datetime.now().isoformat(),
+                "entity_count": len(entities),
+                "relationship_count": len(relationships)
+            }
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error extracting from text: {e}")
+            raise
     
     def process_document(self, input_path: str) -> str:
         """
@@ -255,8 +362,8 @@ class KnowledgeExtractor:
         for relationship in relationships:
             edge = {
                 "id": relationship.id,
-                "source": relationship.source_entity.id,
-                "target": relationship.target_entity.id,
+                "source": relationship.source.id if hasattr(relationship, 'source') else relationship.source_entity.id,
+                "target": relationship.target.id if hasattr(relationship, 'target') else relationship.target_entity.id,
                 "label": relationship.relation_type,
                 "confidence": relationship.confidence,
                 "properties": relationship.metadata
@@ -267,6 +374,62 @@ class KnowledgeExtractor:
         knowledge_graph = {
             "nodes": nodes,
             "edges": edges
+        }
+        
+        logger.info(f"Created knowledge graph with {len(nodes)} nodes and {len(edges)} edges")
+        
+        return knowledge_graph
+        
+    def _create_knowledge_graph(self, entities: List[Entity], 
+                              relationships: List[Relationship],
+                              doc_id: str) -> Dict[str, Any]:
+        """
+        Create a knowledge graph from entities and relationships with document ID.
+        
+        Args:
+            entities: List of entities
+            relationships: List of relationships
+            doc_id: Document ID
+            
+        Returns:
+            Dictionary representing the knowledge graph
+        """
+        import datetime
+        
+        # Create nodes dictionary
+        nodes = {}
+        for entity in entities:
+            nodes[entity.id] = {
+                "id": entity.id,
+                "text": entity.text,
+                "type": entity.type.value,
+                "confidence": entity.confidence,
+                "metadata": entity.metadata
+            }
+        
+        # Create edges dictionary
+        edges = {}
+        for relationship in relationships:
+            source_id = relationship.source.id if hasattr(relationship, 'source') else relationship.source_entity.id
+            target_id = relationship.target.id if hasattr(relationship, 'target') else relationship.target_entity.id
+            
+            edges[relationship.id] = {
+                "id": relationship.id,
+                "source": source_id,
+                "target": target_id,
+                "type": relationship.relation_type.value,
+                "confidence": relationship.confidence,
+                "metadata": relationship.metadata
+            }
+        
+        # Create knowledge graph
+        knowledge_graph = {
+            "nodes": nodes,
+            "edges": edges,
+            "metadata": {
+                "document_id": doc_id,
+                "created_at": datetime.datetime.now().isoformat()
+            }
         }
         
         logger.info(f"Created knowledge graph with {len(nodes)} nodes and {len(edges)} edges")
@@ -414,3 +577,144 @@ class KnowledgeExtractor:
         logger.info(f"Processed {len(results)} documents")
         
         return results
+        
+    def save_extraction_results(self, temp_dir, doc_id):
+        """
+        Save extraction results to files.
+        
+        Args:
+            temp_dir: Directory to save results
+            doc_id: Document ID
+            
+        Returns:
+            Path to the output directory
+        """
+        output_dir = os.path.join(temp_dir, f"{doc_id}")
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Save entities
+        entity_file = os.path.join(output_dir, "entities.json")
+        with open(entity_file, 'w') as f:
+            json.dump([e.to_dict() for e in self.entities[doc_id]], f, indent=2)
+        
+        # Save relationships
+        relationship_file = os.path.join(output_dir, "relationships.json")
+        with open(relationship_file, 'w') as f:
+            json.dump([r.to_dict() for r in self.relationships[doc_id]], f, indent=2)
+        
+        # Save knowledge graph
+        graph_file = os.path.join(output_dir, "knowledge_graph.json")
+        with open(graph_file, 'w') as f:
+            json.dump(self.knowledge_graph[doc_id], f, indent=2)
+        
+        # Save stats
+        stats_file = os.path.join(temp_dir, "extraction_statistics.json")
+        with open(stats_file, 'w') as f:
+            json.dump(self.get_extraction_statistics(), f, indent=2)
+        
+        return output_dir
+        
+    def get_extraction_statistics(self) -> Dict[str, Any]:
+        """
+        Get statistics about extracted entities and relationships.
+        
+        Returns:
+            Dictionary containing statistics
+        """
+        # Document statistics
+        document_count = len(self.documents)
+        
+        # Entity statistics
+        all_entities = []
+        for doc_entities in self.entities.values():
+            all_entities.extend(doc_entities)
+        
+        entity_count = len(all_entities)
+        entity_by_type = self._get_entity_type_statistics(all_entities)
+        
+        # Calculate average confidence
+        if entity_count > 0:
+            avg_entity_confidence = sum(e.confidence for e in all_entities) / entity_count
+        else:
+            avg_entity_confidence = 0.0
+        
+        # Relationship statistics
+        all_relationships = []
+        for doc_relationships in self.relationships.values():
+            all_relationships.extend(doc_relationships)
+        
+        relationship_count = len(all_relationships)
+        relationship_by_type = self._get_relationship_type_statistics(all_relationships)
+        
+        # Calculate average confidence
+        if relationship_count > 0:
+            avg_relationship_confidence = sum(r.confidence for r in all_relationships) / relationship_count
+        else:
+            avg_relationship_confidence = 0.0
+        
+        # Knowledge graph statistics
+        total_nodes = sum(len(g["nodes"]) for g in self.knowledge_graph.values())
+        total_edges = sum(len(g["edges"]) for g in self.knowledge_graph.values())
+        
+        # Build the statistics dictionary
+        statistics = {
+            "documents": {
+                "count": document_count
+            },
+            "entities": {
+                "count": entity_count,
+                "by_type": entity_by_type,
+                "avg_confidence": avg_entity_confidence
+            },
+            "relationships": {
+                "count": relationship_count,
+                "by_type": relationship_by_type,
+                "avg_confidence": avg_relationship_confidence
+            },
+            "knowledge_graph": {
+                "total_nodes": total_nodes,
+                "total_edges": total_edges
+            }
+        }
+        
+        return statistics
+        
+    def _get_entity_type_statistics(self, entities: List[Entity]) -> Dict[str, int]:
+        """
+        Calculate entity counts by type.
+        
+        Args:
+            entities: List of entities
+            
+        Returns:
+            Dictionary mapping entity types to counts
+        """
+        type_counts = {}
+        
+        for entity in entities:
+            type_value = entity.type.value
+            if type_value not in type_counts:
+                type_counts[type_value] = 0
+            type_counts[type_value] += 1
+        
+        return type_counts
+        
+    def _get_relationship_type_statistics(self, relationships: List[Relationship]) -> Dict[str, int]:
+        """
+        Calculate relationship counts by type.
+        
+        Args:
+            relationships: List of relationships
+            
+        Returns:
+            Dictionary mapping relationship types to counts
+        """
+        type_counts = {}
+        
+        for relationship in relationships:
+            type_value = relationship.relation_type.value
+            if type_value not in type_counts:
+                type_counts[type_value] = 0
+            type_counts[type_value] += 1
+        
+        return type_counts

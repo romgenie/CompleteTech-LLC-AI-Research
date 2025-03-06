@@ -8,10 +8,10 @@ components, including mock objects and sample data structures.
 import pytest
 from unittest.mock import MagicMock
 
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
-from src.research_orchestrator.knowledge_extraction.entity_recognition.base_recognizer import EntityRecognizer
-from src.research_orchestrator.knowledge_extraction.document_processing.document_processor import Document
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
+from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
+from research_orchestrator.knowledge_extraction.entity_recognition.base_recognizer import EntityRecognizer
+from research_orchestrator.knowledge_extraction.document_processing.document_processor import Document
 
 
 @pytest.fixture

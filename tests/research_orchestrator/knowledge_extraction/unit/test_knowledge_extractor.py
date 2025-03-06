@@ -19,10 +19,10 @@ import json
 import tempfile
 from unittest.mock import MagicMock, patch
 
-from src.research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
-from src.research_orchestrator.knowledge_extraction.document_processing.document_processor import Document
+from research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
+from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
+from research_orchestrator.knowledge_extraction.document_processing.document_processor import Document
 
 
 class TestKnowledgeExtractor:
@@ -434,9 +434,9 @@ class TestKnowledgeExtractor:
         
         # Check that the statistics have the correct structure
         assert EntityType.MODEL.value in type_stats
-        assert EntityType.ORGANIZATION.value in type_stats
+        assert EntityType.INSTITUTION.value in type_stats
         assert EntityType.ARCHITECTURE.value in type_stats
-        assert EntityType.BENCHMARK.value in type_stats
+        assert EntityType.DATASET.value in type_stats  # In the fixture, MMLU is marked as DATASET
         
         # Check the counts
         model_count = len([e for e in sample_unit_entities if e.type == EntityType.MODEL])
