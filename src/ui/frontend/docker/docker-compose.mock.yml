@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # Frontend React application in development mode
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/development.Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8001
+      - REACT_APP_WEBSOCKET_URL=ws://localhost:8001/ws
+      - DANGEROUSLY_DISABLE_HOST_CHECK=true
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ../:/app
+      - /app/node_modules
+    depends_on:
+      - mock-api
+    stdin_open: true
+    tty: true
+
+  # Mock API server
+  mock-api:
+    build:
+      context: ./development-mock
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./development-mock:/app
+      - ./development-mock/node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: >
+      sh -c "npm install && node api.js"
