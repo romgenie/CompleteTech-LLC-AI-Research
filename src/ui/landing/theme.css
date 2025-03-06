@@ -1,0 +1,182 @@
+/**
+ * AI Research Integration Platform Theme
+ * This file contains the core theme styles for the platform
+ */
+
+:root {
+  /* Primary Colors */
+  --primary-color: #4a6fa5;
+  --secondary-color: #5c946e;
+  --accent-color: #ad5b82;
+  
+  /* Neutral Colors */
+  --light-bg: #f8f9fa;
+  --dark-bg: #212529;
+  --text-color: #333;
+  --light-text: #f8f9fa;
+  
+  /* Gradients */
+  --primary-gradient: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  --secondary-gradient: linear-gradient(135deg, var(--primary-color), #3a5a8f);
+  --accent-gradient: linear-gradient(135deg, var(--accent-color), #96466d);
+  
+  /* Typography */
+  --heading-font-weight: 800;
+  --body-line-height: 1.6;
+  
+  /* Spacing */
+  --section-padding-desktop: 6rem;
+  --section-padding-mobile: 3rem;
+  
+  /* Shadows */
+  --card-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  --card-shadow-hover: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  
+  /* Border Radius */
+  --border-radius-sm: 0.25rem;
+  --border-radius-md: 0.375rem;
+  --border-radius-lg: 0.5rem;
+  
+  /* Transitions */
+  --transition-speed: 0.3s;
+}
+
+/* Typography */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: var(--text-color);
+  line-height: var(--body-line-height);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--heading-font-weight);
+  line-height: 1.2;
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background-color: #3c5d8a;
+  border-color: #3c5d8a;
+}
+
+.btn-accent {
+  background-color: var(--accent-color);
+  border-color: var(--accent-color);
+  color: var(--light-text);
+}
+
+.btn-accent:hover, .btn-accent:focus {
+  background-color: #96466d;
+  border-color: #96466d;
+  color: var(--light-text);
+}
+
+.btn-outline-primary {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary-color);
+}
+
+/* Hero Section */
+.hero {
+  background: var(--primary-gradient);
+  color: white;
+  padding: var(--section-padding-desktop) 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero h1 {
+  font-weight: var(--heading-font-weight);
+  font-size: 3.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.hero p {
+  font-size: 1.25rem;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+}
+
+/* Feature Icons */
+.feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+  color: #fff;
+  border-radius: var(--border-radius-md);
+}
+
+.bg-gradient-primary {
+  background: var(--secondary-gradient);
+}
+
+.bg-gradient-secondary {
+  background: linear-gradient(135deg, var(--secondary-color), #467857);
+}
+
+.bg-gradient-accent {
+  background: var(--accent-gradient);
+}
+
+/* API Cards */
+.api-section {
+  background-color: var(--light-bg);
+}
+
+.api-card {
+  height: 100%;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--card-shadow);
+  transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+}
+
+.api-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* Footer */
+.footer {
+  background-color: var(--dark-bg);
+  color: var(--light-text);
+}
+
+/* Code elements */
+code {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: var(--border-radius-sm);
+  padding: 0.2rem 0.4rem;
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875em;
+  white-space: nowrap;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+  .hero {
+    padding: var(--section-padding-mobile) 0;
+  }
+  
+  .hero h1 {
+    font-size: 2.5rem;
+  }
+  
+  .feature-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    font-size: 1.75rem;
+  }
+}
