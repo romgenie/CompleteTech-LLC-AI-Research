@@ -322,3 +322,30 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Closing Thoughts
+
+*Written by the Author*
+
+This project represents a unique experiment, as it is the only section manually crafted—including the cost estimates. At the time of writing, costs are approximately **$400–$500 USD**, with over **$100 USD** spent on testing. The UI is still evolving, and I might eventually switch tools for its development. Notably, Claude has encountered some challenges—perhaps due to the project's size or complexity.
+
+### Key Insights and Best Practices
+
+- **Tool-Driven Development:**  
+  I challenged Claude to build tools that accomplish specific tasks. This approach not only saves tokens but also lays the groundwork for building even better, layered tools that optimize token usage further.
+
+- **Command Caching:**  
+  A useful trick is to instruct Claude to perform tasks without re-reading the file each time, provided the instructions are cached. For example:
+
+  ```Complete [TASK OF CHOICE] adhere to [FILENAME.md]```
+
+- **Token Efficiency:**  
+  Utilizing token caching from Anthropic proved to be one of the most effective strategies, significantly reducing the project's overall cost.
+
+### Project Reflection
+
+This has been a fun and insightful project where I engaged primarily in prompt engineering rather than traditional coding. Iteratively refining my prompts allowed me to push the boundaries of what Claude can achieve, demonstrating a powerful, efficient workflow.
+
+## Future Projects
+
+I want to do another project at a larger scale, with more agents, increased funding, improved cost and task tracking, and a more rigorous scientific method. Additionally, I plan to document the entire process and make it public. I'm looking for help from the community on practical ideas that could have real-world use cases.
