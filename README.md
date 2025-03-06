@@ -213,7 +213,7 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 
 ## Inspiration Sources
 
-This project draws inspiration from four specialized AI agent frameworks housed in our external repository:
+This project draws inspiration from five specialized AI agent frameworks:
 
 ### 1. [AutoCodeAgent2.0](https://github.com/romgenie/AutoCodeAgent2.0)
 A dual-mode AI agent framework with IntelliChain for code generation and Deep Search for autonomous web research. Our implementation planning system leverages AutoCodeAgent2.0's task decomposition, code validation, and execution workflow, while our research generation system adopts its multi-agent collaborative chain for research synthesis.
@@ -226,6 +226,9 @@ A graph-based multi-agent system supporting various topologies for agent communi
 
 ### 4. [KARMA](https://github.com/romgenie/KARMA)
 A framework for automated knowledge graph enrichment using specialized LLM agents to extract scientific knowledge. Our knowledge extraction pipeline adopts KARMA's multi-dimensional scoring system for evaluating extracted information, and its approach to handling document processing and conflict resolution.
+
+### 5. [AgentLaboratory](https://github.com/SamuelSchmidgall/AgentLaboratory)
+An experimental platform for designing, testing, and benchmarking multi-agent systems in controlled environments. Our testing framework and agent evaluation metrics were influenced by AgentLaboratory's approach to systematic performance assessment and behavior analysis. Its agent interaction protocols informed our collaboration features for research teams.
 
 ## Acknowledgements
 
