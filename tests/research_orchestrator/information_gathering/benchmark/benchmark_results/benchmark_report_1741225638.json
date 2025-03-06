@@ -1,0 +1,21 @@
+{
+  "timestamp": "2025-03-05T20:47:18.503812",
+  "quick_mode": true,
+  "components": {
+    "search": {
+      "success": false,
+      "runtime": 0.41472792625427246,
+      "timings": {}
+    },
+    "source": {
+      "success": false,
+      "runtime": 0.2823958396911621,
+      "timings": {}
+    },
+    "quality": {
+      "success": false,
+      "runtime": 0.2745959758758545,
+      "timings": {}
+    }
+  }
+}

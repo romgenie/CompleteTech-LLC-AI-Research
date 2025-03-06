@@ -1,0 +1,219 @@
+---
+name: Information Gathering Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/research_orchestrator/information_gathering/**'
+      - 'tests/research_orchestrator/information_gathering/**'
+      - '.github/workflows/information_gathering_tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/research_orchestrator/information_gathering/**'
+      - 'tests/research_orchestrator/information_gathering/**'
+      - '.github/workflows/information_gathering_tests.yml'
+  workflow_dispatch: true  # Allow manual triggering
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pytest-html hypothesis
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -e .
+      
+      - name: Run unit tests
+        run: |
+          cd tests/research_orchestrator/information_gathering
+          python -m pytest unit/ -v \
+            --cov=src.research_orchestrator.information_gathering
+      
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit-test-coverage
+          path: tests/research_orchestrator/information_gathering/.coverage
+  
+  property-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pytest-html hypothesis
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -e .
+      
+      - name: Run property-based tests
+        run: |
+          cd tests/research_orchestrator/information_gathering
+          python -m pytest property/ -v
+  
+  edge-case-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pytest-html hypothesis
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -e .
+      
+      - name: Run edge case tests
+        run: |
+          cd tests/research_orchestrator/information_gathering
+          python -m pytest edge_cases/ -v
+  
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [unit-tests, property-tests, edge-case-tests]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pytest-html hypothesis
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -e .
+      
+      - name: Run integration tests
+        run: |
+          cd tests/research_orchestrator/information_gathering
+          python -m pytest integration/ -v
+  
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [integration-tests]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pytest-html hypothesis
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -e .
+      
+      - name: Run end-to-end tests
+        run: |
+          cd tests/research_orchestrator/information_gathering
+          python -m pytest e2e/ -v
+  
+  benchmark-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Only run on main branch or manual trigger
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-html hypothesis psutil numpy matplotlib
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -e .
+      
+      - name: Run benchmark tests
+        run: |
+          cd tests/research_orchestrator/information_gathering
+          python -m benchmark.run_benchmarks --quick
+      
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results
+          path: tests/research_orchestrator/information_gathering/benchmark_results/
+  
+  test-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - unit-tests
+      - property-tests
+      - edge-case-tests
+      - integration-tests
+      - e2e-tests
+    # Always run this job, even if tests fail
+    if: always()
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov pytest-html
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -e .
+      
+      - name: Generate comprehensive test report
+        run: |
+          cd tests/research_orchestrator/information_gathering
+          # Run all tests with HTML report
+          python -m pytest --html=test-report.html --self-contained-html
+      
+      - name: Upload test report
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-report
+          path: >-
+            tests/research_orchestrator/information_gathering/test-report.html

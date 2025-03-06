@@ -1,0 +1,102 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Information Gathering Benchmark Report</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+            h1, h2, h3 { color: #333; }
+            table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            .success { color: green; }
+            .failure { color: red; }
+            .component { margin-bottom: 30px; }
+            .summary { margin-bottom: 30px; }
+            .chart-container { height: 300px; margin-bottom: 30px; }
+        </style>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+    <body>
+        <h1>Information Gathering Benchmark Report</h1>
+        <p>Generated: 2025-03-05T20:47:18.503812</p>
+        <p>Quick mode: Yes</p>
+        
+        <div class="summary">
+            <h2>Summary</h2>
+            <table>
+                <tr>
+                    <th>Component</th>
+                    <th>Status</th>
+                    <th>Runtime (s)</th>
+                    <th>Tests</th>
+                </tr>
+    
+                <tr>
+                    <td>search</td>
+                    <td class="failure">Failure</td>
+                    <td>0.41</td>
+                    <td>0</td>
+                </tr>
+        
+                <tr>
+                    <td>source</td>
+                    <td class="failure">Failure</td>
+                    <td>0.28</td>
+                    <td>0</td>
+                </tr>
+        
+                <tr>
+                    <td>quality</td>
+                    <td class="failure">Failure</td>
+                    <td>0.27</td>
+                    <td>0</td>
+                </tr>
+        
+            </table>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="runtimeChart"></canvas>
+        </div>
+    
+        <script>
+            // Runtime chart
+            const runtimeCtx = document.getElementById('runtimeChart').getContext('2d');
+            const runtimeChart = new Chart(runtimeCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['search', 'source', 'quality'],
+                    datasets: [{
+                        label: 'Runtime (s)',
+                        data: [0.41, 0.28, 0.27],
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Time (seconds)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Component'
+                            }
+                        }
+                    }
+                }
+            });
+        </script>
+    </body>
+    </html>
+    
