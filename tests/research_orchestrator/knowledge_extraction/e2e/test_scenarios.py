@@ -23,8 +23,8 @@ import json
 import tempfile
 from unittest.mock import patch
 
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import EntityType
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import RelationType
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import EntityType
+from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import RelationType
 
 
 def test_research_paper_extraction(e2e_document_directory, e2e_output_directory, advanced_knowledge_extractor):
@@ -47,7 +47,7 @@ def test_research_paper_extraction(e2e_document_directory, e2e_output_directory,
     entity_types = {e.type for e in entities}
     expected_entity_types = {
         EntityType.MODEL,
-        EntityType.ORGANIZATION,
+        EntityType.INSTITUTION,
         EntityType.BENCHMARK,
         EntityType.ARCHITECTURE,
         EntityType.FRAMEWORK
@@ -98,7 +98,7 @@ def test_research_paper_extraction(e2e_document_directory, e2e_output_directory,
             "relationship_types": [str(t) for t in relationship_types],
             "models": [e.text for e in entities if e.type == EntityType.MODEL],
             "benchmarks": [e.text for e in entities if e.type == EntityType.BENCHMARK],
-            "organizations": [e.text for e in entities if e.type == EntityType.ORGANIZATION]
+            "organizations": [e.text for e in entities if e.type == EntityType.INSTITUTION]
         }, f, indent=2)
 
 
@@ -120,7 +120,7 @@ def test_technical_blog_extraction(e2e_document_directory, e2e_output_directory,
     # Check for specific entities we expect to find in a technical blog
     model_entities = [e for e in entities if e.type == EntityType.MODEL]
     framework_entities = [e for e in entities if e.type == EntityType.FRAMEWORK]
-    organization_entities = [e for e in entities if e.type == EntityType.ORGANIZATION]
+    organization_entities = [e for e in entities if e.type == EntityType.INSTITUTION]
     
     # We should find some models
     assert len(model_entities) > 0, "No model entities found in blog post"

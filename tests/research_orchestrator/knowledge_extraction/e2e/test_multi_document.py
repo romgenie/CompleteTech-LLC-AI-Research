@@ -20,8 +20,8 @@ import json
 import tempfile
 from unittest.mock import patch
 
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import EntityType
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import RelationType
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import EntityType
+from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import RelationType
 
 
 def test_cross_document_entity_references(e2e_document_directory, e2e_output_directory, real_knowledge_extractor):
@@ -220,9 +220,9 @@ def test_relationship_consistency_across_documents(e2e_document_directory, advan
     
     # Collect (model, organization) pairs from each document
     paper_pairs = [(r.source.text.lower(), r.target.text.lower()) for r in paper_developed_by 
-                  if r.source.type == EntityType.MODEL and r.target.type == EntityType.ORGANIZATION]
+                  if r.source.type == EntityType.MODEL and r.target.type == EntityType.INSTITUTION]
     article_pairs = [(r.source.text.lower(), r.target.text.lower()) for r in article_developed_by 
-                    if r.source.type == EntityType.MODEL and r.target.type == EntityType.ORGANIZATION]
+                    if r.source.type == EntityType.MODEL and r.target.type == EntityType.INSTITUTION]
     
     # Check for consistency in relationships
     # Here we're looking for the same (model, organization) pair in both documents

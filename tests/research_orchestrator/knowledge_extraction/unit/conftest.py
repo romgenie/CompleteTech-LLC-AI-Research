@@ -43,7 +43,7 @@ def mock_relationship_extractor():
     extractor.extract_relationships.return_value = [
         Relationship(
             source=Entity(text="GPT-4", type=EntityType.MODEL, confidence=0.95, start_pos=10, end_pos=15, id="e1"),
-            target=Entity(text="OpenAI", type=EntityType.ORGANIZATION, confidence=0.9, start_pos=30, end_pos=36, id="e3"),
+            target=Entity(text="OpenAI", type=EntityType.INSTITUTION, confidence=0.9, start_pos=30, end_pos=36, id="e3"),
             relation_type=RelationType.DEVELOPED_BY,
             confidence=0.85,
             context="GPT-4 was developed by OpenAI",
@@ -58,9 +58,9 @@ def sample_unit_entities():
     """Return a list of sample entities for unit testing."""
     return [
         Entity(text="GPT-4", type=EntityType.MODEL, confidence=0.95, start_pos=0, end_pos=5, id="e1"),
-        Entity(text="OpenAI", type=EntityType.ORGANIZATION, confidence=0.9, start_pos=30, end_pos=36, id="e2"),
+        Entity(text="OpenAI", type=EntityType.INSTITUTION, confidence=0.9, start_pos=30, end_pos=36, id="e2"),
         Entity(text="transformer", type=EntityType.ARCHITECTURE, confidence=0.85, start_pos=45, end_pos=56, id="e3"),
-        Entity(text="MMLU", type=EntityType.BENCHMARK, confidence=0.8, start_pos=70, end_pos=74, id="e4")
+        Entity(text="MMLU", type=EntityType.DATASET, confidence=0.8, start_pos=70, end_pos=74, id="e4")
     ]
 
 

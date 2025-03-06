@@ -22,8 +22,8 @@ import json
 import tempfile
 from unittest.mock import patch
 
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import EntityType
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import RelationType
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import EntityType
+from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import RelationType
 
 
 def test_full_extraction_pipeline_text(e2e_document_directory, e2e_output_directory, real_knowledge_extractor):

@@ -17,9 +17,10 @@ import os
 import tempfile
 from unittest.mock import MagicMock, patch
 
-from src.research_orchestrator.knowledge_extraction.document_processing.document_processor import (
-    DocumentProcessor, Document, TextProcessor
+from research_orchestrator.knowledge_extraction.document_processing.document_processor import (
+    DocumentProcessor, Document
 )
+from research_orchestrator.knowledge_extraction.document_processing.text_processor import TextProcessor
 
 
 class TestDocument:
@@ -126,7 +127,7 @@ class TestDocumentProcessor:
         processor = DocumentProcessor(config=config)
         assert processor.config == config
     
-    @patch("src.research_orchestrator.knowledge_extraction.document_processing.document_processor.TextProcessor")
+    @patch("research_orchestrator.knowledge_extraction.document_processing.document_processor.text_processor.TextProcessor")
     def test_process_text_document(self, mock_text_processor):
         """Test processing a text document."""
         # Set up the mock
@@ -149,7 +150,7 @@ class TestDocumentProcessor:
         assert result.content == "Processed content"
         assert result.document_type == "text"
     
-    @patch("src.research_orchestrator.knowledge_extraction.document_processing.document_processor.HTMLProcessor")
+    @patch("research_orchestrator.knowledge_extraction.document_processing.document_processor.html_processor.HTMLProcessor")
     def test_process_html_document(self, mock_html_processor):
         """Test processing an HTML document."""
         # Set up the mock
@@ -172,7 +173,7 @@ class TestDocumentProcessor:
         assert result.content == "Processed HTML content"
         assert result.document_type == "html"
     
-    @patch("src.research_orchestrator.knowledge_extraction.document_processing.document_processor.PDFProcessor")
+    @patch("research_orchestrator.knowledge_extraction.document_processing.document_processor.pdf_processor.PDFProcessor")
     def test_process_pdf_document(self, mock_pdf_processor):
         """Test processing a PDF document."""
         # Set up the mock
@@ -207,7 +208,7 @@ class TestDocumentProcessor:
         # Should default to text processing
         assert result.document_type == "text"
     
-    @patch("src.research_orchestrator.knowledge_extraction.document_processing.document_processor.TextProcessor")
+    @patch("research_orchestrator.knowledge_extraction.document_processing.document_processor.text_processor.TextProcessor")
     def test_process_text_content(self, mock_text_processor):
         """Test processing text content directly."""
         # Set up the mock

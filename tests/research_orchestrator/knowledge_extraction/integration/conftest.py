@@ -10,11 +10,11 @@ import tempfile
 import os
 import shutil
 
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
-from src.research_orchestrator.knowledge_extraction.document_processing.document_processor import DocumentProcessor
-from src.research_orchestrator.knowledge_extraction.entity_recognition.factory import EntityRecognizerFactory
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.factory import RelationshipExtractorFactory
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
+from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
+from research_orchestrator.knowledge_extraction.document_processing.document_processor import DocumentProcessor
+from research_orchestrator.knowledge_extraction.entity_recognition.factory import EntityRecognizerFactory
+from research_orchestrator.knowledge_extraction.relationship_extraction.factory import RelationshipExtractorFactory
 
 
 @pytest.fixture
@@ -55,11 +55,11 @@ def integration_test_data():
         ),
         "expected_entities": [
             {"text": "GPT-4", "type": EntityType.MODEL},
-            {"text": "OpenAI", "type": EntityType.ORGANIZATION},
+            {"text": "OpenAI", "type": EntityType.INSTITUTION},
             {"text": "GPT-3.5", "type": EntityType.MODEL},
             {"text": "MMLU", "type": EntityType.BENCHMARK},
             {"text": "BERT", "type": EntityType.MODEL},
-            {"text": "Google", "type": EntityType.ORGANIZATION},
+            {"text": "Google", "type": EntityType.INSTITUTION},
             {"text": "PyTorch", "type": EntityType.FRAMEWORK},
             {"text": "TensorFlow", "type": EntityType.FRAMEWORK}
         ],

@@ -17,13 +17,13 @@ pytestmark = [
 ]
 from unittest.mock import MagicMock, patch
 
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.base_extractor import RelationshipExtractor
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.pattern_extractor import PatternRelationshipExtractor
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.ai_extractor import AIRelationshipExtractor
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.combined_extractor import CombinedRelationshipExtractor
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.factory import RelationshipExtractorFactory
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
+from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
+from research_orchestrator.knowledge_extraction.relationship_extraction.base_extractor import RelationshipExtractor
+from research_orchestrator.knowledge_extraction.relationship_extraction.pattern_extractor import PatternRelationshipExtractor
+from research_orchestrator.knowledge_extraction.relationship_extraction.ai_extractor import AIRelationshipExtractor
+from research_orchestrator.knowledge_extraction.relationship_extraction.combined_extractor import CombinedRelationshipExtractor
+from research_orchestrator.knowledge_extraction.relationship_extraction.factory import RelationshipExtractorFactory
 
 
 class TestRelationship:
@@ -32,7 +32,7 @@ class TestRelationship:
     def test_relationship_creation(self):
         """Test creating a Relationship with proper attributes."""
         source = Entity(text="BERT", type=EntityType.MODEL, confidence=0.95, start_pos=10, end_pos=14, id="e1")
-        target = Entity(text="Google", type=EntityType.ORGANIZATION, confidence=0.9, start_pos=30, end_pos=36, id="e2")
+        target = Entity(text="Google", type=EntityType.INSTITUTION, confidence=0.9, start_pos=30, end_pos=36, id="e2")
         
         relationship = Relationship(
             source=source,
@@ -55,7 +55,7 @@ class TestRelationship:
     def test_relationship_to_dict(self):
         """Test conversion of Relationship to dictionary."""
         source = Entity(text="BERT", type=EntityType.MODEL, confidence=0.95, start_pos=10, end_pos=14, id="e1")
-        target = Entity(text="Google", type=EntityType.ORGANIZATION, confidence=0.9, start_pos=30, end_pos=36, id="e2")
+        target = Entity(text="Google", type=EntityType.INSTITUTION, confidence=0.9, start_pos=30, end_pos=36, id="e2")
         
         relationship = Relationship(
             source=source,
@@ -118,7 +118,7 @@ class TestRelationship:
     def test_relationship_str_representation(self):
         """Test string representation of Relationship."""
         source = Entity(text="BERT", type=EntityType.MODEL, confidence=0.95, start_pos=10, end_pos=14, id="e1")
-        target = Entity(text="Google", type=EntityType.ORGANIZATION, confidence=0.9, start_pos=30, end_pos=36, id="e2")
+        target = Entity(text="Google", type=EntityType.INSTITUTION, confidence=0.9, start_pos=30, end_pos=36, id="e2")
         
         relationship = Relationship(
             source=source,
@@ -133,7 +133,7 @@ class TestRelationship:
         
         assert "BERT" in relationship_str
         assert "Google" in relationship_str
-        assert "developed_by" in relationship_str
+        assert "DEVELOPED_BY" in relationship_str or "<RelationType.DEVELOPED_BY" in relationship_str
         assert "0.85" in relationship_str
 
 
@@ -159,7 +159,7 @@ class TestRelationshipExtractor:
         
         # Create test entities
         source = Entity(text="BERT", type=EntityType.MODEL, confidence=0.95, start_pos=10, end_pos=14, id="e1")
-        target = Entity(text="Google", type=EntityType.ORGANIZATION, confidence=0.9, start_pos=30, end_pos=36, id="e2")
+        target = Entity(text="Google", type=EntityType.INSTITUTION, confidence=0.9, start_pos=30, end_pos=36, id="e2")
         
         # Create test text
         text = "The BERT model was developed by Google AI researchers."
@@ -185,9 +185,9 @@ class TestRelationshipExtractor:
         # Create test entities
         entities = [
             Entity(text="BERT", type=EntityType.MODEL, confidence=0.95, start_pos=10, end_pos=14, id="e1"),
-            Entity(text="Google", type=EntityType.ORGANIZATION, confidence=0.9, start_pos=30, end_pos=36, id="e2"),
+            Entity(text="Google", type=EntityType.INSTITUTION, confidence=0.9, start_pos=30, end_pos=36, id="e2"),
             Entity(text="GPT-3", type=EntityType.MODEL, confidence=0.95, start_pos=100, end_pos=105, id="e3"),
-            Entity(text="OpenAI", type=EntityType.ORGANIZATION, confidence=0.9, start_pos=200, end_pos=206, id="e4")
+            Entity(text="OpenAI", type=EntityType.INSTITUTION, confidence=0.9, start_pos=200, end_pos=206, id="e4")
         ]
         
         # Find pairs with max distance of 50
@@ -225,9 +225,9 @@ class TestRelationshipExtractor:
         
         # Create test entities
         source1 = Entity(text="BERT", type=EntityType.MODEL, confidence=0.95, start_pos=10, end_pos=14, id="e1")
-        target1 = Entity(text="Google", type=EntityType.ORGANIZATION, confidence=0.9, start_pos=30, end_pos=36, id="e2")
+        target1 = Entity(text="Google", type=EntityType.INSTITUTION, confidence=0.9, start_pos=30, end_pos=36, id="e2")
         source2 = Entity(text="GPT-3", type=EntityType.MODEL, confidence=0.95, start_pos=100, end_pos=105, id="e3")
-        target2 = Entity(text="OpenAI", type=EntityType.ORGANIZATION, confidence=0.9, start_pos=200, end_pos=206, id="e4")
+        target2 = Entity(text="OpenAI", type=EntityType.INSTITUTION, confidence=0.9, start_pos=200, end_pos=206, id="e4")
         
         # Create test relationships
         relationships = [
@@ -536,9 +536,10 @@ class TestRelationshipExtractorFactory:
         extractor = RelationshipExtractorFactory.create_extractor("pattern", config)
         assert isinstance(extractor, PatternRelationshipExtractor)
         
-        # Check if the custom patterns were loaded
-        if hasattr(extractor, "custom_patterns"):
-            assert "DEVELOPED_BY" in extractor.custom_patterns
+        # Check if the patterns were loaded by checking the patterns dictionary
+        assert RelationType.DEVELOPED_BY in extractor.patterns
+        # At least one pattern should be compiled for DEVELOPED_BY
+        assert len(extractor.patterns[RelationType.DEVELOPED_BY]) > 0
     
     def test_create_invalid_extractor(self):
         """Test creating an invalid relationship extractor."""

@@ -12,18 +12,18 @@ import shutil
 import os
 from unittest.mock import MagicMock, patch
 
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
-from src.research_orchestrator.knowledge_extraction.entity_recognition.base_recognizer import EntityRecognizer
-from src.research_orchestrator.knowledge_extraction.entity_recognition.ai_recognizer import AIEntityRecognizer
-from src.research_orchestrator.knowledge_extraction.entity_recognition.scientific_recognizer import ScientificEntityRecognizer
-from src.research_orchestrator.knowledge_extraction.entity_recognition.factory import EntityRecognizerFactory
-from src.research_orchestrator.knowledge_extraction.document_processing.document_processor import Document, DocumentProcessor
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.base_extractor import RelationshipExtractor
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.pattern_extractor import PatternRelationshipExtractor
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.ai_extractor import AIRelationshipExtractor
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.factory import RelationshipExtractorFactory
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.combined_extractor import CombinedRelationshipExtractor
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
+from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
+from research_orchestrator.knowledge_extraction.entity_recognition.base_recognizer import EntityRecognizer
+from research_orchestrator.knowledge_extraction.entity_recognition.ai_recognizer import AIEntityRecognizer
+from research_orchestrator.knowledge_extraction.entity_recognition.scientific_recognizer import ScientificEntityRecognizer
+from research_orchestrator.knowledge_extraction.entity_recognition.factory import EntityRecognizerFactory
+from research_orchestrator.knowledge_extraction.document_processing.document_processor import Document, DocumentProcessor
+from research_orchestrator.knowledge_extraction.relationship_extraction.base_extractor import RelationshipExtractor
+from research_orchestrator.knowledge_extraction.relationship_extraction.pattern_extractor import PatternRelationshipExtractor
+from research_orchestrator.knowledge_extraction.relationship_extraction.ai_extractor import AIRelationshipExtractor
+from research_orchestrator.knowledge_extraction.relationship_extraction.factory import RelationshipExtractorFactory
+from research_orchestrator.knowledge_extraction.relationship_extraction.combined_extractor import CombinedRelationshipExtractor
 
 
 @pytest.fixture
@@ -232,7 +232,7 @@ def integration_fixtures():
         ),
         "test_entities": [
             Entity(text="GPT-4", type=EntityType.MODEL, confidence=0.95, start_pos=0, end_pos=5, id="e1"),
-            Entity(text="OpenAI", type=EntityType.ORGANIZATION, confidence=0.9, start_pos=44, end_pos=50, id="e2"),
+            Entity(text="OpenAI", type=EntityType.INSTITUTION, confidence=0.9, start_pos=44, end_pos=50, id="e2"),
             Entity(text="GPT-3.5", type=EntityType.MODEL, confidence=0.9, start_pos=135, end_pos=142, id="e3"),
             Entity(text="MMLU", type=EntityType.BENCHMARK, confidence=0.85, start_pos=198, end_pos=202, id="e4")
         ],
@@ -249,7 +249,7 @@ def integration_fixtures():
 def knowledge_extractor(mock_document_processor, mock_entity_recognizer_with_entities, 
                        mock_relationship_extractor_with_relationships):
     """Return a KnowledgeExtractor with mock components."""
-    from src.research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
+    from research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
     
     extractor = KnowledgeExtractor(
         document_processor=mock_document_processor,
@@ -262,8 +262,8 @@ def knowledge_extractor(mock_document_processor, mock_entity_recognizer_with_ent
 @pytest.fixture
 def real_knowledge_extractor():
     """Return a KnowledgeExtractor with real components for integration testing."""
-    from src.research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
-    from src.research_orchestrator.knowledge_extraction.document_processing.document_processor import DocumentProcessor
+    from research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
+    from research_orchestrator.knowledge_extraction.document_processing.document_processor import DocumentProcessor
     
     # Create real components
     document_processor = DocumentProcessor()
