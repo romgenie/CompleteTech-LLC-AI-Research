@@ -19,7 +19,7 @@ pytestmark = [
     pytest.mark.medium
 ]
 
-from src.research_orchestrator.knowledge_extraction.document_processing.document_processor import Document, DocumentProcessor, TextProcessor
+from src.research_orchestrator.knowledge_extraction.document_processing.document_processor import Document, DocumentProcessor, SimpleTextProcessor as TextProcessor
 
 
 class TestDocumentProperties:
