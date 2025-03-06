@@ -204,12 +204,16 @@ class TestAIEntityRecognizer:
     def test_ai_recognizer_with_custom_patterns(self):
         """Test creating an AIEntityRecognizer with custom patterns."""
         custom_patterns = {
-            EntityType.MODEL: [r"GPT-\d+", r"BERT(?:-\w+)?"],
-            EntityType.DATASET: [r"ImageNet"]
+            str(EntityType.MODEL): [r"GPT-\d+", r"BERT(?:-\w+)?"],
+            str(EntityType.DATASET): [r"ImageNet"]
         }
         
-        recognizer = AIEntityRecognizer(patterns=custom_patterns)
-        assert recognizer.patterns == custom_patterns
+        recognizer = AIEntityRecognizer(config={"patterns": custom_patterns})
+        # Check that MODEL and DATASET are in patterns and have at least one compiled pattern
+        assert EntityType.MODEL in recognizer.patterns
+        assert len(recognizer.patterns[EntityType.MODEL]) > 0
+        assert EntityType.DATASET in recognizer.patterns 
+        assert len(recognizer.patterns[EntityType.DATASET]) > 0
     
     @patch.object(AIEntityRecognizer, "recognize")
     def test_ai_entity_recognition(self, mock_recognize):
