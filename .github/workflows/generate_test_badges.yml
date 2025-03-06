@@ -16,69 +16,112 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: "${{ github.event.workflow_run.id }}"
-            });
-            
-            const testResults = artifacts.data.artifacts.filter(
-              artifact => artifact.name.startsWith('test-results-')
-            );
-            
-            for (const artifact of testResults) {
-              const download = await github.rest.actions.downloadArtifact({
+            try {
+              console.log("Workflow run ID:", "${{ github.event.workflow_run.id }}");
+              
+              const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                artifact_id: artifact.id,
-                archive_format: 'zip'
+                run_id: "${{ github.event.workflow_run.id }}"
               });
               
-              const fs = require('fs');
-              fs.writeFileSync(`${artifact.name}.zip`, Buffer.from(download.data));
+              console.log("Found artifacts:", artifacts.data.artifacts.length);
               
-              await exec.exec(`unzip -o ${artifact.name}.zip -d ${artifact.name}`);
+              const testResults = artifacts.data.artifacts.filter(
+                artifact => artifact.name.startsWith('test-results-')
+              );
+              
+              console.log("Found test result artifacts:", testResults.length);
+              
+              if (testResults.length === 0) {
+                console.log("No test result artifacts found. Skipping download step.");
+                return;
+              }
+              
+              for (const artifact of testResults) {
+                console.log("Downloading artifact:", artifact.name);
+                
+                const download = await github.rest.actions.downloadArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id,
+                  archive_format: 'zip'
+                });
+                
+                const fs = require('fs');
+                fs.writeFileSync(`${artifact.name}.zip`, Buffer.from(download.data));
+                
+                console.log("Extracting artifact:", artifact.name);
+                await exec.exec(`unzip -o ${artifact.name}.zip -d ${artifact.name}`);
+              }
+            } catch (error) {
+              console.error("Error downloading artifacts:", error);
+              console.log("Continuing with badge generation...");
             }
             
       - name: Generate badges
         run: |
           mkdir -p badges
           
-          # Parse test results to determine status
-          declare -A test_statuses
-          
-          for dir in test-results-*; do
-            if [ -d "$dir" ]; then
-              version=$(echo $dir | cut -d'-' -f3)
-              test_type=$(echo $dir | cut -d'-' -f4)
-              
-              if [ -f "$dir/test-report.html" ]; then
-                if grep -q "0 failed" "$dir/test-report.html"; then
-                  test_statuses["${test_type}-${version}"]="passing"
+          # Check if test results directories exist
+          if ls test-results-* 1> /dev/null 2>&1; then
+            echo "Found test result directories"
+            
+            # Parse test results to determine status
+            declare -A test_statuses
+            
+            for dir in test-results-*; do
+              if [ -d "$dir" ]; then
+                version=$(echo $dir | cut -d'-' -f3)
+                test_type=$(echo $dir | cut -d'-' -f4)
+                
+                if [ -f "$dir/test-report.html" ]; then
+                  if grep -q "0 failed" "$dir/test-report.html"; then
+                    test_statuses["${test_type}-${version}"]="passing"
+                  else
+                    test_statuses["${test_type}-${version}"]="failing"
+                  fi
                 else
-                  test_statuses["${test_type}-${version}"]="failing"
+                  test_statuses["${test_type}-${version}"]="unknown"
                 fi
-              else
-                test_statuses["${test_type}-${version}"]="unknown"
               fi
-            fi
-          done
-          
-          # Generate badges
-          for key in "${!test_statuses[@]}"; do
-            test_type=$(echo $key | cut -d'-' -f1)
-            version=$(echo $key | cut -d'-' -f2)
-            status=${test_statuses[$key]}
+            done
             
-            color="red"
-            if [ "$status" == "passing" ]; then
-              color="brightgreen"
-            elif [ "$status" == "unknown" ]; then
-              color="lightgrey"
+            # Generate badges
+            if [ ${#test_statuses[@]} -eq 0 ]; then
+              echo "No test statuses found, creating placeholder badges"
+              # Create placeholder badges for common test types
+              for test_type in unit integration e2e property edge; do
+                for version in 3.9 3.10; do
+                  curl -o "badges/${test_type}-${version}.svg" "https://img.shields.io/badge/${test_type}%20tests-unknown-lightgrey"
+                done
+              done
+            else
+              echo "Creating badges based on test results"
+              for key in "${!test_statuses[@]}"; do
+                test_type=$(echo $key | cut -d'-' -f1)
+                version=$(echo $key | cut -d'-' -f2)
+                status=${test_statuses[$key]}
+                
+                color="red"
+                if [ "$status" == "passing" ]; then
+                  color="brightgreen"
+                elif [ "$status" == "unknown" ]; then
+                  color="lightgrey"
+                fi
+                
+                curl -o "badges/${test_type}-${version}.svg" "https://img.shields.io/badge/${test_type}%20tests-${status}-${color}"
+              done
             fi
-            
-            curl -o "badges/${test_type}-${version}.svg" "https://img.shields.io/badge/${test_type}%20tests-${status}-${color}"
-          done
+          else
+            echo "No test result directories found, creating placeholder badges"
+            # Create placeholder badges for common test types
+            for test_type in unit integration e2e property edge; do
+              for version in 3.9 3.10; do
+                curl -o "badges/${test_type}-${version}.svg" "https://img.shields.io/badge/${test_type}%20tests-unknown-lightgrey"
+              done
+            done
+          fi
       
       - name: Update README with badges
         run: |
@@ -112,8 +155,18 @@ jobs:
         run: |
           mkdir -p .github/badges
           # Make sure badges directory exists and is not empty before moving files
-          if [ -d "badges" ] && [ "$(ls -A badges)" ]; then
-            mv badges/* .github/badges/
+          if [ -d "badges" ]; then
+            if [ "$(ls -A badges 2>/dev/null)" ]; then
+              mv badges/* .github/badges/
+            else
+              echo "No badge files found to move"
+              # Create a placeholder badge if none exist
+              curl -o ".github/badges/placeholder.svg" "https://img.shields.io/badge/tests-unknown-lightgrey"
+            fi
+          else
+            echo "Badges directory does not exist"
+            # Create a placeholder badge if directory doesn't exist
+            curl -o ".github/badges/placeholder.svg" "https://img.shields.io/badge/tests-unknown-lightgrey"
           fi
           
           git config --local user.email "action@github.com"
