@@ -14,8 +14,8 @@ import {
   Button,
   Snackbar
 } from '@mui/material';
-import { Entity, EntityFilter, Relationship, GraphData, GraphVisualizationOptions } from './types/knowledgeGraph.types';
-import { ModuleDisplayMode } from '../_templates/BaseModule/types/base.types';
+import { Entity, EntityFilter, Relationship, GraphData, GraphVisualizationOptions, EntityType } from './types/knowledgeGraph.types';
+import { ModuleDisplayMode, BaseModuleProps } from '../_templates/BaseModule/types/base.types';
 import { useKnowledgeGraph } from './hooks/useKnowledgeGraph';
 import { EntityList } from './components/EntityList';
 import { EntityCard } from './components/EntityCard';
@@ -24,7 +24,6 @@ import { EntityForm } from './components/EntityForm';
 import { GraphVisualization } from './components/GraphVisualization';
 import { PathFinder } from './components/PathFinder';
 import { GraphStats } from './components/GraphStats';
-import { BaseModuleProps } from '../_templates/BaseModule/types/base.types';
 
 interface KnowledgeGraphModuleProps extends BaseModuleProps<Entity, EntityFilter> {
   graphOptions?: GraphVisualizationOptions;

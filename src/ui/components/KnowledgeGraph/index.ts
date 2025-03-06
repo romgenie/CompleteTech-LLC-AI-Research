@@ -7,12 +7,12 @@ export { KnowledgeGraphModule } from './KnowledgeGraphModule';
 
 // Component exports
 export { EntityList } from './components/EntityList';
-// export { EntityCard } from './components/EntityCard';
-// export { EntityDetail } from './components/EntityDetail';
-// export { EntityForm } from './components/EntityForm';
-// export { GraphVisualization } from './components/GraphVisualization';
-// export { PathFinder } from './components/PathFinder';
-// export { GraphStats } from './components/GraphStats';
+export { EntityCard } from './components/EntityCard';
+export { EntityDetail } from './components/EntityDetail';
+export { EntityForm } from './components/EntityForm';
+export { GraphVisualization } from './components/GraphVisualization';
+export { PathFinder } from './components/PathFinder';
+export { GraphStats } from './components/GraphStats';
 
 // Hook exports
 export { useKnowledgeGraph } from './hooks/useKnowledgeGraph';
@@ -45,5 +45,3 @@ export {
   formatGraphStatistics,
   transformForD3
 } from './utils/knowledgeGraphUtils';
-
-// Note: Commented out exports will be enabled as those components and hooks are implemented
