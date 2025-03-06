@@ -95,11 +95,11 @@ run_tests() {
     # Echo command for visibility
     echo -e "${BLUE}$cmd${NC}"
     
-    # Run command
-    eval $cmd
+    # Run command and capture output
+    eval $cmd 2>&1 | tee test-output.log
     
-    # Check result
-    if [ $? -eq 0 ]; then
+    # Check result (use ${PIPESTATUS[0]} to get exit code of first command in pipe)
+    if [ ${PIPESTATUS[0]} -eq 0 ]; then
         echo -e "${GREEN}$test_name tests passed!${NC}"
         return 0
     else
