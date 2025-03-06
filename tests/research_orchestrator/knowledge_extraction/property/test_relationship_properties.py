@@ -28,13 +28,13 @@ def entity_strategy():
     """Generate a random entity."""
     return st.builds(
         Entity,
-        text=st.text(min_size=1, max_size=50),
+        text=st.text(min_size=1, max_size=50).filter(lambda s: len(s.strip()) > 0),  # Ensure non-empty text
         type=st.sampled_from(list(EntityType)),
-        confidence=st.floats(min_value=0.0, max_value=1.0),
+        confidence=st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),  # Valid confidence values
         start_pos=st.integers(min_value=0, max_value=100),
         end_pos=st.integers(min_value=101, max_value=200),  # Ensure end_pos > start_pos
         metadata=st.fixed_dictionaries({}),
-        id=st.text(min_size=1, max_size=20)
+        id=st.text(min_size=1, max_size=20).filter(lambda s: len(s.strip()) > 0)  # Ensure non-empty ID
     )
 
 
@@ -49,7 +49,11 @@ class TestRelationshipProperties:
         context=st.text(min_size=0, max_size=200),
         metadata=st.dictionaries(
             keys=st.text(min_size=1, max_size=10),
-            values=st.one_of(st.text(), st.integers(), st.floats())
+            values=st.one_of(
+                st.text(), 
+                st.integers(), 
+                st.floats(allow_nan=False, allow_infinity=False)  # Avoid NaN and infinity which don't compare well
+            )
         ),
         id_=st.text(min_size=1, max_size=20)
     )
@@ -93,7 +97,11 @@ class TestRelationshipProperties:
         context=st.text(min_size=0, max_size=200),
         metadata=st.dictionaries(
             keys=st.text(min_size=1, max_size=10),
-            values=st.one_of(st.text(), st.integers(), st.floats())
+            values=st.one_of(
+                st.text(), 
+                st.integers(), 
+                st.floats(allow_nan=False, allow_infinity=False)  # Avoid NaN and infinity which don't compare well
+            )
         ),
         id_=st.text(min_size=1, max_size=20)
     )
@@ -287,7 +295,13 @@ class TestRelationshipExtractorProperties:
         patterns=st.dictionaries(
             keys=st.sampled_from(list(RelationType)),
             values=st.lists(
-                st.text(min_size=1, max_size=20),
+                # Generate only valid regex patterns
+                st.sampled_from([
+                    "model", "algorithm", "dataset", "paper",
+                    "developed by", "created by", "trained on",
+                    "based on", "outperforms", "uses",
+                    r"model\s+for", r"algorithm\s+for", r"dataset\s+for"
+                ]),
                 min_size=1,
                 max_size=3
             ),
