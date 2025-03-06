@@ -1,0 +1,115 @@
+name: Generate Test Status Badges
+
+on:
+  workflow_run:
+    workflows: ["Knowledge Extraction Tests"]
+    types:
+      - completed
+
+jobs:
+  generate_badges:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download test results
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }}
+            });
+            
+            const testResults = artifacts.data.artifacts.filter(
+              artifact => artifact.name.startsWith('test-results-')
+            );
+            
+            for (const artifact of testResults) {
+              const download = await github.rest.actions.downloadArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id,
+                archive_format: 'zip'
+              });
+              
+              const fs = require('fs');
+              fs.writeFileSync(`${artifact.name}.zip`, Buffer.from(download.data));
+              
+              await exec.exec(`unzip -o ${artifact.name}.zip -d ${artifact.name}`);
+            }
+            
+      - name: Generate badges
+        run: |
+          mkdir -p badges
+          
+          # Parse test results to determine status
+          declare -A test_statuses
+          
+          for dir in test-results-*; do
+            if [ -d "$dir" ]; then
+              version=$(echo $dir | cut -d'-' -f3)
+              test_type=$(echo $dir | cut -d'-' -f4)
+              
+              if [ -f "$dir/test-report.html" ]; then
+                if grep -q "0 failed" "$dir/test-report.html"; then
+                  test_statuses["${test_type}-${version}"]="passing"
+                else
+                  test_statuses["${test_type}-${version}"]="failing"
+                fi
+              else
+                test_statuses["${test_type}-${version}"]="unknown"
+              fi
+            fi
+          done
+          
+          # Generate badges
+          for key in "${!test_statuses[@]}"; do
+            test_type=$(echo $key | cut -d'-' -f1)
+            version=$(echo $key | cut -d'-' -f2)
+            status=${test_statuses[$key]}
+            
+            color="red"
+            if [ "$status" == "passing" ]; then
+              color="brightgreen"
+            elif [ "$status" == "unknown" ]; then
+              color="lightgrey"
+            fi
+            
+            curl -o "badges/${test_type}-${version}.svg" "https://img.shields.io/badge/${test_type}%20tests-${status}-${color}"
+          done
+      
+      - name: Update README with badges
+        run: |
+          # Create badge section in README if it doesn't exist
+          if ! grep -q "## Test Status" tests/research_orchestrator/knowledge_extraction/README.md; then
+            cat << EOF >> tests/research_orchestrator/knowledge_extraction/README.md
+          
+          ## Test Status
+          
+          | Test Type | Python 3.9 | Python 3.10 |
+          |-----------|------------|-------------|
+          | Unit      | ![Unit Tests 3.9](https://github.com/${{ github.repository }}/blob/badges/badges/unit-3.9.svg) | ![Unit Tests 3.10](https://github.com/${{ github.repository }}/blob/badges/badges/unit-3.10.svg) |
+          | Integration | ![Integration Tests 3.9](https://github.com/${{ github.repository }}/blob/badges/badges/integration-3.9.svg) | ![Integration Tests 3.10](https://github.com/${{ github.repository }}/blob/badges/badges/integration-3.10.svg) |
+          | End-to-End | ![E2E Tests 3.9](https://github.com/${{ github.repository }}/blob/badges/badges/e2e-3.9.svg) | ![E2E Tests 3.10](https://github.com/${{ github.repository }}/blob/badges/badges/e2e-3.10.svg) |
+          | Property   | ![Property Tests 3.9](https://github.com/${{ github.repository }}/blob/badges/badges/property-3.9.svg) | ![Property Tests 3.10](https://github.com/${{ github.repository }}/blob/badges/badges/property-3.10.svg) |
+          | Edge Case  | ![Edge Case Tests 3.9](https://github.com/${{ github.repository }}/blob/badges/badges/edge-3.9.svg) | ![Edge Case Tests 3.10](https://github.com/${{ github.repository }}/blob/badges/badges/edge-3.10.svg) |
+          | Coverage   | ![Coverage](https://codecov.io/gh/${{ github.repository }}/branch/main/graph/badge.svg?token=${{ secrets.CODECOV_TOKEN }}&flag=knowledge_extraction) |
+          
+          EOF
+          fi
+      
+      - name: Commit badges
+        run: |
+          mkdir -p .github/badges
+          mv badges/* .github/badges/
+          
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add .github/badges
+          git add tests/research_orchestrator/knowledge_extraction/README.md
+          
+          git commit -m "Update test status badges" || echo "No changes to commit"
+          git push
