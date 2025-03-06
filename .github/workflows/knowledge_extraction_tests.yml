@@ -13,14 +13,29 @@ on:
       - 'src/research_orchestrator/knowledge_extraction/**'
       - 'tests/research_orchestrator/knowledge_extraction/**'
       - '.github/workflows/knowledge_extraction_tests.yml'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Test type to run (unit, integration, e2e, property, edge, all)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - unit
+          - integration
+          - e2e
+          - property
+          - edge
+          - all
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
         python-version: [3.9, 3.10]
-        test-type: [unit, integration, e2e, property, edge]
+        test-type: ${{ github.event_name == 'workflow_dispatch' && contains(fromJSON('["unit", "integration", "e2e", "property", "edge", "all"]'), github.event.inputs.test_type) && fromJSON(format('["{0}"]', github.event.inputs.test_type)) || fromJSON('["unit", "integration", "e2e", "property", "edge"]') }}
 
     steps:
       - uses: actions/checkout@v3
@@ -53,6 +68,7 @@ jobs:
 
   benchmark:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: test
     steps:
       - uses: actions/checkout@v3
@@ -83,6 +99,7 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: test
     steps:
       - uses: actions/checkout@v3
