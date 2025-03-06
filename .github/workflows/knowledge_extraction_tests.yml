@@ -51,12 +51,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements-test.txt
+          pip install -e .
       
       - name: Run ${{ matrix.test-type }} tests
         run: |
           cd tests/research_orchestrator/knowledge_extraction
           chmod +x run_tests.sh
-          ./run_tests.sh -t ${{ matrix.test-type }}
+          PYTHONPATH=$GITHUB_WORKSPACE ./run_tests.sh -t ${{ matrix.test-type }}
       
       - name: Upload test artifacts
         if: always()
@@ -84,11 +85,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements-test.txt
+          pip install -e .
       
       - name: Run benchmarks
         run: |
           cd tests/research_orchestrator/knowledge_extraction
-          python -m benchmark.run_benchmarks
+          PYTHONPATH=$GITHUB_WORKSPACE python -m benchmark.run_benchmarks
       
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
@@ -116,11 +118,12 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-test.txt
           pip install pytest-cov
+          pip install -e .
       
       - name: Run tests with coverage
         run: |
           cd tests/research_orchestrator/knowledge_extraction
-          python -m pytest --cov=../../../src/research_orchestrator/knowledge_extraction --cov-report=xml
+          PYTHONPATH=$GITHUB_WORKSPACE python -m pytest --cov=../../../src/research_orchestrator/knowledge_extraction --cov-report=xml
       
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
