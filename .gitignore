@@ -37,3 +37,6 @@ coverage.xml
 
 # Frontend build artifacts
 ui_backup/
+
+# Additional ignores (avoid duplicates)
+external_repo/
