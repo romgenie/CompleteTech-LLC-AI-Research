@@ -125,6 +125,32 @@ All new components and pages should adhere to this design system for a consisten
 
 ## Development
 
+### Project Structure
+
+After reorganization, the repository follows this structure:
+
+```
+repository/
+├── docs/                      # Project documentation
+│   ├── architecture/          # System architecture documents
+│   ├── implementation_plans/  # Implementation plans
+│   ├── modules/               # Module-specific documentation
+│   ├── testing/               # Testing documentation
+│   └── user_guides/           # End-user documentation
+├── src/                       # Source code
+│   ├── api/                   # API server and routes
+│   ├── knowledge_graph_system/# Knowledge graph components
+│   ├── paper_processing/      # Paper processing pipeline
+│   ├── research_implementation/# Implementation system
+│   ├── research_orchestrator/ # Main orchestration framework
+│   └── ui/                    # Frontend components
+├── tests/                     # Test suite
+│   ├── knowledge_graph_system/# Knowledge graph tests
+│   ├── research_implementation/# Implementation system tests
+│   ├── research_orchestrator/ # Orchestration framework tests
+│   └── ui/                    # Frontend tests
+```
+
 ### API Development
 
 The API is built with FastAPI. To run the API in development mode:
@@ -150,6 +176,31 @@ npm install
 
 # Start the development server
 npm run dev
+```
+
+The main application frontend is built with React/TypeScript:
+
+```bash
+# Navigate to the frontend directory
+cd src/ui
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm start
+```
+
+### Development Imports
+
+With the reorganized structure, imports should follow this pattern:
+
+```python
+# For internal imports
+from src.research_orchestrator.knowledge_extraction import KnowledgeExtractor
+
+# After package installation
+from ai_research_integration.research_orchestrator.knowledge_extraction import KnowledgeExtractor
 ```
 
 ### Running Tests

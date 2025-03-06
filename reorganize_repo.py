@@ -243,11 +243,14 @@ def main():
     """Main function to execute the reorganization."""
     print("Starting repository reorganization...")
     
-    # Confirm before proceeding
-    response = input("This will reorganize the repository structure. Continue? (y/n): ")
-    if response.lower() != 'y':
-        print("Reorganization cancelled.")
-        sys.exit(0)
+    # Skip confirmation in non-interactive environments
+    if sys.stdin.isatty():
+        response = input("This will reorganize the repository structure. Continue? (y/n): ")
+        if response.lower() != 'y':
+            print("Reorganization cancelled.")
+            sys.exit(0)
+    else:
+        print("Running in non-interactive mode. Proceeding with reorganization...")
     
     try:
         # Execute steps
