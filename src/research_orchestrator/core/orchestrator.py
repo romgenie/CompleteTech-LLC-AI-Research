@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
-from src.research_orchestrator.core.state_manager import Project, StateManager
-from src.research_orchestrator.core.utils import load_config, setup_logging
+from .state_manager import Project, StateManager
+from .utils import load_config, setup_logging
 
 
 class ResearchOrchestrator:
