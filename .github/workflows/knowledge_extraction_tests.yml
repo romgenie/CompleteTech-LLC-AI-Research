@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        python-version: [3.9, 3.10]
+        python-version: ['3.9', '3.10']
         test-type: ${{ github.event_name == 'workflow_dispatch' && contains(fromJSON('["unit", "integration", "e2e", "property", "edge", "all"]'), github.event.inputs.test_type) && fromJSON(format('["{0}"]', github.event.inputs.test_type)) || fromJSON('["unit", "integration", "e2e", "property", "edge"]') }}
 
     steps:
