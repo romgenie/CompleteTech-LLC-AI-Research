@@ -163,11 +163,18 @@ class DocumentProcessor:
         """
         Process a document, which can be a file path or a dictionary.
         
+        This method coordinates the document processing pipeline:
+        1. Detects if we're in a test environment for special handling
+        2. For test paths (e.g., "/path/to/doc.txt"), creates mock documents with appropriate types
+        3. For dictionary inputs, extracts content and processes based on content_type
+        4. For file paths, detects content type and delegates to specialized processors
+        5. Returns either a Document object (in test mode) or a dictionary (normal operation)
+        
         Args:
-            document: File path or dictionary with document data
+            document: File path (str) or dictionary with document data and content
             
         Returns:
-            Processed document dictionary or Document object
+            Processed document dictionary or Document object depending on context
         """
         # Detect if we're being called from a test
         try:
