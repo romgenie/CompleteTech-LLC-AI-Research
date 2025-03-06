@@ -2,6 +2,15 @@
 
 This directory contains performance benchmark tests for the knowledge extraction components. These tests measure the performance of the components with various inputs and configurations.
 
+## Overview
+
+The benchmark tests measure:
+
+- **Processing Speed**: How quickly components process data of different sizes
+- **Memory Usage**: How much memory is consumed during processing
+- **Scaling Properties**: How performance scales with input size (linear, quadratic, etc.)
+- **Comparative Performance**: How different implementations compare against each other
+
 ## Running Benchmarks
 
 ### Using the Script
@@ -10,22 +19,22 @@ The easiest way to run benchmarks is using the provided script:
 
 ```bash
 # Run all benchmarks
-./benchmark/run_benchmarks.py
+python tests/research_orchestrator/knowledge_extraction/benchmark/run_benchmarks.py
 
 # Run benchmarks for a specific component
-./benchmark/run_benchmarks.py -c document
-./benchmark/run_benchmarks.py -c entity
-./benchmark/run_benchmarks.py -c relationship
-./benchmark/run_benchmarks.py -c knowledge_graph
+python tests/research_orchestrator/knowledge_extraction/benchmark/run_benchmarks.py -c document
+python tests/research_orchestrator/knowledge_extraction/benchmark/run_benchmarks.py -c entity
+python tests/research_orchestrator/knowledge_extraction/benchmark/run_benchmarks.py -c relationship
+python tests/research_orchestrator/knowledge_extraction/benchmark/run_benchmarks.py -c knowledge_graph
 
 # Run a quick benchmark (smaller datasets)
-./benchmark/run_benchmarks.py -q
+python tests/research_orchestrator/knowledge_extraction/benchmark/run_benchmarks.py -q
 
 # Generate a report in a custom directory
-./benchmark/run_benchmarks.py -o benchmark_results
+python tests/research_orchestrator/knowledge_extraction/benchmark/run_benchmarks.py -o benchmark_results
 
 # Show help
-./benchmark/run_benchmarks.py -h
+python tests/research_orchestrator/knowledge_extraction/benchmark/run_benchmarks.py -h
 ```
 
 ### Using pytest
@@ -34,10 +43,13 @@ You can also run benchmark tests directly with pytest:
 
 ```bash
 # Run all benchmark tests
-python -m pytest benchmark/
+python -m pytest tests/research_orchestrator/knowledge_extraction/benchmark/
 
 # Run document processing benchmarks
-python -m pytest benchmark/test_document_processing_performance.py
+python -m pytest tests/research_orchestrator/knowledge_extraction/benchmark/test_document_processing_performance.py
+
+# Run a specific test with a certain parameter
+python -m pytest "tests/research_orchestrator/knowledge_extraction/benchmark/test_document_processing_performance.py::test_text_processor_performance[10]"
 
 # Run benchmark tests with a specific marker
 python -m pytest -m "benchmark and document"
@@ -83,6 +95,7 @@ The benchmarks generate reports in both JSON and HTML formats. The HTML reports 
 - Summary of benchmark results
 - Detailed results for each component
 - Charts showing performance characteristics
+- Scaling factors for each component
 
 Reports are saved to the specified output directory (default: `benchmark_results`).
 
@@ -92,6 +105,7 @@ The benchmarks measure various performance metrics:
 - Execution time for different operations
 - Scaling characteristics with input size
 - Memory usage for different data structures
+- Component-specific performance indicators
 
 ## Performance Goals
 
@@ -100,3 +114,22 @@ The benchmark tests include assertions to verify that components meet performanc
 - Entity recognition should scale approximately linearly with input size (O(n))
 - Relationship extraction should scale better than quadratic with input size (O(n^2))
 - Knowledge extraction should scale reasonably with input size
+
+## Fixture System
+
+The benchmarks use a sophisticated fixture system to generate test data:
+
+- `generate_text_document`: Creates documents of specified sizes with realistic AI-related content
+- `generate_entities`: Creates random entities of various types (models, datasets, etc.)
+- `generate_relationships`: Creates relationships between entities with realistic attributes
+- `timer`: Provides timing functionality for measuring operation duration
+
+These fixtures are designed to be composable and parametrizable, supporting tests with different input sizes and configurations.
+
+## Implementation Notes
+
+- All benchmarks are marked with `pytest.mark.benchmark` for easy filtering
+- Component-specific markers are used to organize tests (`document`, `entity`, etc.)
+- Size parameters cover small, medium, and large inputs (10KB, 100KB, 1000KB)
+- The `test_document_processor_scalability` test measures and reports scaling factors
+- HTML reports include interactive charts for visualizing performance characteristics
