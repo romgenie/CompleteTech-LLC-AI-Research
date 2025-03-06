@@ -2,9 +2,56 @@
 
 A comprehensive platform that streamlines the process from research paper to working implementation.
 
+![GitHub Workflow Status](https://github.com/romgenie/CompleteTech-LLC-AI-Research/actions/workflows/run-tests.yml/badge.svg)
+![GitHub Workflow Status](https://github.com/romgenie/CompleteTech-LLC-AI-Research/actions/workflows/information_gathering_tests.yml/badge.svg)
+![GitHub Workflow Status](https://github.com/romgenie/CompleteTech-LLC-AI-Research/actions/workflows/knowledge_extraction_tests.yml/badge.svg)
+
 ## Project Overview
 
 The AI Research Integration Platform helps researchers and developers discover, analyze, and implement AI research findings. The platform provides tools for knowledge graph exploration, research orchestration, and implementation planning.
+
+## Development Status
+
+### Completed Components
+
+1. **Information Gathering Module** ✅
+   - SearchManager: Coordinates search operations across multiple sources
+   - SourceManager: Registers and manages different information sources
+   - QualityAssessor: Evaluates search result quality
+   - Source adapters for academic, web, code, and AI sources
+   - Comprehensive test suite with unit, integration, property-based, edge case, and benchmark tests
+
+2. **Knowledge Extraction Pipeline** ✅
+   - Document Processing Engine: Handles PDF, HTML, and text documents
+   - Entity Recognition System: Extracts entities from research content
+   - Relationship Extraction Module: Identifies connections between entities
+   - Knowledge Extractor: Coordinates the extraction process
+
+3. **Temporal Evolution Layer** ✅
+   - Temporal Entity Versioning: Tracks entity changes over time
+   - Time-Aware Relationships: Models relationships with temporal attributes
+   - Temporal Query Engine: Enables time-based knowledge graph queries
+   - Evolution Pattern Detection: Identifies trends and patterns in research
+
+4. **Frontend Framework** ✅
+   - React-based UI with TypeScript
+   - Comprehensive API client services
+   - Research organization features with tagging and filtering
+   - Knowledge graph visualization with D3.js
+
+### In Progress
+
+1. **Integration Testing Improvements**
+   - Implementing comprehensive CI/CD pipeline
+   - Fixing test compatibility issues across environments
+   - Adding benchmark tests for performance monitoring
+   - Creating standardized test fixtures and mock data
+
+2. **Deployment Infrastructure**
+   - Containerization with Docker and Docker Compose
+   - Environment-specific configuration management
+   - Monitoring and observability tools
+   - Scalability testing and optimization
 
 ## Key Features
 
@@ -96,6 +143,65 @@ npm install
 # Start the development server
 npm run dev
 ```
+
+### Running Tests
+
+The project has a comprehensive test suite. To run the tests:
+
+```bash
+# Install test dependencies
+pip install -r requirements-test.txt
+
+# Run all tests
+python -m pytest tests/
+
+# Run specific test modules
+python -m pytest tests/research_orchestrator/knowledge_extraction/
+
+# Run with coverage report
+python -m pytest tests/ --cov=src --cov-report=xml
+```
+
+For the Information Gathering module specifically:
+
+```bash
+# Navigate to the information gathering tests directory
+cd tests/research_orchestrator/information_gathering
+
+# Run all information gathering tests
+./run_tests.sh
+
+# Run specific test types
+./run_tests.sh --test-type unit
+./run_tests.sh --test-type property
+./run_tests.sh --test-type benchmark
+
+# Run specific tests with markers
+./run_tests.sh --markers "search or source"
+
+# Generate HTML report
+./run_tests.sh --report
+```
+
+## Roadmap
+
+### Q2 2025
+- Complete CI/CD pipeline
+- Implement end-to-end test coverage
+- Develop documentation site
+- Enhance accessibility features
+
+### Q3 2025
+- Launch research library management
+- Implement collaborative knowledge graph editing
+- Add advanced visualization capabilities
+- Create API client libraries
+
+### Q4 2025
+- Public Beta release
+- Add enterprise deployment options
+- Implement federated knowledge graph sharing
+- Provide ML-powered research recommendations
 
 ## Contributing
 
