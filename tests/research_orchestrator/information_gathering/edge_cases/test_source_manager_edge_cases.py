@@ -20,7 +20,7 @@ pytestmark = [
     pytest.mark.medium
 ]
 
-from research_orchestrator.information_gathering.source_manager import SourceManager
+from src.research_orchestrator.information_gathering.source_manager import SourceManager
 
 
 @pytest.mark.empty

@@ -5,11 +5,12 @@ This module contains implementations for various information sources
 that can be used for research.
 """
 
-from src.research_orchestrator.information_gathering.sources.base_source import BaseSource
-from src.research_orchestrator.information_gathering.sources.academic import AcademicSource
-from src.research_orchestrator.information_gathering.sources.web import WebSource
-from src.research_orchestrator.information_gathering.sources.code import CodeSource
-from src.research_orchestrator.information_gathering.sources.ai import AISource
+# Use relative imports instead of absolute imports
+from .base_source import BaseSource
+from .academic import AcademicSource
+from .web import WebSource
+from .code import CodeSource
+from .ai import AISource
 
 __all__ = [
     'BaseSource',

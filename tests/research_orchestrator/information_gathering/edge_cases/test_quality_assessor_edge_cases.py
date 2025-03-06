@@ -19,7 +19,7 @@ pytestmark = [
     pytest.mark.medium
 ]
 
-from research_orchestrator.information_gathering.quality_assessor import QualityAssessor
+from src.research_orchestrator.information_gathering.quality_assessor import QualityAssessor
 
 
 @pytest.mark.empty

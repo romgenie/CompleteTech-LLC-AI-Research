@@ -19,7 +19,7 @@ pytestmark = [
     pytest.mark.medium
 ]
 
-from research_orchestrator.information_gathering.search_manager import SearchManager
+from src.research_orchestrator.information_gathering.search_manager import SearchManager
 
 
 @pytest.mark.empty

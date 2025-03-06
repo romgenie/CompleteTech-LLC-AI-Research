@@ -20,8 +20,8 @@ pytestmark = [
     pytest.mark.medium
 ]
 
-from research_orchestrator.information_gathering.source_manager import SourceManager
-from research_orchestrator.information_gathering.sources.base_source import BaseSource
+from src.research_orchestrator.information_gathering.source_manager import SourceManager
+from src.research_orchestrator.information_gathering.sources.base_source import BaseSource
 
 
 # Strategy for generating search queries

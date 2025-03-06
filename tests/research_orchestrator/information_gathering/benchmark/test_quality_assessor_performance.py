@@ -24,7 +24,7 @@ try:
     from src.research_orchestrator.information_gathering.quality_assessor import QualityAssessor
 except ImportError:
     try:
-        from research_orchestrator.information_gathering.quality_assessor import QualityAssessor
+        from src.research_orchestrator.information_gathering.quality_assessor import QualityAssessor
     except ImportError:
         # Create mock class for testing when actual module is not available
         class QualityAssessor:

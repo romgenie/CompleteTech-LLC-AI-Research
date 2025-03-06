@@ -21,10 +21,10 @@ except ImportError:
 
 # Try different import paths
 try:
-    from research_orchestrator.information_gathering.search_manager import SearchManager
-    from research_orchestrator.information_gathering.source_manager import SourceManager
-    from research_orchestrator.information_gathering.quality_assessor import QualityAssessor
-    from research_orchestrator.information_gathering.sources.base_source import BaseSource
+    from src.research_orchestrator.information_gathering.search_manager import SearchManager
+    from src.research_orchestrator.information_gathering.source_manager import SourceManager
+    from src.research_orchestrator.information_gathering.quality_assessor import QualityAssessor
+    from src.research_orchestrator.information_gathering.sources.base_source import BaseSource
 except ImportError:
     try:
         from src.research_orchestrator.information_gathering.search_manager import SearchManager

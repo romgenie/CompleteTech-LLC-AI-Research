@@ -42,7 +42,7 @@ pytestmark = [
 
 # Try both import paths
 try:
-    from research_orchestrator.information_gathering.search_manager import SearchManager
+    from src.research_orchestrator.information_gathering.search_manager import SearchManager
 except ImportError:
     try:
         from src.research_orchestrator.information_gathering.search_manager import SearchManager

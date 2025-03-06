@@ -25,8 +25,8 @@ try:
     from src.research_orchestrator.information_gathering.sources.base_source import BaseSource
 except ImportError:
     try:
-        from research_orchestrator.information_gathering.source_manager import SourceManager
-        from research_orchestrator.information_gathering.sources.base_source import BaseSource
+        from src.research_orchestrator.information_gathering.source_manager import SourceManager
+        from src.research_orchestrator.information_gathering.sources.base_source import BaseSource
     except ImportError:
         # Create mock classes for testing when actual modules are not available
         class SourceManager:
