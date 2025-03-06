@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowledge Graph Module Test</title>
+  <!-- Material UI dependencies -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .header {
+      margin-bottom: 20px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    h1 {
+      color: #1976d2;
+      margin-top: 0;
+    }
+    .description {
+      margin-bottom: 20px;
+    }
+    .module-display {
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 4px;
+      min-height: 500px;
+      background-color: #fff;
+    }
+    .controls {
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+    }
+    .control-group {
+      margin-bottom: 10px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    select, input {
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+    .checkbox-label input {
+      margin-right: 8px;
+    }
+    .entity-list, .entity-detail, .entity-form {
+      margin-top: 20px;
+    }
+    .entity-card {
+      border: 1px solid #eee;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 10px;
+      position: relative;
+    }
+    .entity-type {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      color: white;
+      margin-left: 10px;
+    }
+    .entity-card h3 {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+    }
+    .entity-actions {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+    .action-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #757575;
+      margin-left: 5px;
+    }
+    .action-button:hover {
+      color: #1976d2;
+    }
+    .delete-button:hover {
+      color: #f44336;
+    }
+    .button {
+      background-color: #1976d2;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .button:hover {
+      background-color: #1565c0;
+    }
+    .button-secondary {
+      background-color: #757575;
+    }
+    .button-danger {
+      background-color: #f44336;
+    }
+    .tab-container {
+      margin-bottom: 20px;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+    }
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    .tab.active {
+      border-bottom-color: #1976d2;
+      color: #1976d2;
+      font-weight: 500;
+    }
+    .tab-content {
+      padding: 20px 0;
+    }
+    .tag {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      color: white;
+      margin-right: 5px;
+      background-color: #757575;
+    }
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 4px;
+      color: white;
+      background-color: #4caf50;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+      display: none;
+    }
+    .notification.error {
+      background-color: #f44336;
+    }
+    .model { background-color: #4285F4; }
+    .algorithm { background-color: #EA4335; }
+    .dataset { background-color: #FBBC05; }
+    .paper { background-color: #34A853; }
+    .author { background-color: #9C27B0; }
+    .method { background-color: #FF9800; }
+    .finding { background-color: #00BCD4; }
+    .metric { background-color: #795548; }
+    .code { background-color: #607D8B; }
+    .concept { background-color: #E91E63; }
+    .framework { background-color: #3F51B5; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Knowledge Graph Module Test</h1>
+    </div>
+
+    <div class="description">
+      <p>This page demonstrates the Knowledge Graph module with mock data. You can interact with the entities list, view details, and simulate creating/editing entities.</p>
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <label for="display-mode">Display Mode</label>
+        <select id="display-mode">
+          <option value="list">List</option>
+          <option value="detail">Detail</option>
+          <option value="form">Form</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="height">Height (px)</label>
+        <select id="height">
+          <option value="400">400px</option>
+          <option value="600" selected>600px</option>
+          <option value="800">800px</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="read-only">
+          Read Only
+        </label>
+      </div>
+
+      <div class="control-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="show-actions" checked>
+          Show Actions
+        </label>
+      </div>
+    </div>
+
+    <div class="module-display" id="module-container" style="height: 600px;">
+      <!-- Module content will be rendered here -->
+    </div>
+  </div>
+
+  <div class="notification" id="notification"></div>
+
+  <script>
+    // Mock data
+    const mockEntities = [
+      {
+        id: 'e1',
+        name: 'GPT-4',
+        type: 'MODEL',
+        description: 'Large language model by OpenAI',
+        properties: { parameters: '1.76T', architecture: 'Transformer' },
+        confidence: 0.95,
+        createdAt: '2023-01-01T00:00:00Z',
+        updatedAt: '2023-01-01T00:00:00Z',
+      },
+      {
+        id: 'e2',
+        name: 'BERT',
+        type: 'MODEL',
+        description: 'Bidirectional Encoder Representations from Transformers',
+        properties: { parameters: '340M', architecture: 'Transformer' },
+        confidence: 0.98,
+        createdAt: '2023-01-02T00:00:00Z',
+        updatedAt: '2023-01-02T00:00:00Z',
+      },
+      {
+        id: 'e3',
+        name: 'Attention Is All You Need',
+        type: 'PAPER',
+        description: 'Original transformer paper',
+        properties: { year: 2017, authors: 'Vaswani et al.' },
+        confidence: 0.99,
+        createdAt: '2023-01-03T00:00:00Z',
+        updatedAt: '2023-01-03T00:00:00Z',
+      },
+      {
+        id: 'e4',
+        name: 'Transformer',
+        type: 'ALGORITHM',
+        description: 'Self-attention based neural network architecture',
+        properties: { complexity: 'O(n²)' },
+        confidence: 0.97,
+        createdAt: '2023-01-04T00:00:00Z',
+        updatedAt: '2023-01-04T00:00:00Z',
+      },
+      {
+        id: 'e5',
+        name: 'ImageNet',
+        type: 'DATASET',
+        description: 'Large image dataset',
+        properties: { size: '14M images', classes: 21843 },
+        confidence: 0.96,
+        createdAt: '2023-01-05T00:00:00Z',
+        updatedAt: '2023-01-05T00:00:00Z',
+      },
+      {
+        id: 'e6',
+        name: 'Claude',
+        type: 'MODEL',
+        description: 'Large language model by Anthropic',
+        properties: { training: 'RLHF', family: 'Claude' },
+        confidence: 0.94,
+        createdAt: '2023-02-01T00:00:00Z',
+        updatedAt: '2023-02-01T00:00:00Z',
+      },
+      {
+        id: 'e7',
+        name: 'ResNet',
+        type: 'ALGORITHM',
+        description: 'Residual Neural Network architecture',
+        properties: { year: 2015, inventors: 'He et al.' },
+        confidence: 0.92,
+        createdAt: '2023-02-02T00:00:00Z',
+        updatedAt: '2023-02-02T00:00:00Z',
+      },
+    ];
+
+    const mockRelationships = [
+      {
+        id: 'r1',
+        type: 'IMPLEMENTS',
+        sourceId: 'e1',
+        targetId: 'e4',
+        properties: { year: 2020 },
+        confidence: 0.92,
+        createdAt: '2023-02-01T00:00:00Z',
+        updatedAt: '2023-02-01T00:00:00Z',
+      },
+      {
+        id: 'r2',
+        type: 'IMPLEMENTS',
+        sourceId: 'e2',
+        targetId: 'e4',
+        properties: { year: 2018 },
+        confidence: 0.95,
+        createdAt: '2023-02-02T00:00:00Z',
+        updatedAt: '2023-02-02T00:00:00Z',
+      },
+      {
+        id: 'r3',
+        type: 'CITES',
+        sourceId: 'e1',
+        targetId: 'e3',
+        properties: {},
+        confidence: 0.99,
+        createdAt: '2023-02-03T00:00:00Z',
+        updatedAt: '2023-02-03T00:00:00Z',
+      },
+      {
+        id: 'r4',
+        type: 'CITES',
+        sourceId: 'e2',
+        targetId: 'e3',
+        properties: {},
+        confidence: 0.99,
+        createdAt: '2023-02-04T00:00:00Z',
+        updatedAt: '2023-02-04T00:00:00Z',
+      },
+      {
+        id: 'r5',
+        type: 'TRAINED_ON',
+        sourceId: 'e1',
+        targetId: 'e5',
+        properties: { subset: 'partial' },
+        confidence: 0.85,
+        createdAt: '2023-02-05T00:00:00Z',
+        updatedAt: '2023-02-05T00:00:00Z',
+      },
+    ];
+
+    // State
+    let entities = [...mockEntities];
+    let relationships = [...mockRelationships];
+    let selectedEntity = null;
+    let activeTab = 0;
+    let filter = {};
+    
+    // DOM elements
+    const moduleContainer = document.getElementById('module-container');
+    const displayModeSelect = document.getElementById('display-mode');
+    const heightSelect = document.getElementById('height');
+    const readOnlyCheckbox = document.getElementById('read-only');
+    const showActionsCheckbox = document.getElementById('show-actions');
+    const notificationEl = document.getElementById('notification');
+
+    // Event listeners
+    displayModeSelect.addEventListener('change', render);
+    heightSelect.addEventListener('change', updateModuleHeight);
+    readOnlyCheckbox.addEventListener('change', render);
+    showActionsCheckbox.addEventListener('change', render);
+
+    // Update module height
+    function updateModuleHeight() {
+      moduleContainer.style.height = `${heightSelect.value}px`;
+    }
+
+    // Show notification
+    function showNotification(message, isError = false) {
+      notificationEl.textContent = message;
+      notificationEl.className = `notification ${isError ? 'error' : ''}`;
+      notificationEl.style.display = 'block';
+      
+      setTimeout(() => {
+        notificationEl.style.display = 'none';
+      }, 3000);
+    }
+
+    // Handle entity selection
+    function selectEntity(entityId) {
+      selectedEntity = entities.find(e => e.id === entityId);
+      displayModeSelect.value = 'detail';
+      render();
+    }
+
+    // Handle entity creation
+    function createEntity(formData) {
+      const newEntity = {
+        ...formData,
+        id: `e${entities.length + 1}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      
+      entities.push(newEntity);
+      showNotification(`Entity "${newEntity.name}" created successfully`);
+      displayModeSelect.value = 'list';
+      render();
+    }
+
+    // Handle entity update
+    function updateEntity(entityId, formData) {
+      const index = entities.findIndex(e => e.id === entityId);
+      if (index !== -1) {
+        entities[index] = {
+          ...entities[index],
+          ...formData,
+          updatedAt: new Date().toISOString(),
+        };
+        selectedEntity = entities[index];
+        showNotification(`Entity "${entities[index].name}" updated successfully`);
+        displayModeSelect.value = 'detail';
+        render();
+      }
+    }
+
+    // Handle entity deletion
+    function deleteEntity(entityId) {
+      if (confirm('Are you sure you want to delete this entity? This action cannot be undone.')) {
+        entities = entities.filter(e => e.id !== entityId);
+        if (selectedEntity && selectedEntity.id === entityId) {
+          selectedEntity = null;
+        }
+        showNotification('Entity deleted successfully');
+        displayModeSelect.value = 'list';
+        render();
+      }
+    }
+
+    // Filter entities by type
+    function filterByType(type) {
+      filter.type = filter.type === type ? undefined : type;
+      render();
+    }
+
+    // Render entity list
+    function renderEntityList() {
+      // Get unique entity types for filtering
+      const entityTypes = [...new Set(entities.map(e => e.type))];
+      
+      // Filter entities if needed
+      let filteredEntities = entities;
+      if (filter.type) {
+        filteredEntities = entities.filter(e => e.type === filter.type);
+      }
+      
+      let html = `
+        <div class="tab-container">
+          <div class="tabs">
+            <div class="tab ${activeTab === 0 ? 'active' : ''}" onclick="activeTab = 0; render();">Entities</div>
+            <div class="tab ${activeTab === 1 ? 'active' : ''}" onclick="activeTab = 1; render();">Graph</div>
+            <div class="tab ${activeTab === 2 ? 'active' : ''}" onclick="activeTab = 2; render();">Statistics</div>
+          </div>
+          
+          <div class="tab-content">
+      `;
+      
+      if (activeTab === 0) {
+        // Filter chips
+        html += `<div style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 5px;">`;
+        entityTypes.forEach(type => {
+          const isActive = filter.type === type;
+          html += `
+            <span class="tag ${type.toLowerCase()}" 
+                  onclick="filterByType('${type}')" 
+                  style="${isActive ? 'outline: 2px solid black; outline-offset: 1px;' : ''}">
+              ${type}
+            </span>
+          `;
+        });
+        
+        if (filter.type) {
+          html += `
+            <span class="tag" onclick="filter = {}; render();" style="background-color: #757575;">
+              Clear filter
+            </span>
+          `;
+        }
+        html += `</div>`;
+        
+        // Entity list
+        html += `<div class="entity-list">`;
+        if (filteredEntities.length === 0) {
+          html += `<p>No entities found.</p>`;
+        } else {
+          filteredEntities.forEach(entity => {
+            html += `
+              <div class="entity-card">
+                <h3>
+                  ${entity.name}
+                  <span class="entity-type ${entity.type.toLowerCase()}">${entity.type}</span>
+                  ${entity.confidence ? 
+                    `<span class="entity-type" style="background-color: ${entity.confidence > 0.8 ? '#4caf50' : entity.confidence > 0.5 ? '#ff9800' : '#f44336'}">
+                      ${Math.round(entity.confidence * 100)}%
+                    </span>` : ''}
+                </h3>
+                <p>${entity.description || 'No description'}</p>
+                
+                <div class="entity-actions">
+                  <button class="action-button" onclick="selectEntity('${entity.id}')">
+                    <span class="material-icons">visibility</span>
+                  </button>
+                  ${!readOnlyCheckbox.checked ? `
+                    <button class="action-button" onclick="editEntity('${entity.id}')">
+                      <span class="material-icons">edit</span>
+                    </button>
+                    <button class="action-button delete-button" onclick="deleteEntity('${entity.id}')">
+                      <span class="material-icons">delete</span>
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+            `;
+          });
+        }
+        html += `</div>`;
+      } else if (activeTab === 1) {
+        // Graph visualization (placeholder)
+        html += `
+          <div style="display: flex; justify-content: center; align-items: center; height: 400px; background-color: #f5f5f5; border-radius: 4px;">
+            <p style="text-align: center; color: #757575;">
+              Graph visualization would be rendered here.<br>
+              The graph has ${entities.length} entities and ${relationships.length} relationships.
+            </p>
+          </div>
+        `;
+      } else if (activeTab === 2) {
+        // Statistics (placeholder)
+        const typeCounts = {};
+        entities.forEach(entity => {
+          typeCounts[entity.type] = (typeCounts[entity.type] || 0) + 1;
+        });
+        
+        html += `
+          <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+            <div style="flex: 1; min-width: 300px;">
+              <h3>Overview</h3>
+              <p><strong>Entities:</strong> ${entities.length}</p>
+              <p><strong>Relationships:</strong> ${relationships.length}</p>
+              <p><strong>Density:</strong> ${((relationships.length / (entities.length * (entities.length - 1))) * 100).toFixed(2)}%</p>
+            </div>
+            
+            <div style="flex: 1; min-width: 300px;">
+              <h3>Entity Types</h3>
+              <ul>
+                ${Object.entries(typeCounts).map(([type, count]) => 
+                  `<li><span class="tag ${type.toLowerCase()}">${type}</span> ${count}</li>`
+                ).join('')}
+              </ul>
+            </div>
+          </div>
+        `;
+      }
+      
+      html += `
+          </div>
+        </div>
+      `;
+      
+      return html;
+    }
+
+    // Render entity detail
+    function renderEntityDetail() {
+      if (!selectedEntity) {
+        return `
+          <div style="padding: 20px;">
+            <p>No entity selected.</p>
+            <button class="button" onclick="displayModeSelect.value = 'list'; render();">
+              Back to List
+            </button>
+          </div>
+        `;
+      }
+      
+      let html = `
+        <div style="padding: 20px;">
+          <div style="display: flex; align-items: center; margin-bottom: 20px;">
+            <button class="action-button" onclick="displayModeSelect.value = 'list'; render();">
+              <span class="material-icons">arrow_back</span>
+            </button>
+            
+            <h2 style="margin: 0 10px;">
+              ${selectedEntity.name}
+              <span class="entity-type ${selectedEntity.type.toLowerCase()}">${selectedEntity.type}</span>
+              ${selectedEntity.confidence ? 
+                `<span class="entity-type" style="background-color: ${selectedEntity.confidence > 0.8 ? '#4caf50' : selectedEntity.confidence > 0.5 ? '#ff9800' : '#f44336'}">
+                  ${Math.round(selectedEntity.confidence * 100)}%
+                </span>` : ''}
+            </h2>
+          </div>
+          
+          ${selectedEntity.description ? `<p>${selectedEntity.description}</p>` : ''}
+          
+          <h3>Properties</h3>
+          <div style="border: 1px solid #eee; border-radius: 4px; padding: 10px; margin-bottom: 20px;">
+            ${Object.keys(selectedEntity.properties || {}).length === 0 ? 
+              `<p>No properties defined.</p>` : 
+              `<ul>
+                ${Object.entries(selectedEntity.properties).map(([key, value]) => 
+                  `<li><strong>${key}:</strong> ${value}</li>`
+                ).join('')}
+              </ul>`
+            }
+          </div>
+          
+          <h3>Relationships</h3>
+          <div style="border: 1px solid #eee; border-radius: 4px; padding: 10px;">
+            <p>Loading relationships...</p>
+          </div>
+          
+          ${!readOnlyCheckbox.checked ? `
+            <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+              <button class="button" onclick="editEntity('${selectedEntity.id}')">
+                <span class="material-icons">edit</span> Edit
+              </button>
+              <button class="button button-danger" style="margin-left: 10px;" onclick="deleteEntity('${selectedEntity.id}')">
+                <span class="material-icons">delete</span> Delete
+              </button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+      
+      return html;
+    }
+
+    // Edit entity
+    function editEntity(entityId) {
+      selectedEntity = entities.find(e => e.id === entityId);
+      displayModeSelect.value = 'form';
+      render();
+    }
+
+    // Render entity form
+    function renderEntityForm() {
+      const isEditing = !!selectedEntity;
+      const entity = selectedEntity || { name: '', type: 'MODEL', description: '', properties: {} };
+      
+      const entityTypes = ['MODEL', 'ALGORITHM', 'DATASET', 'PAPER', 'AUTHOR', 'METHOD', 'FINDING', 'METRIC', 'CODE', 'CONCEPT', 'FRAMEWORK'];
+      
+      let html = `
+        <div style="padding: 20px;">
+          <h2>${isEditing ? 'Edit Entity' : 'Create New Entity'}</h2>
+          
+          <form id="entity-form" onsubmit="handleFormSubmit(event)">
+            <div style="margin-bottom: 15px;">
+              <label for="entity-name" style="display: block; margin-bottom: 5px; font-weight: 500;">Name *</label>
+              <input type="text" id="entity-name" value="${entity.name}" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+              <label for="entity-type" style="display: block; margin-bottom: 5px; font-weight: 500;">Type *</label>
+              <select id="entity-type" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+                ${entityTypes.map(type => 
+                  `<option value="${type}" ${entity.type === type ? 'selected' : ''}>${type}</option>`
+                ).join('')}
+              </select>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+              <label for="entity-description" style="display: block; margin-bottom: 5px; font-weight: 500;">Description</label>
+              <textarea id="entity-description" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd; min-height: 100px;">${entity.description || ''}</textarea>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+              <label style="display: block; margin-bottom: 5px; font-weight: 500;">Properties</label>
+              <div id="properties-container" style="border: 1px solid #eee; border-radius: 4px; padding: 10px; margin-bottom: 10px;">
+                ${Object.entries(entity.properties || {}).map(([key, value], index) => `
+                  <div style="display: flex; margin-bottom: 10px;" class="property-row">
+                    <input type="text" value="${key}" class="property-key" style="width: 30%; margin-right: 10px; padding: 8px; border-radius: 4px; border: 1px solid #ddd;" readonly>
+                    <input type="text" value="${value}" class="property-value" style="flex-grow: 1; padding: 8px; border-radius: 4px; border: 1px solid #ddd;" readonly>
+                    <button type="button" onclick="removeProperty(${index})" style="margin-left: 10px; background: none; border: none; color: #f44336; cursor: pointer;">
+                      <span class="material-icons">delete</span>
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+              
+              <div style="display: flex; margin-bottom: 10px;">
+                <input type="text" id="new-property-key" placeholder="New property" style="width: 30%; margin-right: 10px; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+                <input type="text" id="new-property-value" placeholder="Value" style="flex-grow: 1; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+                <button type="button" onclick="addProperty()" style="margin-left: 10px; background-color: #1976d2; color: white; border: none; border-radius: 4px; padding: 0 10px; cursor: pointer;">
+                  <span class="material-icons">add</span>
+                </button>
+              </div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+              <button type="button" class="button button-secondary" onclick="cancelForm()" style="margin-right: 10px;">
+                Cancel
+              </button>
+              <button type="submit" class="button">
+                ${isEditing ? 'Save Changes' : 'Create Entity'}
+              </button>
+            </div>
+          </form>
+        </div>
+      `;
+      
+      return html;
+    }
+
+    // Add property
+    function addProperty() {
+      const keyInput = document.getElementById('new-property-key');
+      const valueInput = document.getElementById('new-property-value');
+      
+      const key = keyInput.value.trim();
+      const value = valueInput.value.trim();
+      
+      if (key && value) {
+        const container = document.getElementById('properties-container');
+        const index = document.querySelectorAll('.property-row').length;
+        
+        const propertyRowHtml = `
+          <div style="display: flex; margin-bottom: 10px;" class="property-row">
+            <input type="text" value="${key}" class="property-key" style="width: 30%; margin-right: 10px; padding: 8px; border-radius: 4px; border: 1px solid #ddd;" readonly>
+            <input type="text" value="${value}" class="property-value" style="flex-grow: 1; padding: 8px; border-radius: 4px; border: 1px solid #ddd;" readonly>
+            <button type="button" onclick="removeProperty(${index})" style="margin-left: 10px; background: none; border: none; color: #f44336; cursor: pointer;">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', propertyRowHtml);
+        
+        keyInput.value = '';
+        valueInput.value = '';
+      }
+    }
+
+    // Remove property
+    function removeProperty(index) {
+      const propertyRows = document.querySelectorAll('.property-row');
+      if (propertyRows[index]) {
+        propertyRows[index].remove();
+      }
+    }
+
+    // Handle form submission
+    function handleFormSubmit(event) {
+      event.preventDefault();
+      
+      const nameInput = document.getElementById('entity-name');
+      const typeInput = document.getElementById('entity-type');
+      const descriptionInput = document.getElementById('entity-description');
+      
+      // Get properties
+      const properties = {};
+      const propertyRows = document.querySelectorAll('.property-row');
+      propertyRows.forEach(row => {
+        const key = row.querySelector('.property-key').value;
+        const value = row.querySelector('.property-value').value;
+        if (key && value) {
+          properties[key] = value;
+        }
+      });
+      
+      const formData = {
+        name: nameInput.value,
+        type: typeInput.value,
+        description: descriptionInput.value,
+        properties,
+      };
+      
+      if (selectedEntity) {
+        updateEntity(selectedEntity.id, formData);
+      } else {
+        createEntity(formData);
+      }
+    }
+
+    // Cancel form
+    function cancelForm() {
+      if (selectedEntity) {
+        displayModeSelect.value = 'detail';
+      } else {
+        displayModeSelect.value = 'list';
+      }
+      render();
+    }
+
+    // Render module based on current display mode
+    function render() {
+      const displayMode = displayModeSelect.value;
+      const readOnly = readOnlyCheckbox.checked;
+      const showActions = showActionsCheckbox.checked;
+      
+      let html = '';
+      
+      // Actions bar
+      if (showActions && displayMode === 'list') {
+        html += `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
+            <h3 style="margin: 0;">Knowledge Graph</h3>
+            ${!readOnly ? `
+              <button class="button" onclick="selectedEntity = null; displayModeSelect.value = 'form'; render();">
+                Add Entity
+              </button>
+            ` : ''}
+          </div>
+        `;
+      }
+      
+      // Content based on display mode
+      switch (displayMode) {
+        case 'list':
+          html += renderEntityList();
+          break;
+        case 'detail':
+          html += renderEntityDetail();
+          break;
+        case 'form':
+          html += renderEntityForm();
+          break;
+      }
+      
+      moduleContainer.innerHTML = html;
+    }
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
