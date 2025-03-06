@@ -1,13 +1,26 @@
 """
-Algorithm Extraction module for identifying and parsing algorithms from research papers.
+Algorithm Extraction package for the Research Understanding Engine.
+
+This package provides components for identifying and extracting algorithms
+from research papers, including their implementation details.
 """
 
 from .algorithm_extractor import (
-    AlgorithmExtractor, 
-    ExtractedAlgorithm, 
     AlgorithmParameter,
     AlgorithmVariable,
     AlgorithmSubroutine,
-    AlgorithmImplementationGenerator,
-    PseudocodeParser
+    ExtractedAlgorithm,
+    AlgorithmExtractor,
+    PseudocodeParser,
+    AlgorithmImplementationGenerator
 )
+
+__all__ = [
+    'AlgorithmParameter',
+    'AlgorithmVariable',
+    'AlgorithmSubroutine',
+    'ExtractedAlgorithm',
+    'AlgorithmExtractor',
+    'PseudocodeParser',
+    'AlgorithmImplementationGenerator',
+]

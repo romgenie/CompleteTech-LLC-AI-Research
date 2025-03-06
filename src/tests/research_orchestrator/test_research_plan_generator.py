@@ -5,8 +5,8 @@ Tests for the research plan generator module.
 import pytest
 from unittest.mock import MagicMock, patch
 
-from research_orchestrator.research_planning.query_analyzer import QueryAnalysis
-from research_orchestrator.research_planning.research_plan_generator import (
+from src.research_orchestrator.research_planning.query_analyzer import QueryAnalysis
+from src.research_orchestrator.research_planning.research_plan_generator import (
     ResearchPlan, Section, ResearchPlanGenerator
 )
 

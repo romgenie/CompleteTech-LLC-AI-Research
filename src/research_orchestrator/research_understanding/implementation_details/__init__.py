@@ -1,14 +1,28 @@
 """
-Implementation Details module for collecting details needed for code generation.
+Implementation Details package for the Research Understanding Engine.
+
+This package provides components for extracting detailed implementation information
+from research papers to facilitate accurate code generation.
 """
 
 from .detail_collector import (
-    ImplementationDetailCollector,
-    ImplementationDetail,
     CodeSnippet,
     ImplementationRequirement,
     DatasetInfo,
     EvaluationMetric,
     HyperparameterInfo,
-    EnvironmentInfo
+    EnvironmentInfo,
+    ImplementationDetail,
+    ImplementationDetailCollector
 )
+
+__all__ = [
+    'CodeSnippet',
+    'ImplementationRequirement',
+    'DatasetInfo',
+    'EvaluationMetric',
+    'HyperparameterInfo',
+    'EnvironmentInfo',
+    'ImplementationDetail',
+    'ImplementationDetailCollector',
+]

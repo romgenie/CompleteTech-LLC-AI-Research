@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
-from research_orchestrator.core.utils import load_config
-from research_orchestrator.research_planning.query_analyzer import QueryAnalysis, QueryAnalyzer
+from src.research_orchestrator.core.utils import load_config
+from src.research_orchestrator.research_planning.query_analyzer import QueryAnalysis, QueryAnalyzer
 
 
 class Section:

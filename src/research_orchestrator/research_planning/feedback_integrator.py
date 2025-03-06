@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
-from research_orchestrator.research_planning.research_plan_generator import ResearchPlan, Section
+from src.research_orchestrator.research_planning.research_plan_generator import ResearchPlan, Section
 
 
 class FeedbackIntegrator:

@@ -69,16 +69,16 @@ class SourceManager:
         # Get the source class based on type
         try:
             if source_type == 'academic':
-                from research_orchestrator.information_gathering.sources.academic import AcademicSource
+                from src.research_orchestrator.information_gathering.sources.academic import AcademicSource
                 source_class = AcademicSource
             elif source_type == 'web':
-                from research_orchestrator.information_gathering.sources.web import WebSource
+                from src.research_orchestrator.information_gathering.sources.web import WebSource
                 source_class = WebSource
             elif source_type == 'code':
-                from research_orchestrator.information_gathering.sources.code import CodeSource
+                from src.research_orchestrator.information_gathering.sources.code import CodeSource
                 source_class = CodeSource
             elif source_type == 'ai':
-                from research_orchestrator.information_gathering.sources.ai import AISource
+                from src.research_orchestrator.information_gathering.sources.ai import AISource
                 source_class = AISource
             elif source_type == 'custom':
                 # Handle custom source with module path

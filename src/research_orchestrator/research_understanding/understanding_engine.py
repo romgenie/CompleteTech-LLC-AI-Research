@@ -12,11 +12,11 @@ import logging
 import tempfile
 from pathlib import Path
 
-from .paper_processing.paper_processor import PaperProcessor, StructuredPaper, PaperFormat
-from .algorithm_extraction.algorithm_extractor import (
+from .paper_processing import PaperProcessor, StructuredPaper, PaperFormat
+from .algorithm_extraction import (
     AlgorithmExtractor, ExtractedAlgorithm, AlgorithmImplementationGenerator
 )
-from .implementation_details.detail_collector import (
+from .implementation_details import (
     ImplementationDetailCollector, ImplementationDetail, CodeSnippet, 
     DatasetInfo, EvaluationMetric, HyperparameterInfo
 )
@@ -87,7 +87,7 @@ class ResearchUnderstandingEngine:
         )
     
     def process_paper(self,
-                     paper_path: Union[str, Path], 
+                     paper_path: Union[str, Path],
                      paper_format: Optional[PaperFormat] = None,
                      metadata: Optional[Dict[str, Any]] = None,
                      extract_algorithms: bool = True,

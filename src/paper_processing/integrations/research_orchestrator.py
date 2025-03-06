@@ -22,9 +22,9 @@ from typing import Dict, List, Any, Optional
 import uuid
 
 # Import the Research Orchestration Framework interfaces
-from research_orchestrator.core.orchestrator import ResearchOrchestrator
-from research_orchestrator.research_planning.research_plan_generator import ResearchPlanGenerator
-from research_orchestrator.research_generation.content_generator import ContentGenerator
+from src.research_orchestrator.core.orchestrator import ResearchOrchestrator
+from src.research_orchestrator.research_planning.research_plan_generator import ResearchPlanGenerator
+from src.research_orchestrator.research_generation.content_generator import ContentGenerator
 
 # Import the Paper Processing models
 from ..models.paper import Paper, Entity, Relationship

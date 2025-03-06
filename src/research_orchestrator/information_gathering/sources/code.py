@@ -12,7 +12,7 @@ import json
 import base64
 from typing import Dict, List, Any, Optional, Union
 from urllib.parse import quote_plus
-from research_orchestrator.information_gathering.sources.base_source import BaseSource
+from src.research_orchestrator.information_gathering.sources.base_source import BaseSource
 
 logger = logging.getLogger(__name__)
 

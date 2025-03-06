@@ -4,7 +4,7 @@ Tests for the query analyzer module.
 
 import pytest
 
-from research_orchestrator.research_planning.query_analyzer import QueryAnalysis, QueryAnalyzer
+from src.research_orchestrator.research_planning.query_analyzer import QueryAnalysis, QueryAnalyzer
 
 
 def test_query_analysis_init():

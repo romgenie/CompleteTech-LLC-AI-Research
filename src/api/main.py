@@ -53,7 +53,7 @@ from src.api.routers import (
     comments,
     versions,
 )
-from research_implementation.api.planning import router as planning_router
+from src.research_implementation.api.planning import router as planning_router
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])

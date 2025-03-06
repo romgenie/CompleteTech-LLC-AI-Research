@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
-from research_orchestrator.core.state_manager import Project, StateManager
-from research_orchestrator.core.utils import load_config, setup_logging
+from src.research_orchestrator.core.state_manager import Project, StateManager
+from src.research_orchestrator.core.utils import load_config, setup_logging
 
 
 class ResearchOrchestrator:
@@ -376,7 +376,7 @@ class ResearchOrchestrator:
         if self._research_planning is None:
             try:
                 # Dynamically import to avoid circular imports
-                from research_orchestrator.research_planning.research_plan_generator import ResearchPlanGenerator
+                from src.research_orchestrator.research_planning.research_plan_generator import ResearchPlanGenerator
                 self._research_planning = ResearchPlanGenerator()
             except ImportError:
                 logger.error("Research planning module not available")
@@ -397,7 +397,7 @@ class ResearchOrchestrator:
         if self._information_gathering is None:
             try:
                 # Dynamically import to avoid circular imports
-                from research_orchestrator.information_gathering.information_gatherer import InformationGatherer
+                from src.research_orchestrator.information_gathering.information_gatherer import InformationGatherer
                 self._information_gathering = InformationGatherer()
             except ImportError:
                 # Create a mock implementation for development
@@ -424,7 +424,7 @@ class ResearchOrchestrator:
         if self._knowledge_extraction is None:
             try:
                 # Dynamically import to avoid circular imports
-                from research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
+                from src.research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
                 self._knowledge_extraction = KnowledgeExtractor()
             except ImportError:
                 # Create a mock implementation for development
@@ -451,7 +451,7 @@ class ResearchOrchestrator:
         if self._knowledge_integration is None:
             try:
                 # Dynamically import to avoid circular imports
-                from research_orchestrator.knowledge_integration.knowledge_integrator import KnowledgeIntegrator
+                from src.research_orchestrator.knowledge_integration.knowledge_integrator import KnowledgeIntegrator
                 self._knowledge_integration = KnowledgeIntegrator()
             except ImportError:
                 # Create a mock implementation for development
@@ -478,7 +478,7 @@ class ResearchOrchestrator:
         if self._research_generation is None:
             try:
                 # Dynamically import to avoid circular imports
-                from research_orchestrator.research_generation.content_generator import ContentGenerator
+                from src.research_orchestrator.research_generation.content_generator import ContentGenerator
                 self._research_generation = ContentGenerator()
             except ImportError:
                 # Create a mock implementation for development

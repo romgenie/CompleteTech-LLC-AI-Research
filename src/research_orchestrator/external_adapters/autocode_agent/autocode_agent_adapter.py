@@ -9,18 +9,13 @@ import os
 import sys
 import logging
 import importlib.util
-import importlib
 import json
-import time
 from typing import Any, Dict, List, Optional, Union, Tuple
-
-# Add parent directory to sys.path to import base_adapter
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ..base_adapter import BaseAdapter
 
+
 # Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -55,30 +50,20 @@ class AutoCodeAgentAdapter(BaseAdapter):
             repository_path: Path to the AutoCodeAgent2.0 repository (if None, will look in standard locations)
             log_level: Logging level
         """
-        super().__init__("AutoCodeAgentAdapter")
-        
         self.repository_path = repository_path
         self.initialized = False
-        self.available = False
+        self.aca_module = None
         self.code_agent = None
-        self.deep_search_agent = None
-        self.function_validator = None
         self.task_counter = 0
         self.completed_tasks = {}
         
         # Configure logging
+        logging.basicConfig(level=log_level)
         self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(log_level)
         
         # Try to determine repository path if not provided
         if self.repository_path is None:
             self._find_repository()
-            
-        # Try to import the AutoCodeAgent modules
-        if self.repository_path and os.path.exists(self.repository_path):
-            self.available = self._import_modules()
-        else:
-            self.logger.warning("AutoCodeAgent2.0 repository not found or specified. Adapter will operate in limited mode.")
     
     def initialize(self, config: Dict[str, Any]) -> bool:
         """
@@ -93,33 +78,27 @@ class AutoCodeAgentAdapter(BaseAdapter):
         try:
             self.logger.info("Initializing AutoCodeAgent adapter")
             
-            # Default configuration
+            # Import AutoCodeAgent modules
+            if not self._import_aca():
+                return False
+            
+            # Configure AutoCodeAgent based on provided config
             default_config = {
-                "mode": "intellichain",     # "intellichain" or "deep_search"
-                "model": "gpt-4",
-                "memory_type": "in_memory", # "in_memory", "redis", or "postgres"
+                "mode": "intellichain",  # "intellichain" or "deep_search"
+                "model": "gpt-4-turbo",
+                "memory_type": "postgres",
                 "enable_execution": True,
                 "max_retries": 3,
                 "log_level": "info",
-                "use_egot": True,           # Evolving Graph of Thought
-                "include_citations": True,
-                "api_keys": {}              # External API keys
+                "use_egot": True,
+                "include_citations": True
             }
             
             # Merge default and provided config
-            self.config = {**default_config, **config}
+            merged_config = {**default_config, **config}
             
-            # Initialize components based on availability
-            if self.available:
-                # Initialize real components
-                success = self._initialize_components()
-                if not success:
-                    self.logger.error("Failed to initialize AutoCodeAgent components.")
-                    return False
-            else:
-                # Initialize mock components
-                self.logger.warning("Initializing in mock mode due to unavailable repository.")
-                self._initialize_mock_components()
+            # Initialize components
+            self._initialize_code_agent(merged_config)
             
             self.initialized = True
             self.logger.info("AutoCodeAgent adapter initialized successfully")
@@ -136,7 +115,7 @@ class AutoCodeAgentAdapter(BaseAdapter):
         Returns:
             True if the repository is available, False otherwise
         """
-        return self.initialized and self.available
+        return self.initialized and self.aca_module is not None
     
     def get_capabilities(self) -> List[str]:
         """
@@ -198,8 +177,7 @@ class AutoCodeAgentAdapter(BaseAdapter):
             
             # Clean up any resources
             self.code_agent = None
-            self.deep_search_agent = None
-            self.function_validator = None
+            self.aca_module = None
             self.initialized = False
             
             return True
@@ -215,7 +193,6 @@ class AutoCodeAgentAdapter(BaseAdapter):
         """
         # List of standard locations to check
         standard_locations = [
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../../external_repo/AutoCodeAgent2.0"),
             os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../external_repo/AutoCodeAgent2.0"),
             os.path.join(os.path.expanduser("~"), "AutoCodeAgent2.0"),
             "/opt/AutoCodeAgent2.0",
@@ -231,7 +208,7 @@ class AutoCodeAgentAdapter(BaseAdapter):
         
         self.logger.warning("Could not find AutoCodeAgent repository")
     
-    def _import_modules(self) -> bool:
+    def _import_aca(self) -> bool:
         """
         Import the AutoCodeAgent modules.
         
@@ -247,122 +224,60 @@ class AutoCodeAgentAdapter(BaseAdapter):
             if self.repository_path not in sys.path:
                 sys.path.append(self.repository_path)
             
-            # Let's check for key files to verify it's the right repo
-            required_files = [
-                os.path.join(self.repository_path, "app.py"),
-                os.path.join(self.repository_path, "code_agent"),
-                os.path.join(self.repository_path, "deep_search")
-            ]
+            # Try to import the main module
+            spec = importlib.util.find_spec("autocode_agent")
+            if spec is None:
+                # If not found directly, try subdirectory
+                aca_path = os.path.join(self.repository_path, "src")
+                if aca_path not in sys.path:
+                    sys.path.append(aca_path)
+                spec = importlib.util.find_spec("autocode_agent")
             
-            if not all(os.path.exists(f) for f in required_files):
-                self.logger.error("Repository does not appear to be AutoCodeAgent2.0")
+            if spec is None:
+                self.logger.error("Could not find AutoCodeAgent module")
                 return False
             
-            # Try to import key modules
-            try:
-                # We'll test if we can import, but not actually import here
-                # as the real imports will happen during initialization
-                
-                # Check for code_agent
-                code_agent_path = os.path.join(self.repository_path, "code_agent", "code_agent.py")
-                if not os.path.exists(code_agent_path):
-                    self.logger.error("code_agent.py not found in repository")
-                    return False
-                
-                # Check for deep_search
-                deep_search_path = os.path.join(self.repository_path, "deep_search", "planner.py")
-                if not os.path.exists(deep_search_path):
-                    self.logger.error("deep_search/planner.py not found in repository")
-                    return False
-                
-                # Success - we found all the required files
-                self.logger.info("Successfully verified AutoCodeAgent2.0 repository structure")
-                return True
-                
-            except Exception as e:
-                self.logger.error(f"Error when attempting to verify repository: {e}")
-                return False
-                
+            # Import module
+            self.aca_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(self.aca_module)
+            
+            return True
         except Exception as e:
             self.logger.error(f"Failed to import AutoCodeAgent modules: {str(e)}")
             return False
     
-    def _initialize_components(self) -> bool:
+    def _initialize_code_agent(self, config: Dict[str, Any]) -> None:
         """
-        Initialize the AutoCodeAgent components.
+        Initialize the code agent.
         
-        Returns:
-            True if initialization was successful, False otherwise
+        Args:
+            config: Configuration dictionary
         """
-        try:
-            # We'll skip the full implementation here since we don't have access to the actual
-            # AutoCodeAgent2.0 codebase structure, but here's how it would work:
-            
-            # 1. Import the required modules
-            # 2. Initialize the appropriate components based on the configuration
-            # 3. Set up any necessary API keys or authentication
-            
-            # For example:
-            # if self.config["mode"] == "intellichain":
-            #     # Import and initialize CodeAgent
-            #     from code_agent.code_agent import CodeAgent
-            #     from code_agent.function_validator import FunctionValidator
-            #     
-            #     self.function_validator = FunctionValidator()
-            #     self.code_agent = CodeAgent(
-            #         model=self.config["model"],
-            #         memory_type=self.config["memory_type"],
-            #         enable_execution=self.config["enable_execution"],
-            #         max_retries=self.config["max_retries"]
-            #     )
-            # else:  # deep_search mode
-            #     # Import and initialize DeepSearchAgentPlanner
-            #     from deep_search.planner import DeepSearchAgentPlanner
-            #     
-            #     self.deep_search_agent = DeepSearchAgentPlanner(
-            #         model=self.config["model"],
-            #         include_citations=self.config["include_citations"]
-            #     )
-            
-            # Since we don't have access to the actual codebase, we'll initialize mock components
-            self._initialize_mock_components()
-            
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Failed to initialize AutoCodeAgent components: {str(e)}")
-            return False
-    
-    def _initialize_mock_components(self) -> None:
-        """
-        Initialize mock components when the actual repository is not available.
-        """
-        self.logger.info("Initializing mock components")
+        # For now, this is a stub as we don't have direct access to the codebase
+        self.code_agent = {
+            "mode": config["mode"],
+            "model": config["model"],
+            "memory_type": config["memory_type"],
+            "enable_execution": config["enable_execution"],
+            "max_retries": config["max_retries"],
+            "tasks": [],
+            "current_rag": None
+        }
         
-        if self.config["mode"] == "intellichain":
-            self.code_agent = {
-                "mode": "intellichain",
-                "model": self.config["model"],
-                "memory_type": self.config["memory_type"],
-                "enable_execution": self.config["enable_execution"],
-                "max_retries": self.config["max_retries"],
-                "tasks": [],
-                "current_rag": None
-            }
-            self.function_validator = {
-                "validation_enabled": True
-            }
-            self.deep_search_agent = None
-        else:  # deep_search mode
-            self.deep_search_agent = {
-                "mode": "deep_search",
-                "model": self.config["model"],
-                "include_citations": self.config["include_citations"],
-                "use_egot": self.config["use_egot"],
-                "searches": []
-            }
-            self.code_agent = None
-            self.function_validator = None
+        # In a real implementation, this would initialize the code agent from the repository
+        # For example:
+        # if config["mode"] == "intellichain":
+        #     self.code_agent = self.aca_module.CodeAgent(
+        #         model=config["model"],
+        #         memory_type=config["memory_type"],
+        #         enable_execution=config["enable_execution"],
+        #         max_retries=config["max_retries"]
+        #     )
+        # else:  # deep_search mode
+        #     self.code_agent = self.aca_module.DeepSearchAgentPlanner(
+        #         model=config["model"],
+        #         include_citations=config["include_citations"]
+        #     )
     
     def _generate_code(self, 
                       params: Dict[str, Any], 
@@ -372,15 +287,10 @@ class AutoCodeAgentAdapter(BaseAdapter):
         
         Args:
             params: Parameters for code generation
-                - specification: Detailed description of what the code should do
-                - language: Programming language to use (default: python)
-                - include_tests: Whether to include tests (default: True)
-                - add_documentation: Whether to add documentation (default: True)
-                - dependencies: List of dependencies to use
             context: Optional context information
             
         Returns:
-            Result dictionary with generated code and task ID
+            Result dictionary
         """
         # Extract parameters
         specification = params.get("specification", "")
@@ -389,17 +299,14 @@ class AutoCodeAgentAdapter(BaseAdapter):
         add_documentation = params.get("add_documentation", True)
         dependencies = params.get("dependencies", [])
         
-        if self.available and self.code_agent:
-            # Real implementation would use the actual code_agent
-            # Here we would call something like:
-            # result = self.code_agent.generate_code(specification, language, ...)
-            pass
+        # For now, this is a stub as we don't have direct access to the codebase
         
         # Create a new task ID
         self.task_counter += 1
         task_id = f"task_{self.task_counter}"
         
-        # Mock code generation process for now
+        # Mock code generation process
+        import time
         import random
         
         # Simple mapping of languages to file extensions
@@ -518,16 +425,10 @@ if __name__ == "__main__":
         
         Args:
             params: Parameters for algorithm implementation
-                - algorithm_name: Name of the algorithm
-                - algorithm_description: Description of the algorithm
-                - pseudocode: Pseudocode representation (optional)
-                - language: Programming language to use (default: python)
-                - paper_references: List of paper references
-                - include_tests: Whether to include tests (default: True)
             context: Optional context information
             
         Returns:
-            Result dictionary with implemented algorithm code and task ID
+            Result dictionary
         """
         # Extract parameters
         algorithm_name = params.get("algorithm_name", "")
@@ -537,15 +438,15 @@ if __name__ == "__main__":
         paper_references = params.get("paper_references", [])
         include_tests = params.get("include_tests", True)
         
-        if self.available and self.code_agent:
-            # Real implementation would use the actual code_agent
-            pass
+        # For now, this is a stub as we don't have direct access to the codebase
         
         # Create a new task ID
         self.task_counter += 1
         task_id = f"task_{self.task_counter}"
         
         # Generate a mock implementation
+        import time
+        
         # Create a more detailed implementation template for algorithms
         code = f"""# Implementation of {algorithm_name}
 # Based on: {"" if not paper_references else paper_references[0]}
@@ -632,20 +533,16 @@ if __name__ == "__main__":
         
         Args:
             params: Parameters for task decomposition
-                - task: Description of the complex task
-                - max_subtasks: Maximum number of subtasks (default: 5)
             context: Optional context information
             
         Returns:
-            Result dictionary with task decomposition plan
+            Result dictionary
         """
         # Extract parameters
         task = params.get("task", "")
         max_subtasks = params.get("max_subtasks", 5)
         
-        if self.available and self.code_agent:
-            # Real implementation would use the actual code_agent
-            pass
+        # For now, this is a stub as we don't have direct access to the codebase
         
         # Create a new task ID
         self.task_counter += 1
@@ -710,14 +607,10 @@ if __name__ == "__main__":
         
         Args:
             params: Parameters for code execution
-                - task_id: ID of the task with code to execute
-                - code: Code to execute (optional if task_id is provided)
-                - language: Programming language (optional if task_id is provided)
-                - timeout: Execution timeout in seconds (default: 30)
             context: Optional context information
             
         Returns:
-            Result dictionary with execution output and status
+            Result dictionary
         """
         # Extract parameters
         task_id = params.get("task_id", "")
@@ -725,9 +618,7 @@ if __name__ == "__main__":
         language = params.get("language", "python")
         timeout = params.get("timeout", 30)
         
-        if self.available and self.code_agent:
-            # Real implementation would use the actual code_agent
-            pass
+        # For now, this is a stub as we don't have direct access to the codebase
         
         # Check if task exists
         if task_id and task_id not in self.completed_tasks:
@@ -747,6 +638,7 @@ if __name__ == "__main__":
         
         # Mock execution result
         import random
+        import time
         
         # Simulate execution time
         execution_time = random.uniform(0.1, min(2.0, timeout / 10))
@@ -811,23 +703,17 @@ if __name__ == "__main__":
         
         Args:
             params: Parameters for web search
-                - query: Search query string
-                - search_type: Type of search (default: code)
-                  Options: code, research, implementation
-                - max_results: Maximum number of results (default: 5)
             context: Optional context information
             
         Returns:
-            Result dictionary with search results
+            Result dictionary
         """
         # Extract parameters
         query = params.get("query", "")
         search_type = params.get("search_type", "code")  # "code", "research", "implementation"
         max_results = params.get("max_results", 5)
         
-        if self.available and self.deep_search_agent:
-            # Real implementation would use the actual deep_search_agent
-            pass
+        # For now, this is a stub as we don't have direct access to the codebase
         
         # Create a new task ID
         self.task_counter += 1
@@ -835,6 +721,7 @@ if __name__ == "__main__":
         
         # Mock search results
         import random
+        import time
         from datetime import datetime, timedelta
         
         # Generate mock timestamps
@@ -921,14 +808,13 @@ if __name__ == "__main__":
         if search_type == "code":
             summary += f"Most results are in {', '.join(set(r['language'] for r in results[:3]))}. "
         elif search_type == "research":
-            summary += f"Most cited paper has {max([r['citations'] for r in results]) if results else 0} citations. "
+            summary += f"Most cited paper has {max(r['citations'] for r in results)} citations. "
         else:  # implementation
             summary += f"Popular frameworks include {', '.join(set(r['framework'] for r in results[:3]))}. "
         
         summary += f"Results are sorted by relevance to your query."
         
-        # Store the search results
-        search_result = {
+        return {
             "success": True,
             "task_id": task_id,
             "query": query,
@@ -937,10 +823,6 @@ if __name__ == "__main__":
             "summary": summary,
             "timestamp": time.time()
         }
-        
-        self.completed_tasks[task_id] = search_result
-        
-        return search_result
     
     def _setup_rag(self, 
                   params: Dict[str, Any], 
@@ -950,23 +832,17 @@ if __name__ == "__main__":
         
         Args:
             params: Parameters for RAG setup
-                - rag_type: Type of RAG system (default: simple)
-                  Options: simple, hybrid, llamaindex, hyde, adaptive
-                - documents: List of documents to include in RAG
-                - embedding_model: Model to use for embeddings (default: default)
             context: Optional context information
             
         Returns:
-            Result dictionary with RAG setup information
+            Result dictionary
         """
         # Extract parameters
         rag_type = params.get("rag_type", "simple")  # "simple", "hybrid", "llamaindex", "hyde", "adaptive"
         documents = params.get("documents", [])
         embedding_model = params.get("embedding_model", "default")
         
-        if self.available and (self.code_agent or self.deep_search_agent):
-            # Real implementation would use the AutoCodeAgent2.0 repository
-            pass
+        # For now, this is a stub as we don't have direct access to the codebase
         
         # Map RAG types to descriptions
         rag_descriptions = {
@@ -980,6 +856,9 @@ if __name__ == "__main__":
         # Get description for the selected RAG type
         description = rag_descriptions.get(rag_type, "Custom RAG configuration")
         
+        # Mock RAG setup process
+        import time
+        
         # Create a RAG configuration
         rag_config = {
             "type": rag_type,
@@ -991,11 +870,8 @@ if __name__ == "__main__":
         }
         
         # Store the current RAG configuration
-        if hasattr(self, 'code_agent') and self.code_agent:
-            if isinstance(self.code_agent, dict):
-                self.code_agent["current_rag"] = rag_config
+        self.code_agent["current_rag"] = rag_config
         
-        # Return the RAG configuration
         return {
             "success": True,
             "rag_type": rag_type,
@@ -1013,15 +889,10 @@ if __name__ == "__main__":
         
         Args:
             params: Parameters for code validation
-                - code: Code to validate
-                - language: Programming language (default: python)
-                - task_id: ID of the task with code to validate
-                - validation_type: Type of validation (default: all)
-                  Options: security, functionality, all
             context: Optional context information
             
         Returns:
-            Result dictionary with validation results
+            Result dictionary
         """
         # Extract parameters
         code = params.get("code", "")
@@ -1029,9 +900,7 @@ if __name__ == "__main__":
         task_id = params.get("task_id", "")
         validation_type = params.get("validation_type", "all")  # "security", "functionality", "all"
         
-        if self.available and self.function_validator:
-            # Real implementation would use the actual function_validator
-            pass
+        # For now, this is a stub as we don't have direct access to the codebase
         
         # If task_id is provided, retrieve code from the task
         if task_id and not code:
@@ -1046,6 +915,7 @@ if __name__ == "__main__":
         
         # Mock validation process
         import random
+        import time
         
         # Simulate validation time
         validation_time = random.uniform(0.5, 2.0)
@@ -1142,12 +1012,10 @@ if __name__ == "__main__":
         
         Args:
             params: Parameters for getting task status
-                - task_id: ID of the task
-                - include_code: Whether to include code in the result (default: False)
             context: Optional context information
             
         Returns:
-            Result dictionary with task status
+            Result dictionary
         """
         # Extract parameters
         task_id = params.get("task_id", "")

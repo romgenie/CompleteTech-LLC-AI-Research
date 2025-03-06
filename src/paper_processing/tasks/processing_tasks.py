@@ -171,7 +171,7 @@ def process_document(self, paper_id: str) -> str:
             raise ValueError(f"Paper {paper_id} has no file path")
         
         # Import the document processor
-        from research_orchestrator.knowledge_extraction.document_processing.document_processor import (
+        from src.research_orchestrator.knowledge_extraction.document_processing.document_processor import (
             DocumentProcessor, Document
         )
         
@@ -348,8 +348,8 @@ def extract_entities(self, paper_id: str) -> str:
         )
         
         # Import entity recognizer components
-        from research_orchestrator.knowledge_extraction.entity_recognition.factory import EntityRecognizerFactory
-        from research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity as OrchestratorEntity
+        from src.research_orchestrator.knowledge_extraction.entity_recognition.factory import EntityRecognizerFactory
+        from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity as OrchestratorEntity
         
         # Check if paper has content to process
         if not paper.content:
@@ -542,9 +542,9 @@ def extract_relationships(self, paper_id: str) -> str:
         )
         
         # Import relationship extractor components
-        from research_orchestrator.knowledge_extraction.relationship_extraction.factory import RelationshipExtractorFactory
-        from research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity as OrchestratorEntity
-        from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship as OrchestratorRelationship
+        from src.research_orchestrator.knowledge_extraction.relationship_extraction.factory import RelationshipExtractorFactory
+        from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity as OrchestratorEntity
+        from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship as OrchestratorRelationship
         
         # Check if paper has content and entities to process
         if not paper.content:
@@ -843,8 +843,8 @@ def build_knowledge_graph(self, paper_id: str) -> str:
         
         # Import knowledge graph components
         from paper_processing.integrations.knowledge_graph import KnowledgeGraphAdapter
-        from knowledge_graph_system.core.knowledge_graph_manager import KnowledgeGraphManager
-        from knowledge_graph_system.core.db.neo4j_manager import Neo4jManager
+        from src.knowledge_graph_system.core.knowledge_graph_manager import KnowledgeGraphManager
+        from src.knowledge_graph_system.core.db.neo4j_manager import Neo4jManager
         
         # Import config settings
         from paper_processing.config.settings import (
@@ -894,13 +894,13 @@ def build_knowledge_graph(self, paper_id: str) -> str:
         if TEMPORAL_EVOLUTION_ENABLED:
             try:
                 # Import temporal components
-                from knowledge_graph_system.temporal_evolution.integration.knowledge_graph_integration import (
+                from src.knowledge_graph_system.temporal_evolution.integration.knowledge_graph_integration import (
                     TemporalKnowledgeGraphIntegrator
                 )
-                from knowledge_graph_system.temporal_evolution.core.temporal_entity_manager import (
+                from src.knowledge_graph_system.temporal_evolution.core.temporal_entity_manager import (
                     TemporalEntityManager
                 )
-                from knowledge_graph_system.temporal_evolution.query_engine.temporal_query_engine import (
+                from src.knowledge_graph_system.temporal_evolution.query_engine.temporal_query_engine import (
                     TemporalQueryEngine
                 )
                 

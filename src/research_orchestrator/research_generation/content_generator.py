@@ -11,11 +11,11 @@ import json
 import os
 from pathlib import Path
 
-from research_orchestrator.core.state_manager import Project
-from research_orchestrator.research_generation.content_synthesis import ContentSynthesisEngine, ResearchData
-from research_orchestrator.research_generation.report_structure import ReportStructurePlanner, DocumentStructure, Section, DocumentType, SectionType
-from research_orchestrator.research_generation.citation.citation_manager import CitationManager, CitationStyle
-from research_orchestrator.research_generation.visualization.visualization_generator import VisualizationGenerator, VisualizationType
+from src.research_orchestrator.core.state_manager import Project
+from src.research_orchestrator.research_generation.content_synthesis import ContentSynthesisEngine, ResearchData
+from src.research_orchestrator.research_generation.report_structure import ReportStructurePlanner, DocumentStructure, Section, DocumentType, SectionType
+from src.research_orchestrator.research_generation.citation.citation_manager import CitationManager, CitationStyle
+from src.research_orchestrator.research_generation.visualization.visualization_generator import VisualizationGenerator, VisualizationType
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -70,7 +70,7 @@ class ContentGenerator:
             self.logger.warning(f"Error initializing VisualizationGenerator: {e}")
             self.logger.info("Creating minimal visualization generator")
             # Use a minimal implementation if the full one fails
-            from research_orchestrator.research_generation.visualization.visualization_generator import VisualizationType
+            from src.research_orchestrator.research_generation.visualization.visualization_generator import VisualizationType
             class MinimalVisualizationGenerator:
                 def create_visualization(self, **kwargs):
                     return f"[Visualization placeholder: {kwargs.get('title', 'Untitled')}]"

@@ -229,7 +229,8 @@ class ImplementationDetailCollector:
         Returns:
             Enhanced algorithm with more implementation details
         """
-        # This is a simplified implementation for the example
+        # This method focuses on a single algorithm, extracting more detailed
+        # information to enrich the algorithm object
         
         # Collect full details first to get context
         details = self.collect_details(paper, [algorithm])
@@ -571,11 +572,11 @@ class ImplementationDetailCollector:
                         
                         # Check if higher is better is mentioned
                         higher_is_better = None
-                        if re.search(r"(?:{})[^\.\n]*?(?:higher|larger|greater)[^\.\n]+(?:better|preferred|desired)".format(re.escape(metric)), 
+                        if re.search(r"(?:{}).*?(?:higher|larger|greater)[^\.\n]+(?:better|preferred|desired)".format(re.escape(metric)), 
                                      section.content, 
                                      re.IGNORECASE):
                             higher_is_better = True
-                        elif re.search(r"(?:{})[^\.\n]*?(?:lower|smaller|lesser)[^\.\n]+(?:better|preferred|desired)".format(re.escape(metric)), 
+                        elif re.search(r"(?:{}).*?(?:lower|smaller|lesser)[^\.\n]+(?:better|preferred|desired)".format(re.escape(metric)), 
                                       section.content, 
                                       re.IGNORECASE):
                             higher_is_better = False
@@ -831,7 +832,7 @@ class ImplementationDetailCollector:
                     ref_text = ref_text.rstrip(".,:;'\"")
                     
                     # See if this is a URL
-                    is_url = bool(re.match(r"https?://", ref_text, re.IGNORECASE))
+                    is_url = re.match(r"https?://", ref_text, re.IGNORECASE)
                     
                     # Is it a GitHub reference?
                     is_github = "github" in ref_text.lower()
@@ -1079,7 +1080,7 @@ class ImplementationDetailCollector:
         # A complete implementation would handle all nested objects
         return {
             "paper_id": details.paper_id,
-            "algorithms": [], # Would convert algorithm data
+            "algorithms": [self._algorithm_to_json(algo) for algo in details.algorithms],
             "code_snippets": [self._code_snippet_to_json(snippet) for snippet in details.code_snippets],
             "requirements": [self._requirement_to_json(req) for req in details.requirements],
             "datasets": [self._dataset_to_json(dataset) for dataset in details.datasets],
@@ -1089,6 +1090,15 @@ class ImplementationDetailCollector:
             "libraries_used": details.libraries_used,
             "references_to_existing_implementations": details.references_to_existing_implementations,
             "notes": details.notes
+        }
+    
+    def _algorithm_to_json(self, algorithm: ExtractedAlgorithm) -> Dict:
+        """Convert algorithm to JSON."""
+        return {
+            "algorithm_id": algorithm.algorithm_id,
+            "name": algorithm.name,
+            "description": algorithm.description,
+            # Other fields would be converted as well
         }
     
     def _code_snippet_to_json(self, snippet: CodeSnippet) -> Dict:

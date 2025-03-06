@@ -22,9 +22,9 @@ from typing import Dict, List, Any, Optional, Tuple
 import uuid
 
 # Import the Knowledge Graph System interfaces
-from knowledge_graph_system.core.knowledge_graph.manager import KnowledgeGraphManager
-from knowledge_graph_system.core.models.entity import GraphEntity
-from knowledge_graph_system.core.models.relationship import GraphRelationship
+from src.knowledge_graph_system.core.knowledge_graph.manager import KnowledgeGraphManager
+from src.knowledge_graph_system.core.models.entity import GraphEntity
+from src.knowledge_graph_system.core.models.relationship import GraphRelationship
 
 # Import the Paper Processing models
 from ..models.paper import Paper, Entity, Relationship

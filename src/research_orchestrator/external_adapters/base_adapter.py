@@ -1,33 +1,21 @@
 """
-Base adapter for external repositories.
+Base adapter interface for external repositories.
 
-This module provides a base class for adapters that integrate with external repositories,
-defining the common interface and functionality for all adapters.
+This module defines the base adapter interface that all external repository adapters
+must implement to ensure consistent integration with the research orchestrator.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 
 class BaseAdapter(ABC):
     """
-    Base class for adapters that integrate with external repositories.
+    Base adapter interface for external repositories.
     
-    This abstract class defines the common interface that all adapters must implement.
-    It provides a standard way for the research orchestrator to interact with external
-    repositories regardless of their specific implementation details.
+    This abstract class defines the interface that all external repository adapters
+    must implement to ensure consistent integration with the research orchestrator.
     """
-    
-    def __init__(self, name: str):
-        """
-        Initialize the adapter.
-        
-        Args:
-            name: Name of the adapter
-        """
-        self.name = name
-        self.initialized = False
-        self.available = False
     
     @abstractmethod
     def initialize(self, config: Dict[str, Any]) -> bool:
@@ -35,7 +23,7 @@ class BaseAdapter(ABC):
         Initialize the adapter with the provided configuration.
         
         Args:
-            config: Configuration dictionary containing adapter-specific settings
+            config: Configuration dictionary for the adapter
             
         Returns:
             True if initialization was successful, False otherwise
@@ -89,14 +77,3 @@ class BaseAdapter(ABC):
             True if shutdown was successful, False otherwise
         """
         pass
-    
-    def __str__(self) -> str:
-        """
-        Get a string representation of the adapter.
-        
-        Returns:
-            String representation
-        """
-        status = "initialized" if self.initialized else "not initialized"
-        available = "available" if self.is_available() else "not available"
-        return f"{self.name} ({status}, {available})"

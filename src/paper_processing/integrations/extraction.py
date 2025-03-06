@@ -24,10 +24,10 @@ import os
 import tempfile
 
 # Import the Knowledge Extraction Pipeline interfaces
-from research_orchestrator.knowledge_extraction.document_processing.document_processor import DocumentProcessor
-from research_orchestrator.knowledge_extraction.entity_recognition.base_recognizer import EntityRecognizer
-from research_orchestrator.knowledge_extraction.relationship_extraction.base_extractor import RelationshipExtractor
-from research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
+from src.research_orchestrator.knowledge_extraction.document_processing.document_processor import DocumentProcessor
+from src.research_orchestrator.knowledge_extraction.entity_recognition.base_recognizer import EntityRecognizer
+from src.research_orchestrator.knowledge_extraction.relationship_extraction.base_extractor import RelationshipExtractor
+from src.research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
 
 # Import the Paper Processing models
 from ..models.paper import Paper, Entity, Relationship, PaperStatus

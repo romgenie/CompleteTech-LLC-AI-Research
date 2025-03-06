@@ -23,7 +23,7 @@ import uuid
 import json
 
 # Import the Research Implementation System interfaces
-from research_implementation.core.implementation_manager import ImplementationManager
+from src.research_implementation.core.implementation_manager import ImplementationManager
 
 # Import the Paper Processing models
 from ..models.paper import Paper, Entity, Relationship

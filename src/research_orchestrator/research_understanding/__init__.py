@@ -1,8 +1,21 @@
 """
-Research Understanding module for analyzing and extracting structured information from papers.
+Research Understanding Engine package.
+
+This package provides components for analyzing and extracting structured information
+from research papers, including algorithms, implementation details, and architectures.
 """
 
+# Make subpackages available
+from . import paper_processing
+from . import algorithm_extraction
+from . import implementation_details
+
+# Import main engine class
 from .understanding_engine import ResearchUnderstandingEngine
-from .paper_processing.paper_processor import PaperProcessor, StructuredPaper, PaperFormat
-from .algorithm_extraction.algorithm_extractor import AlgorithmExtractor, ExtractedAlgorithm
-from .implementation_details.detail_collector import ImplementationDetailCollector
+
+__all__ = [
+    'paper_processing',
+    'algorithm_extraction',
+    'implementation_details',
+    'ResearchUnderstandingEngine',
+]

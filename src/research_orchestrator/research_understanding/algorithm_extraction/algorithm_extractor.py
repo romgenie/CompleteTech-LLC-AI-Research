@@ -214,91 +214,17 @@ class AlgorithmExtractor:
         Returns:
             Enriched ExtractedAlgorithm with implementation details
         """
-        # This is a simplified implementation for the example
-        # A real implementation would do more sophisticated analysis
+        # This method would analyze the paper more deeply to extract implementation
+        # details for a specific algorithm.
         
-        # Extract key sections related to the algorithm
-        related_sections = []
-        algorithm_name_lower = algorithm.name.lower()
+        # Here we would use language models and rule-based approaches to identify:
+        # - Parameters and their descriptions
+        # - Variables and their purposes
+        # - Subroutines and their functionality
+        # - Optimization techniques
+        # - Implementation notes and considerations
         
-        for section in self._flatten_sections(paper.sections):
-            # Check if the section mentions this algorithm
-            if (algorithm_name_lower in section.title.lower() or 
-                algorithm_name_lower in section.content.lower()):
-                related_sections.append(section)
-        
-        # Look for purpose description
-        if not algorithm.purpose:
-            purpose_pattern = rf"{re.escape(algorithm.name)}[^.]*?(?:aims to|designed to|purpose is to|goal is to)[^.]*\."
-            for section in related_sections:
-                purpose_match = re.search(purpose_pattern, section.content, re.IGNORECASE)
-                if purpose_match:
-                    algorithm.purpose = purpose_match.group(0).strip()
-                    break
-        
-        # Look for parameters
-        param_pattern = rf"{re.escape(algorithm.name)}[^.]*?takes (?:as input|as parameters)[^.]*\."
-        for section in related_sections:
-            param_match = re.search(param_pattern, section.content, re.IGNORECASE)
-            if param_match:
-                param_text = param_match.group(0).strip()
-                # Extract parameter names
-                param_names = re.findall(r'(\w+)(?:\s*and\s*|\s*,\s*|\s+as\s+|\s+is\s+)', param_text)
-                
-                for param_name in param_names:
-                    # Skip common words
-                    if param_name.lower() in ["it", "that", "the", "this", "which", "with", "takes", "as", "is", "are"]:
-                        continue
-                        
-                    # Skip if we already have this parameter
-                    if any(p.name == param_name for p in algorithm.parameters):
-                        continue
-                        
-                    algorithm.parameters.append(AlgorithmParameter(
-                        name=param_name,
-                        description=f"Parameter extracted from: {param_text}"
-                    ))
-        
-        # Look for complexity information if not already set
-        if not algorithm.complexity:
-            algorithm.complexity = {}
-            
-        if "time" not in algorithm.complexity:
-            time_pattern = rf"(?:time complexity|runtime)[^.]*?(?:is|of)[^.]*?([OΘΩo]\(?[^)]+\)?)"
-            for section in related_sections:
-                time_match = re.search(time_pattern, section.content, re.IGNORECASE)
-                if time_match:
-                    algorithm.complexity["time"] = time_match.group(1).strip()
-                    break
-                    
-        if "space" not in algorithm.complexity:
-            space_pattern = rf"(?:space complexity|memory usage)[^.]*?(?:is|of)[^.]*?([OΘΩo]\(?[^)]+\)?)"
-            for section in related_sections:
-                space_match = re.search(space_pattern, section.content, re.IGNORECASE)
-                if space_match:
-                    algorithm.complexity["space"] = space_match.group(1).strip()
-                    break
-        
-        # Look for limitations
-        if not algorithm.limitations:
-            limitation_pattern = rf"{re.escape(algorithm.name)}[^.]*?(?:limitation|drawback|weakness|issue)[^.]*\."
-            for section in related_sections:
-                limitation_match = re.search(limitation_pattern, section.content, re.IGNORECASE)
-                if limitation_match:
-                    algorithm.limitations = limitation_match.group(0).strip()
-                    break
-                    
-        # For this example, let's use some hardcoded values for QuickMergeSort if needed
-        if algorithm.name == "QuickMergeSort" and not algorithm.purpose:
-            algorithm.purpose = "QuickMergeSort aims to combine the strengths of QuickSort and MergeSort, achieving good average-case performance while maintaining good worst-case bounds."
-            
-        if algorithm.name == "QuickMergeSort" and not algorithm.parameters:
-            algorithm.parameters = [
-                AlgorithmParameter(name="arr", description="The array to be sorted", is_required=True),
-                AlgorithmParameter(name="low", description="The starting index of the array segment to sort", default_value="0", is_required=False),
-                AlgorithmParameter(name="high", description="The ending index of the array segment to sort", default_value="None", is_required=False)
-            ]
-        
+        # For this stub implementation, we'll just return the original algorithm
         return algorithm
     
     def _check_cache(self, paper_id: str) -> Optional[List[ExtractedAlgorithm]]:
@@ -372,11 +298,13 @@ class AlgorithmExtractor:
         Args:
             context: Extraction context
         """
-        # This is a simplified implementation for the example
-        # A real implementation would use more sophisticated NLP techniques
+        # This would be implemented to parse algorithm sections and extract
+        # algorithm descriptions, pseudocode, etc.
+        # For now, we'll use a simple placeholder approach
         
         for section in context["potential_algorithm_sections"]:
             # Simple regex to detect potential algorithm names - this is just illustrative
+            # A real implementation would use more sophisticated NLP techniques
             algorithm_matches = re.finditer(r"(?:Algorithm|We propose)(?:\s+\d+)?(?:\s*:)?\s+([A-Z][A-Za-z0-9_]+)", section.content)
             
             for match in algorithm_matches:
@@ -386,15 +314,6 @@ class AlgorithmExtractor:
                     "section": section,
                     "match_context": section.content[max(0, match.start() - 100):min(len(section.content), match.end() + 500)]
                 })
-                
-            # For our example, special case for "QuickMergeSort"
-            if "quickmergesort" in section.title.lower() or "quickmergesort" in section.content.lower():
-                if not any(algo.get("name") == "QuickMergeSort" for algo in context["algorithms"]):
-                    context["algorithms"].append({
-                        "name": "QuickMergeSort",
-                        "section": section,
-                        "match_context": section.content
-                    })
     
     def _extract_from_pseudocode(self, context: Dict) -> None:
         """
@@ -403,14 +322,15 @@ class AlgorithmExtractor:
         Args:
             context: Extraction context
         """
-        # This is a simplified implementation for the example
-        # A real implementation would use more sophisticated techniques
+        # This would identify and extract pseudocode blocks using patterns
+        # like "begin" and "end" or code formatting in the paper.
+        # For now, just a placeholder
         
-        # Simple regex to detect pseudocode blocks
-        pseudocode_pattern = r"```([^`]+)```"
+        # Simple regex to detect pseudocode blocks - just illustrative
+        pseudocode_pattern = r"(?:(?:Pseudocode|Algorithm)(?:\s+\d+)?(?:\s*:)?[\s\S]*?begin)([\s\S]*?)(?:end|return)"
         
         for section in self._flatten_sections(context["paper"].sections):
-            pseudocode_matches = re.finditer(pseudocode_pattern, section.content)
+            pseudocode_matches = re.finditer(pseudocode_pattern, section.content, re.IGNORECASE)
             
             for match in pseudocode_matches:
                 pseudocode = match.group(1).strip()
@@ -419,16 +339,6 @@ class AlgorithmExtractor:
                     "section": section,
                     "context": section.content[max(0, match.start() - 100):min(len(section.content), match.end() + 100)]
                 })
-                
-                # For our example, check if this is a function definition for a known algorithm
-                if "def quick_merge_sort" in pseudocode:
-                    if not any(algo.get("name") == "QuickMergeSort" for algo in context["algorithms"]):
-                        context["algorithms"].append({
-                            "name": "QuickMergeSort",
-                            "section": section,
-                            "match_context": section.content,
-                            "pseudocode": pseudocode
-                        })
     
     def _extract_from_algorithmic_language(self, context: Dict) -> None:
         """
@@ -437,18 +347,9 @@ class AlgorithmExtractor:
         Args:
             context: Extraction context
         """
-        # This is a simplified implementation for the example
-        # For the example, check if paper has QuickMergeSort but we haven't found it yet
-        if "QuickMergeSort" in context["paper"].title and not any(algo.get("name") == "QuickMergeSort" for algo in context["algorithms"]):
-            # Check all sections for mentions
-            for section in self._flatten_sections(context["paper"].sections):
-                if "quickmergesort" in section.content.lower():
-                    context["algorithms"].append({
-                        "name": "QuickMergeSort",
-                        "section": section,
-                        "match_context": section.content
-                    })
-                    break
+        # This would use NLP to identify algorithm descriptions from natural language
+        # For now, just a placeholder
+        pass
     
     def _process_extracted_algorithms(self, context: Dict) -> List[ExtractedAlgorithm]:
         """
@@ -460,7 +361,9 @@ class AlgorithmExtractor:
         Returns:
             List of ExtractedAlgorithm objects
         """
-        # This is a simplified implementation for the example
+        # This would combine information from different extraction methods,
+        # eliminate duplicates, and create ExtractedAlgorithm objects.
+        # For now, just a placeholder implementation
         
         result = []
         
@@ -470,30 +373,11 @@ class AlgorithmExtractor:
             section = algo_info["section"]
             
             # Try to find matching pseudocode
-            pseudocode = algo_info.get("pseudocode")
-            if not pseudocode:
-                for pc_info in context["extracted_pseudocode"]:
-                    if pc_info["section"] == section:
-                        pseudocode = pc_info["pseudocode"]
-                        break
-            
-            # Look for complexity information
-            complexity = {}
-            time_match = re.search(r'time complexity[^\.]*?([OΘΩo]\(?[^)]+\)?)', algo_info["match_context"], re.IGNORECASE)
-            space_match = re.search(r'space complexity[^\.]*?([OΘΩo]\(?[^)]+\)?)', algo_info["match_context"], re.IGNORECASE)
-            
-            if time_match:
-                complexity["time"] = time_match.group(1).strip()
-            if space_match:
-                complexity["space"] = space_match.group(1).strip()
-                
-            # For QuickMergeSort, use specific values if found
-            if algo_info["name"] == "QuickMergeSort":
-                algo_id = "algo_quickmergesort"
-                if "O(n log n)" in section.content and "time" not in complexity:
-                    complexity["time"] = "O(n log n)"
-                if "O(n)" in section.content and "space" not in complexity:
-                    complexity["space"] = "O(n)"
+            pseudocode = None
+            for pc_info in context["extracted_pseudocode"]:
+                if pc_info["section"] == section:
+                    pseudocode = pc_info["pseudocode"]
+                    break
             
             # Create ExtractedAlgorithm
             result.append(ExtractedAlgorithm(
@@ -501,7 +385,6 @@ class AlgorithmExtractor:
                 name=algo_info["name"],
                 description=algo_info["match_context"],
                 pseudocode=pseudocode,
-                complexity=complexity,
                 source_paper_id=context["paper"].paper_id,
                 paper_section_references=[section.title]
             ))
@@ -517,11 +400,6 @@ class AlgorithmExtractor:
             # Try to extract a name from the context
             name_match = re.search(r"(?:Algorithm|We propose)(?:\s+\d+)?(?:\s*:)?\s+([A-Z][A-Za-z0-9_]+)", pc_info["context"])
             name = name_match.group(1) if name_match else f"Algorithm {i+1}"
-            
-            # For QuickMergeSort, use specific name if found
-            if "quick_merge_sort" in pc_info["pseudocode"]:
-                name = "QuickMergeSort"
-                algo_id = "algo_quickmergesort"
             
             # Create ExtractedAlgorithm
             result.append(ExtractedAlgorithm(
@@ -546,15 +424,27 @@ class AlgorithmExtractor:
         Returns:
             Enriched algorithms
         """
-        # This is a simplified implementation for the example
-        # A real implementation would do more sophisticated analysis
+        # This would analyze the algorithms and paper to extract implementation details
+        # For now, just a placeholder that extracts complexity information
         
         for algo in algorithms:
-            # Use the full extraction method
-            enriched_algo = self.extract_implementation_details(algo, paper)
+            # Look for complexity information
+            complexity_pattern = r"(?:time|space)(?:\s+)?complexity(?:\s+)?(?:is|of)(?:\s+)?([OΘΩo]\(?[^)]+\)?)"
             
-            # Update the algorithm with enriched information
-            algo = enriched_algo
+            complexity = {}
+            
+            # Look in algorithm description
+            time_matches = re.finditer(r"time(?:\s+)?complexity(?:\s+)?(?:is|of)(?:\s+)?([OΘΩo]\(?[^)]+\)?)", algo.description, re.IGNORECASE)
+            space_matches = re.finditer(r"space(?:\s+)?complexity(?:\s+)?(?:is|of)(?:\s+)?([OΘΩo]\(?[^)]+\)?)", algo.description, re.IGNORECASE)
+            
+            for match in time_matches:
+                complexity["time"] = match.group(1)
+            
+            for match in space_matches:
+                complexity["space"] = match.group(1)
+            
+            if complexity:
+                algo.complexity = complexity
         
         return algorithms
     
@@ -587,55 +477,24 @@ class AlgorithmExtractor:
         Returns:
             List of JSON-serializable dictionaries
         """
+        # This is a simplified implementation
+        # A complete implementation would handle all nested objects
         result = []
         
         for algo in algorithms:
-            # Helper function to convert parameters
-            def convert_param(param):
-                return {
-                    "name": param.name,
-                    "description": param.description,
-                    "type_hint": param.type_hint,
-                    "default_value": param.default_value,
-                    "is_required": param.is_required
-                }
-            
-            # Helper function to convert variables
-            def convert_var(var):
-                return {
-                    "name": var.name,
-                    "purpose": var.purpose,
-                    "type_hint": var.type_hint,
-                    "initialization": var.initialization
-                }
-            
-            # Helper function to convert subroutines
-            def convert_subroutine(sub):
-                return {
-                    "name": sub.name,
-                    "description": sub.description,
-                    "parameters": [convert_param(p) for p in sub.parameters] if sub.parameters else [],
-                    "returns": sub.returns,
-                    "pseudocode": sub.pseudocode
-                }
-            
             result.append({
                 "algorithm_id": algo.algorithm_id,
                 "name": algo.name,
                 "description": algo.description,
                 "purpose": algo.purpose,
                 "pseudocode": algo.pseudocode,
-                "parameters": [convert_param(p) for p in algo.parameters] if algo.parameters else [],
-                "variables": [convert_var(v) for v in algo.variables] if algo.variables else [],
-                "subroutines": [convert_subroutine(s) for s in algo.subroutines] if algo.subroutines else [],
                 "complexity": algo.complexity,
                 "optimization_notes": algo.optimization_notes,
                 "implementation_notes": algo.implementation_notes,
-                "usage_examples": algo.usage_examples,
                 "limitations": algo.limitations,
-                "alternative_approaches": algo.alternative_approaches,
+                "source_paper_id": algo.source_paper_id,
                 "paper_section_references": algo.paper_section_references,
-                "source_paper_id": algo.source_paper_id
+                # Other fields would be converted as well
             })
         
         return result
@@ -650,75 +509,25 @@ class AlgorithmExtractor:
         Returns:
             List of ExtractedAlgorithm objects
         """
+        # This is a simplified implementation
+        # A complete implementation would recreate all nested objects
         result = []
         
         for item in data:
-            # Helper function to convert parameters
-            def convert_param(param_data):
-                return AlgorithmParameter(
-                    name=param_data["name"],
-                    description=param_data.get("description"),
-                    type_hint=param_data.get("type_hint"),
-                    default_value=param_data.get("default_value"),
-                    is_required=param_data.get("is_required", True)
-                )
-            
-            # Helper function to convert variables
-            def convert_var(var_data):
-                return AlgorithmVariable(
-                    name=var_data["name"],
-                    purpose=var_data.get("purpose"),
-                    type_hint=var_data.get("type_hint"),
-                    initialization=var_data.get("initialization")
-                )
-            
-            # Helper function to convert subroutines
-            def convert_subroutine(sub_data):
-                params = []
-                if "parameters" in sub_data and sub_data["parameters"]:
-                    params = [convert_param(p) for p in sub_data["parameters"]]
-                
-                return AlgorithmSubroutine(
-                    name=sub_data["name"],
-                    description=sub_data.get("description"),
-                    parameters=params,
-                    returns=sub_data.get("returns"),
-                    pseudocode=sub_data.get("pseudocode")
-                )
-            
-            # Convert parameters
-            parameters = []
-            if "parameters" in item and item["parameters"]:
-                parameters = [convert_param(p) for p in item["parameters"]]
-            
-            # Convert variables
-            variables = []
-            if "variables" in item and item["variables"]:
-                variables = [convert_var(v) for v in item["variables"]]
-            
-            # Convert subroutines
-            subroutines = []
-            if "subroutines" in item and item["subroutines"]:
-                subroutines = [convert_subroutine(s) for s in item["subroutines"]]
-            
-            result.append(ExtractedAlgorithm(
-                algorithm_id=item["algorithm_id"],
-                name=item["name"],
-                description=item["description"],
+            algo = ExtractedAlgorithm(
+                algorithm_id=item.get("algorithm_id", ""),
+                name=item.get("name", ""),
+                description=item.get("description", ""),
                 purpose=item.get("purpose"),
                 pseudocode=item.get("pseudocode"),
-                parameters=parameters,
-                variables=variables,
-                subroutines=subroutines,
                 complexity=item.get("complexity"),
                 optimization_notes=item.get("optimization_notes"),
                 implementation_notes=item.get("implementation_notes"),
-                usage_examples=item.get("usage_examples"),
                 limitations=item.get("limitations"),
-                alternative_approaches=item.get("alternative_approaches"),
-                paper_section_references=item.get("paper_section_references"),
-                source_paper_id=item.get("source_paper_id")
-            ))
+                source_paper_id=item.get("source_paper_id"),
+                paper_section_references=item.get("paper_section_references", [])
+            )
+            result.append(algo)
         
         return result
 
@@ -747,7 +556,8 @@ class PseudocodeParser:
         Returns:
             Dictionary with structured information
         """
-        # This is a simplified implementation for the example
+        # This would parse pseudocode to extract inputs, outputs, variables, etc.
+        # For now just a placeholder implementation
         
         result = {
             "parameters": [],
@@ -756,25 +566,17 @@ class PseudocodeParser:
             "main_logic": pseudocode
         }
         
-        # Extract input parameters from function definition
-        param_matches = re.finditer(r"def\s+\w+\s*\(([^)]*)\)", pseudocode)
+        # Extract input parameters
+        param_matches = re.finditer(r"(?:Input|Parameters):?\s+([^\\n]+)", pseudocode)
         for match in param_matches:
             param_text = match.group(1)
             for param in param_text.split(','):
                 param = param.strip()
                 if param:
-                    # Handle default values
-                    if '=' in param:
-                        name, default = param.split('=', 1)
-                        result["parameters"].append({
-                            "name": name.strip(),
-                            "default_value": default.strip()
-                        })
-                    else:
-                        result["parameters"].append({"name": param})
+                    result["parameters"].append({"name": param})
         
-        # Extract variables
-        var_pattern = r"(?:let|set|)\s*([a-zA-Z][a-zA-Z0-9_]*)\s*(?:=|←|:=)\s*([^\\n;]+)"
+        # Extract variables (this is highly simplified)
+        var_pattern = r"(?:let|set)\s+([a-zA-Z][a-zA-Z0-9_]*)\s*(?:=|←|:=)\s*([^\\n;]+)"
         var_matches = re.finditer(var_pattern, pseudocode)
         for match in var_matches:
             var_name = match.group(1)
@@ -820,12 +622,13 @@ class AlgorithmImplementationGenerator:
         Returns:
             Code implementation as string
         """
-        # This is a simplified implementation for the example
+        # This would generate actual code from algorithm description
+        # For now just a placeholder implementation
         
         if language.lower() == "python":
             return self._generate_python_implementation(algorithm, include_comments)
         else:
-            return f"# Implementation in {language} not supported yet\n# Algorithm: {algorithm.name}"
+            raise ValueError(f"Unsupported language: {language}")
     
     def _generate_python_implementation(self, algorithm: ExtractedAlgorithm, include_comments: bool) -> str:
         """
@@ -838,7 +641,8 @@ class AlgorithmImplementationGenerator:
         Returns:
             Python code as string
         """
-        # This is a simplified implementation for the example
+        # This is a placeholder implementation
+        # A real implementation would analyze the algorithm and generate actual code
         
         lines = []
         
@@ -846,13 +650,7 @@ class AlgorithmImplementationGenerator:
         if include_comments:
             lines.append(f"# {algorithm.name}")
             lines.append("#")
-            
-            if algorithm.purpose:
-                lines.append(f"# Purpose: {algorithm.purpose}")
-            else:
-                description_summary = algorithm.description[:100] + "..." if len(algorithm.description) > 100 else algorithm.description
-                lines.append(f"# {description_summary}")
-                
+            lines.append(f"# {algorithm.description[:100]}..." if len(algorithm.description) > 100 else f"# {algorithm.description}")
             if algorithm.complexity:
                 for complexity_type, complexity_value in algorithm.complexity.items():
                     lines.append(f"# {complexity_type.capitalize()} complexity: {complexity_value}")
@@ -868,191 +666,47 @@ class AlgorithmImplementationGenerator:
                 if not param.is_required and param.default_value is not None:
                     param_str = f"{param_str} = {param.default_value}"
                 params.append(param_str)
-        else:
-            # Default parameters based on algorithm name
-            if algorithm.name == "QuickMergeSort":
-                params = ["arr", "low=0", "high=None"]
         
-        func_name = algorithm.name.lower().replace(" ", "_")
-        lines.append(f"def {func_name}({', '.join(params)}):")
+        lines.append(f"def {algorithm.name.lower().replace(' ', '_')}({', '.join(params)}):")
         
         # Add docstring
         if include_comments:
             lines.append(f'    """')
             lines.append(f"    {algorithm.name}")
             lines.append("")
-            
-            if algorithm.purpose:
-                lines.append(f"    {algorithm.purpose}")
-            elif algorithm.description:
+            if algorithm.description:
                 # Wrap description at 70 chars and indent
                 import textwrap
                 wrapped = textwrap.wrap(algorithm.description, width=70)
-                for i, line in enumerate(wrapped):
-                    if i < 3:  # Limit to first few lines
-                        lines.append(f"    {line}")
-                
-            lines.append("")
+                for line in wrapped:
+                    lines.append(f"    {line}")
+                lines.append("")
             
             # Parameters
             if algorithm.parameters:
                 lines.append("    Args:")
                 for param in algorithm.parameters:
-                    lines.append(f"        {param.name}: {param.description or 'Parameter description not available'}")
+                    lines.append(f"        {param.name}: {param.description or 'No description'}")
                 lines.append("")
             
             # Return value
             lines.append("    Returns:")
-            lines.append("        Sorted array")
+            lines.append("        Implementation result")
             
             lines.append('    """')
         
-        # Implement the algorithm based on pseudocode or description
+        # Add placeholder implementation or try to convert pseudocode
         if algorithm.pseudocode:
-            # Convert pseudocode to Python
+            # Simple conversion of pseudocode to Python comments
             pseudocode_lines = algorithm.pseudocode.split('\n')
-            
-            # For QuickMergeSort, use the pseudocode directly if it looks like Python
-            if algorithm.name == "QuickMergeSort" and "def quick_merge_sort" in algorithm.pseudocode:
-                # Extract the function body
-                body_lines = []
-                in_body = False
-                for line in pseudocode_lines:
-                    if in_body:
-                        body_lines.append("    " + line)
-                    elif "def quick_merge_sort" in line:
-                        in_body = True
-                
-                if body_lines:
-                    lines.extend(body_lines)
-                else:
-                    # Fallback implementation
-                    lines.append("    if high is None:")
-                    lines.append("        high = len(arr) - 1")
-                    lines.append("")
-                    lines.append("    if low < high:")
-                    lines.append("        # If the array segment is small, use insertion sort")
-                    lines.append("        if high - low < 10:")
-                    lines.append("            insertion_sort(arr, low, high)")
-                    lines.append("            return")
-                    lines.append("")
-                    lines.append("        # Otherwise use quicksort partitioning")
-                    lines.append("        pivot = partition(arr, low, high)")
-                    lines.append("")
-                    lines.append("        # Recursively sort the left half")
-                    lines.append("        quick_merge_sort(arr, low, pivot-1)")
-                    lines.append("")
-                    lines.append("        # Recursively sort the right half")
-                    lines.append("        quick_merge_sort(arr, pivot+1, high)")
-                    lines.append("")
-                    lines.append("        # Merge the two sorted halves if needed")
-                    lines.append("        if is_merging_beneficial(arr, low, pivot, high):")
-                    lines.append("            merge(arr, low, pivot, high)")
-                    lines.append("")
-                    lines.append("    return arr")
-            else:
-                # Generic pseudocode conversion
-                lines.append("    # Implementation based on pseudocode:")
-                for line in pseudocode_lines[:10]:  # Only include the first few lines
-                    lines.append(f"    # {line}")
-                lines.append("")
-                lines.append("    # TODO: Implement this algorithm")
-                lines.append("    pass")
+            lines.append("    # Implementation based on pseudocode:")
+            for pc_line in pseudocode_lines:
+                lines.append(f"    # {pc_line}")
+            lines.append("")
+            lines.append("    # TODO: Implement this algorithm")
+            lines.append("    pass")
         else:
-            # Simplified implementation
-            if algorithm.name == "QuickMergeSort":
-                # Basic implementation for QuickMergeSort
-                lines.append("    if high is None:")
-                lines.append("        high = len(arr) - 1")
-                lines.append("")
-                lines.append("    if low < high:")
-                lines.append("        # If the array segment is small, use insertion sort")
-                lines.append("        if high - low < 10:")
-                lines.append("            insertion_sort(arr, low, high)")
-                lines.append("            return")
-                lines.append("")
-                lines.append("        # Otherwise use quicksort partitioning")
-                lines.append("        pivot = partition(arr, low, high)")
-                lines.append("")
-                lines.append("        # Recursively sort the left half")
-                lines.append("        quick_merge_sort(arr, low, pivot-1)")
-                lines.append("")
-                lines.append("        # Recursively sort the right half")
-                lines.append("        quick_merge_sort(arr, pivot+1, high)")
-                lines.append("")
-                lines.append("        # Merge the two sorted halves if needed")
-                lines.append("        if is_merging_beneficial(arr, low, pivot, high):")
-                lines.append("            merge(arr, low, pivot, high)")
-                lines.append("")
-                lines.append("    return arr")
-                
-                # Add helper functions
-                lines.append("")
-                lines.append("")
-                lines.append("def insertion_sort(arr, low, high):")
-                lines.append("    for i in range(low + 1, high + 1):")
-                lines.append("        key = arr[i]")
-                lines.append("        j = i - 1")
-                lines.append("        while j >= low and arr[j] > key:")
-                lines.append("            arr[j + 1] = arr[j]")
-                lines.append("            j -= 1")
-                lines.append("        arr[j + 1] = key")
-                lines.append("    return arr")
-                lines.append("")
-                lines.append("")
-                lines.append("def partition(arr, low, high):")
-                lines.append("    pivot = arr[high]")
-                lines.append("    i = low - 1")
-                lines.append("    for j in range(low, high):")
-                lines.append("        if arr[j] <= pivot:")
-                lines.append("            i += 1")
-                lines.append("            arr[i], arr[j] = arr[j], arr[i]")
-                lines.append("    arr[i + 1], arr[high] = arr[high], arr[i + 1]")
-                lines.append("    return i + 1")
-                lines.append("")
-                lines.append("")
-                lines.append("def is_merging_beneficial(arr, low, pivot, high):")
-                lines.append("    # In a real implementation, this would use heuristics")
-                lines.append("    # For this example, we'll merge if the segments are imbalanced")
-                lines.append("    left_size = pivot - low + 1")
-                lines.append("    right_size = high - pivot")
-                lines.append("    return abs(left_size - right_size) > (high - low) // 4")
-                lines.append("")
-                lines.append("")
-                lines.append("def merge(arr, low, pivot, high):")
-                lines.append("    # Create temporary arrays for the left and right segments")
-                lines.append("    left_size = pivot - low + 1")
-                lines.append("    right_size = high - pivot")
-                lines.append("    left = [arr[low + i] for i in range(left_size)]")
-                lines.append("    right = [arr[pivot + 1 + i] for i in range(right_size)]")
-                lines.append("    ")
-                lines.append("    # Merge the arrays back into arr[low..high]")
-                lines.append("    i, j, k = 0, 0, low")
-                lines.append("    ")
-                lines.append("    while i < left_size and j < right_size:")
-                lines.append("        if left[i] <= right[j]:")
-                lines.append("            arr[k] = left[i]")
-                lines.append("            i += 1")
-                lines.append("        else:")
-                lines.append("            arr[k] = right[j]")
-                lines.append("            j += 1")
-                lines.append("        k += 1")
-                lines.append("    ")
-                lines.append("    # Copy any remaining elements")
-                lines.append("    while i < left_size:")
-                lines.append("        arr[k] = left[i]")
-                lines.append("        i += 1")
-                lines.append("        k += 1")
-                lines.append("    ")
-                lines.append("    while j < right_size:")
-                lines.append("        arr[k] = right[j]")
-                lines.append("        j += 1")
-                lines.append("        k += 1")
-                lines.append("    ")
-                lines.append("    return arr")
-            else:
-                # Generic placeholder for other algorithms
-                lines.append("    # TODO: Implement this algorithm")
-                lines.append("    pass")
+            lines.append("    # TODO: Implement this algorithm")
+            lines.append("    pass")
         
         return "\n".join(lines)

@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
 
-from knowledge_graph_system.core.knowledge_graph_manager import KnowledgeGraphManager
+from src.knowledge_graph_system.core.knowledge_graph_manager import KnowledgeGraphManager
 
 # Mock models for testing
 class GraphEntity:

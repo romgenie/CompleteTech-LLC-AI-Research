@@ -12,14 +12,14 @@ import uuid
 from pathlib import Path
 import os
 
-from research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
-from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
-from research_orchestrator.knowledge_integration.entity_converter import EntityConverter
-from research_orchestrator.knowledge_integration.relationship_converter import RelationshipConverter
-from research_orchestrator.knowledge_integration.conflict_resolver import ConflictResolver
-from research_orchestrator.knowledge_integration.connection_discovery import ConnectionDiscoveryEngine
-from research_orchestrator.knowledge_integration.temporal_evolution_tracker import TemporalEvolutionTracker
-from research_orchestrator.knowledge_integration.knowledge_gap_identifier import KnowledgeGapIdentifier
+from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
+from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
+from src.research_orchestrator.knowledge_integration.entity_converter import EntityConverter
+from src.research_orchestrator.knowledge_integration.relationship_converter import RelationshipConverter
+from src.research_orchestrator.knowledge_integration.conflict_resolver import ConflictResolver
+from src.research_orchestrator.knowledge_integration.connection_discovery import ConnectionDiscoveryEngine
+from src.research_orchestrator.knowledge_integration.temporal_evolution_tracker import TemporalEvolutionTracker
+from src.research_orchestrator.knowledge_integration.knowledge_gap_identifier import KnowledgeGapIdentifier
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -27,9 +27,9 @@ logger = logging.getLogger(__name__)
 
 # Import from knowledge_graph_system if available
 try:
-    from knowledge_graph_system.core.knowledge_graph_manager import KnowledgeGraphManager
-    from knowledge_graph_system.core.db.neo4j_manager import Neo4jManager
-    from knowledge_graph_system.core.models.base_models import GraphEntity, GraphRelationship
+    from src.knowledge_graph_system.core.knowledge_graph_manager import KnowledgeGraphManager
+    from src.knowledge_graph_system.core.db.neo4j_manager import Neo4jManager
+    from src.knowledge_graph_system.core.models.base_models import GraphEntity, GraphRelationship
     
     KNOWLEDGE_GRAPH_AVAILABLE = True
 except ImportError:

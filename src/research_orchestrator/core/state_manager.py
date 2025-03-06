@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
-from research_orchestrator.core.utils import ensure_dir, generate_id, load_json, save_json, timestamp
+from src.research_orchestrator.core.utils import ensure_dir, generate_id, load_json, save_json, timestamp
 
 
 class Project:
