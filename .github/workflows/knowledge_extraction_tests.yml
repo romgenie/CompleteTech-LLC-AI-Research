@@ -62,15 +62,15 @@ jobs:
           if [[ "$?" == "1" && "$(cat test-output.log 2>/dev/null | grep 'not found in \`markers\` configuration option')" ]]; then
             echo "Falling back to direct pytest command with no strict markers"
             if [[ "${{ matrix.test-type }}" == "unit" ]]; then
-              PYTHONPATH=$GITHUB_WORKSPACE python -m pytest unit/ -v --no-strict-markers
+              PYTHONPATH=$GITHUB_WORKSPACE python -m pytest unit/ -v
             elif [[ "${{ matrix.test-type }}" == "integration" ]]; then
-              PYTHONPATH=$GITHUB_WORKSPACE python -m pytest integration/ -v --no-strict-markers
+              PYTHONPATH=$GITHUB_WORKSPACE python -m pytest integration/ -v
             elif [[ "${{ matrix.test-type }}" == "e2e" ]]; then
-              PYTHONPATH=$GITHUB_WORKSPACE python -m pytest e2e/ -v --no-strict-markers
+              PYTHONPATH=$GITHUB_WORKSPACE python -m pytest e2e/ -v
             elif [[ "${{ matrix.test-type }}" == "property" ]]; then
-              PYTHONPATH=$GITHUB_WORKSPACE python -m pytest property/ -v --no-strict-markers
+              PYTHONPATH=$GITHUB_WORKSPACE python -m pytest property/ -v
             elif [[ "${{ matrix.test-type }}" == "edge" ]]; then
-              PYTHONPATH=$GITHUB_WORKSPACE python -m pytest edge_cases/ -v --no-strict-markers
+              PYTHONPATH=$GITHUB_WORKSPACE python -m pytest edge_cases/ -v
             else
               exit 1
             fi
@@ -110,7 +110,7 @@ jobs:
         run: |
           cd tests/research_orchestrator/knowledge_extraction
           PYTHONPATH=$GITHUB_WORKSPACE python -m benchmark.run_benchmarks || \
-          PYTHONPATH=$GITHUB_WORKSPACE python -m pytest benchmark/ -v --no-strict-markers
+          PYTHONPATH=$GITHUB_WORKSPACE python -m pytest benchmark/ -v
       
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
@@ -143,7 +143,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           cd tests/research_orchestrator/knowledge_extraction
-          PYTHONPATH=$GITHUB_WORKSPACE python -m pytest --cov=../../../src/research_orchestrator/knowledge_extraction --cov-report=xml --no-strict-markers
+          PYTHONPATH=$GITHUB_WORKSPACE python -m pytest --cov=../../../src/research_orchestrator/knowledge_extraction --cov-report=xml
       
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
