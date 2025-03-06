@@ -19,7 +19,7 @@ jobs:
             const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              run_id: ${{ github.event.workflow_run.id }}
+              run_id: "${{ github.event.workflow_run.id }}"
             });
             
             const testResults = artifacts.data.artifacts.filter(
@@ -82,6 +82,14 @@ jobs:
       
       - name: Update README with badges
         run: |
+          # Ensure the README directory exists
+          mkdir -p tests/research_orchestrator/knowledge_extraction
+          
+          # Create README if it doesn't exist
+          if [ ! -f "tests/research_orchestrator/knowledge_extraction/README.md" ]; then
+            echo "# Knowledge Extraction Tests" > tests/research_orchestrator/knowledge_extraction/README.md
+          fi
+          
           # Create badge section in README if it doesn't exist
           if ! grep -q "## Test Status" tests/research_orchestrator/knowledge_extraction/README.md; then
             cat << EOF >> tests/research_orchestrator/knowledge_extraction/README.md
@@ -103,7 +111,10 @@ jobs:
       - name: Commit badges
         run: |
           mkdir -p .github/badges
-          mv badges/* .github/badges/
+          # Make sure badges directory exists and is not empty before moving files
+          if [ -d "badges" ] && [ "$(ls -A badges)" ]; then
+            mv badges/* .github/badges/
+          fi
           
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -111,5 +122,10 @@ jobs:
           git add .github/badges
           git add tests/research_orchestrator/knowledge_extraction/README.md
           
-          git commit -m "Update test status badges" || echo "No changes to commit"
-          git push
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update test status badges"
+            git push
+          fi
