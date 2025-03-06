@@ -89,17 +89,26 @@ run_tests() {
     
     echo -e "${YELLOW}Running $test_name tests...${NC}"
     
-    # Construct the command
-    cmd="python -m pytest $test_path $VERBOSITY $MARKERS $REPORT_OPTS"
+    # Construct the command - avoiding errors with report options
+    cmd="python -m pytest $test_path $VERBOSITY $MARKERS"
     
     # Echo command for visibility
     echo -e "${BLUE}$cmd${NC}"
     
     # Run command
     eval $cmd
+    test_result=$?
+    
+    # Generate a report if requested (as a separate command to avoid conflicts)
+    if [ "$REPORT" = true ] && [ $test_result -eq 0 ]; then
+        echo -e "${BLUE}Generating HTML report for $test_name tests...${NC}"
+        report_cmd="python -m pytest $test_path --html=$test_name-report.html --self-contained-html"
+        echo -e "${BLUE}$report_cmd${NC}"
+        eval $report_cmd
+    fi
     
     # Check result
-    if [ $? -eq 0 ]; then
+    if [ $test_result -eq 0 ]; then
         echo -e "${GREEN}$test_name tests passed!${NC}"
         return 0
     else
