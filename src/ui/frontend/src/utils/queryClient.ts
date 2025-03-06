@@ -22,7 +22,7 @@ const queryClientConfig: { defaultOptions: DefaultOptions } = {
       },
       
       // Time to keep data in cache (in milliseconds)
-      cacheTime: 1000 * 60 * 30, // 30 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes
       
       // Refetch when window refocuses
       refetchOnWindowFocus: true,
@@ -37,14 +37,14 @@ const queryClientConfig: { defaultOptions: DefaultOptions } = {
       refetchOnReconnect: true,
       
       // Use error boundary for queries
-      useErrorBoundary: false,
+      throwOnError: false,
     },
     mutations: {
       // Don't retry mutations
       retry: false,
       
       // Use error boundary for mutations
-      useErrorBoundary: false,
+      throwOnError: false,
     },
   },
 };

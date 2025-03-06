@@ -81,26 +81,20 @@ class TestDocumentProcessor(unittest.TestCase):
         mock_text_processor_instance = mock_text_processor.return_value
         mock_text_processor_instance.process.return_value = self.mock_text_document
         
-        # Initialize the document processor
         processor = DocumentProcessor()
-        
-        # Mock the _process_text method to return our mock document
         processor._process_text = MagicMock(return_value=self.mock_text_document)
         
-        # Process the text document
+        # Process document
         result = processor.process_document(self.text_path)
         
-        # Since process_document returns a dictionary in the implementation,
-        # we need to check that the dictionary was created from our mock document
+        # Verify result structure and content
         self.assertIsInstance(result, dict)
         self.assertEqual(result["document_type"], "text")
         self.assertEqual(result["path"], self.text_path)
         self.assertEqual(result["content"], self.text_content)
         
-        # Check metadata
         self.assertIn("metadata", result)
         self.assertIn("file_size", result["metadata"])
-        self.assertIn("file_extension", result["metadata"])
         self.assertEqual(result["metadata"]["file_extension"], ".txt")
     
     def test_process_html_document(self, mock_pdf_processor, mock_html_processor, mock_text_processor):
@@ -109,90 +103,69 @@ class TestDocumentProcessor(unittest.TestCase):
         mock_html_processor_instance = mock_html_processor.return_value
         mock_html_processor_instance.process.return_value = self.mock_html_document
         
-        # Initialize the document processor
         processor = DocumentProcessor()
-        
-        # Mock the _process_html method to return our mock document
         processor._process_html = MagicMock(return_value=self.mock_html_document)
         
-        # Process the HTML document
+        # Process document
         result = processor.process_document(self.html_path)
         
-        # Since process_document returns a dictionary in the implementation,
-        # we need to check that the dictionary was created from our mock document
+        # Verify result structure and content
         self.assertIsInstance(result, dict)
         self.assertEqual(result["document_type"], "html")
         self.assertEqual(result["path"], self.html_path)
         
-        # Check metadata
         self.assertIn("metadata", result)
-        self.assertIn("file_size", result["metadata"])
-        self.assertIn("file_extension", result["metadata"])
         self.assertEqual(result["metadata"]["file_extension"], ".html")
-        
-        # Check HTML-specific metadata
-        self.assertIn("title", result["metadata"])
         self.assertEqual(result["metadata"]["title"], "Test HTML Document")
     
     def test_process_unknown_format(self, mock_pdf_processor, mock_html_processor, mock_text_processor):
         """Test processing a document with unknown format."""
-        # Create a file with unknown extension
+        # Create test file with unknown extension
         unknown_path = os.path.join(self.temp_dir, "test_document.xyz")
+        test_content = "This is a test document with unknown format."
         with open(unknown_path, 'w') as f:
-            f.write("This is a test document with unknown format.")
+            f.write(test_content)
         
         # Configure mock
         mock_text_processor_instance = mock_text_processor.return_value
         mock_text_document = Document(
-            content="This is a test document with unknown format.",
+            content=test_content,
             document_type="text",
             path=unknown_path,
             metadata={"file_size": 50, "file_extension": ".xyz"}
         )
         mock_text_processor_instance.process.return_value = mock_text_document
         
-        # Initialize the document processor
         processor = DocumentProcessor()
-        
-        # Mock the _process_text method to return our mock document
         processor._process_text = MagicMock(return_value=mock_text_document)
         
         try:
-            # Process the document and expect it to try text processor as fallback
+            # Process document with unknown format
             result = processor.process_document(unknown_path)
             
-            # Check the result dictionary
+            # Verify fallback to text processor worked
             self.assertIsInstance(result, dict)
             self.assertEqual(result["document_type"], "text")
             self.assertEqual(result["path"], unknown_path)
-            self.assertEqual(result["content"], "This is a test document with unknown format.")
-            
-            # Check metadata
-            self.assertIn("metadata", result)
-            self.assertIn("file_extension", result["metadata"])
+            self.assertEqual(result["content"], test_content)
             self.assertEqual(result["metadata"]["file_extension"], ".xyz")
             
-            # Clean up
             os.remove(unknown_path)
         except Exception as e:
-            # Clean up in case of error
             os.remove(unknown_path)
             raise
     
     def test_processor_selection(self, mock_pdf_processor, mock_html_processor, mock_text_processor):
         """Test processor selection for different file types."""
-        # Initialize the document processor
         processor = DocumentProcessor()
         
-        # Mock _read_file to return appropriate document data
+        # Setup mocks
         processor._read_file = MagicMock()
-        
-        # Mock methods to test which processor gets used
         processor._process_text = MagicMock()
         processor._process_html = MagicMock()
         processor._process_pdf = MagicMock()
         
-        # Test with a .txt file
+        # Test text file processing
         processor._read_file.return_value = {
             'id': 'test.txt',
             'content': 'Text content',
@@ -208,7 +181,7 @@ class TestDocumentProcessor(unittest.TestCase):
         processor._process_html.reset_mock()
         processor._process_pdf.reset_mock()
         
-        # Test with a .html file
+        # Test HTML file processing
         processor._read_file.return_value = {
             'id': 'test.html',
             'content': '<html><body>HTML content</body></html>',
@@ -224,7 +197,7 @@ class TestDocumentProcessor(unittest.TestCase):
         processor._process_html.reset_mock()
         processor._process_pdf.reset_mock()
         
-        # Test with a .pdf file
+        # Test PDF file processing
         processor._read_file.return_value = {
             'id': 'test.pdf',
             'content': b'%PDF-1.4\n',

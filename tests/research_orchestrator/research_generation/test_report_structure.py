@@ -51,14 +51,11 @@ class TestReportStructurePlanner(unittest.TestCase):
     
     def test_load_template(self):
         """Test loading a template."""
-        # Load a template
         template = self.planner.load_template("research_paper")
         
-        # Check the template properties
         self.assertEqual(template.document_type, DocumentType.RESEARCH_PAPER)
         self.assertGreater(len(template.sections), 0)
         
-        # Check for key sections
         section_types = [section.section_type for section in template.sections]
         self.assertIn(SectionType.INTRODUCTION, section_types)
         self.assertIn(SectionType.METHODOLOGY, section_types)
@@ -66,7 +63,7 @@ class TestReportStructurePlanner(unittest.TestCase):
     
     def test_save_template(self):
         """Test saving a template."""
-        # Create a simple template
+        # Create template
         sections = [
             Section(
                 section_type=SectionType.TITLE,
@@ -90,14 +87,12 @@ class TestReportStructurePlanner(unittest.TestCase):
             sections=sections
         )
         
-        # Save the template
+        # Save and reload template
         self.planner.save_template(template, "test_template")
         
-        # Check that the file was created
         template_path = os.path.join(self.temp_dir.name, "test_template.json")
         self.assertTrue(os.path.exists(template_path))
         
-        # Load the template and check its properties
         loaded_template = self.planner.load_template("test_template")
         self.assertEqual(loaded_template.title, "Test Template")
         self.assertEqual(loaded_template.document_type, DocumentType.RESEARCH_PAPER)
@@ -105,7 +100,6 @@ class TestReportStructurePlanner(unittest.TestCase):
     
     def test_generate_structure(self):
         """Test generating a document structure."""
-        # Generate a structure
         structure = self.planner.generate_structure(
             title="Test Document",
             document_type=DocumentType.RESEARCH_PAPER,
@@ -114,56 +108,47 @@ class TestReportStructurePlanner(unittest.TestCase):
             target_length="10 pages"
         )
         
-        # Check the structure properties
         self.assertEqual(structure.title, "Test Document")
         self.assertEqual(structure.document_type, DocumentType.RESEARCH_PAPER)
         self.assertEqual(structure.audience, "Academic")
         self.assertEqual(structure.target_length, "10 pages")
-        
-        # Check that metadata was updated
-        self.assertIn("generated_for", structure.metadata)
         self.assertEqual(structure.metadata["generated_for"], "Test Topic")
     
     def test_generate_structure_with_string_document_type(self):
         """Test generating a document structure with a string document type."""
-        # Generate a structure with a string document type
         structure = self.planner.generate_structure(
             title="Test Document",
             document_type="LITERATURE_REVIEW",
             topic="Test Topic"
         )
         
-        # Check that the document type was converted correctly
         self.assertEqual(structure.document_type, DocumentType.LITERATURE_REVIEW)
     
     def test_analyze_topics_for_sections(self):
         """Test analyzing topics for sections."""
-        # Define topics and subtopics
         topic = "Machine Learning Algorithms"
         subtopics = ["Decision Trees", "Neural Networks", "Support Vector Machines"]
         
-        # Analyze topics for a research paper
-        sections = self.planner.analyze_topics_for_sections(
+        # Test research paper structure
+        paper_sections = self.planner.analyze_topics_for_sections(
             topic=topic,
             subtopics=subtopics,
             document_type=DocumentType.RESEARCH_PAPER
         )
         
-        # Check that we got the expected sections
-        self.assertGreater(len(sections), 0)
-        section_types = [section.section_type for section in sections]
+        self.assertGreater(len(paper_sections), 0)
+        section_types = [section.section_type for section in paper_sections]
         self.assertIn(SectionType.METHODOLOGY, section_types)
         self.assertIn(SectionType.RESULTS, section_types)
         
-        # Analyze topics for a literature review
-        sections = self.planner.analyze_topics_for_sections(
+        # Test literature review structure
+        review_sections = self.planner.analyze_topics_for_sections(
             topic=topic,
             subtopics=subtopics,
             document_type=DocumentType.LITERATURE_REVIEW
         )
         
-        # Check that we got sections for each subtopic
-        self.assertEqual(len(sections), len(subtopics))
+        self.assertEqual(len(review_sections), len(subtopics))
     
     def test_adjust_for_audience(self):
         """Test adjusting a document structure for different audiences."""

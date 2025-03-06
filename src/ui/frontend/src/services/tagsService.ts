@@ -1,6 +1,7 @@
 import { Tag, TagVisibility, SharedWith, TagSuggestion, TagUsageStats, TagConflict } from '../types/research';
 import apiClient from './apiClient';
 import { useFetchQuery, useFetchMutation } from '../hooks/useQueryFetch';
+import { mockTags, mockTagStats, mockTagConflicts } from './mockData/mockTags';
 
 // Base URL for tag endpoints
 const TAG_BASE_URL = '/api/tags';
@@ -823,32 +824,22 @@ export function useAcceptTagSuggestion() {
  * @returns Query result with tag usage statistics
  */
 export function useTagStats(id: string) {
-  return useFetchQuery<TagUsageStats>({
-    url: `${TAG_BASE_URL}/${id}/stats`,
-    queryOptions: {
-      staleTime: 1000 * 60 * 10, // 10 minutes
-      cacheTime: 1000 * 60 * 30, // 30 minutes
-      enabled: !!id // Only run if ID is provided
+  return useQuery({
+    queryKey: ['tagStats', id],
+    queryFn: async () => {
+      if (!id) return null;
+      try {
+        const response = await apiClient.get<TagUsageStats>(`${TAG_BASE_URL}/${id}/stats`);
+        return response.data;
+      } catch (error) {
+        console.warn('Falling back to mock data for tag stats');
+        return {
+          ...mockTagStats,
+          tagId: id
+        };
+      }
     },
-    mockData: () => {
-      // Generate mock stats if API fails
-      return {
-        tagId: id,
-        userCount: 42,
-        itemCount: 157,
-        dailyUse: [
-          { date: '2023-01-01', count: 5 },
-          { date: '2023-01-02', count: 8 },
-          { date: '2023-01-03', count: 12 }
-        ],
-        relatedTags: [
-          { tagId: 'tag-4', cooccurrence: 0.75 },
-          { tagId: 'tag-7', cooccurrence: 0.68 },
-          { tagId: 'tag-8', cooccurrence: 0.54 }
-        ],
-        trend: 'rising'
-      };
-    }
+    enabled: !!id
   });
 }
 
@@ -858,20 +849,16 @@ export function useTagStats(id: string) {
  * @returns Query result with popular tags
  */
 export function usePopularTags(limit: number = 20) {
-  return useFetchQuery<Tag[]>({
-    url: `${TAG_BASE_URL}/popular`,
-    queryParams: { limit },
-    queryOptions: {
-      staleTime: 1000 * 60 * 10, // 10 minutes
-      cacheTime: 1000 * 60 * 30, // 30 minutes
-    },
-    mockData: () => {
-      // Generate mock popular tags if API fails
-      return [
-        { id: 'tag-4', name: 'Transformers', color: '#9c27b0', count: 42, visibility: 'public', usageCount: 87, popularity: 0.92 },
-        { id: 'tag-6', name: 'LLM', color: '#607d8b', count: 35, visibility: 'public', usageCount: 64, popularity: 0.89 },
-        { id: 'tag-7', name: 'GPT', color: '#e91e63', count: 22, visibility: 'public', usageCount: 58, popularity: 0.85 }
-      ];
+  return useQuery({
+    queryKey: ['popularTags', limit],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<Tag[]>(`${TAG_BASE_URL}/popular?limit=${limit}`);
+        return response.data;
+      } catch (error) {
+        console.warn('Falling back to mock data for popular tags');
+        return mockTags;
+      }
     }
   });
 }
@@ -881,40 +868,16 @@ export function usePopularTags(limit: number = 20) {
  * @returns Query result with tag conflicts
  */
 export function useTagConflicts() {
-  return useFetchQuery<TagConflict[]>({
-    url: `${TAG_BASE_URL}/conflicts`,
-    queryOptions: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      cacheTime: 1000 * 60 * 15, // 15 minutes
-    },
-    mockData: () => {
-      // Generate mock conflicts if API fails
-      return [
-        { 
-          id: 'conf-1', 
-          tagId: 'tag-7', 
-          conflictType: 'hierarchy', 
-          description: 'Tag "GPT" exists in multiple hierarchies', 
-          options: [
-            {
-              id: 'opt-1',
-              description: 'Keep in "Transformers" hierarchy',
-              action: 'move',
-              tagIds: ['tag-7'],
-              newParentId: 'tag-4'
-            },
-            {
-              id: 'opt-2',
-              description: 'Keep in "LLM" hierarchy',
-              action: 'move',
-              tagIds: ['tag-7'],
-              newParentId: 'tag-6'
-            }
-          ],
-          resolved: false,
-          createdAt: '2023-01-15T10:30:00Z'
-        }
-      ];
+  return useQuery({
+    queryKey: ['tagConflicts'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<TagConflict[]>(`${TAG_BASE_URL}/conflicts`);
+        return response.data;
+      } catch (error) {
+        console.warn('Falling back to mock data for tag conflicts');
+        return mockTagConflicts;
+      }
     }
   });
 }

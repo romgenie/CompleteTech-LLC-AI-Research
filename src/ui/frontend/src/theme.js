@@ -346,7 +346,7 @@ export const knowledgeGraphColorSchemes = {
     CODE: '#99ffff',       // Light Cyan
     default: '#ffffff'     // White
   }
-});
+};
 
 // Custom theme configuration for the application
 const theme = createTheme({

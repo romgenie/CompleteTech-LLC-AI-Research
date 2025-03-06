@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { ApiResponse } from '../types';
 
 /**
@@ -41,7 +41,7 @@ class ApiClient {
     // Add auth interceptor if requested
     if (config.useAuth) {
       this.instance.interceptors.request.use(
-        (config: AxiosRequestConfig): AxiosRequestConfig => {
+        (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
           const token = localStorage.getItem('token');
           if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;

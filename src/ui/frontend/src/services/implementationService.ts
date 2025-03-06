@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { 
   ApiResponse, 
   Paper, 
@@ -13,7 +13,7 @@ const implementationApi: AxiosInstance = axios.create({
 
 // Add request interceptor to add authentication token
 implementationApi.interceptors.request.use(
-  (config: AxiosRequestConfig): AxiosRequestConfig => {
+  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const token = localStorage.getItem('token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -117,7 +117,9 @@ const implementationService = {
    */
   getAllProjects: async (): Promise<Project[]> => {
     try {
-      const response = await implementationApi.get<ApiResponse<Project[]>>('/projects');
+      const response = await implementationApi.get<ApiResponse<Project[]>>('/implementations', {
+        params: { args: '[]', kwargs: '{}' }
+      });
       return response.data.data as Project[] || [];
     } catch (error) {
       console.error('Error fetching implementation projects:', error);
@@ -133,7 +135,9 @@ const implementationService = {
    */
   getProjectFiles: async (projectId: string): Promise<ProjectFile[]> => {
     try {
-      const response = await implementationApi.get<ApiResponse<ProjectFile[]>>(`/projects/${projectId}/files`);
+      const response = await implementationApi.get<ApiResponse<ProjectFile[]>>(`/implementations/${projectId}/files`, {
+        params: { args: '[]', kwargs: '{}' }
+      });
       return response.data.data as ProjectFile[] || [];
     } catch (error) {
       console.error(`Error fetching files for project ${projectId}:`, error);
@@ -149,7 +153,9 @@ const implementationService = {
    */
   getFileContent: async (fileId: string): Promise<FileContentResponse> => {
     try {
-      const response = await implementationApi.get<ApiResponse<FileContentResponse>>(`/files/${fileId}/content`);
+      const response = await implementationApi.get<ApiResponse<FileContentResponse>>(`/implementations/files/${fileId}/content`, {
+        params: { args: '[]', kwargs: '{}' }
+      });
       return response.data.data as FileContentResponse;
     } catch (error) {
       console.error(`Error fetching content for file ${fileId}:`, error);
@@ -165,7 +171,11 @@ const implementationService = {
    */
   createProject: async (paperUrl: string): Promise<Project> => {
     try {
-      const response = await implementationApi.post<ApiResponse<Project>>('/projects', { paperUrl });
+      const response = await implementationApi.post<ApiResponse<Project>>('/implementations', { 
+        paperUrl,
+        args: '[]', 
+        kwargs: '{}'
+      });
       return response.data.data as Project;
     } catch (error) {
       console.error('Error creating implementation project:', error);
@@ -206,7 +216,10 @@ const implementationService = {
    */
   runTests: async (projectId: string): Promise<TestResults> => {
     try {
-      const response = await implementationApi.post<ApiResponse<TestResults>>(`/projects/${projectId}/tests`);
+      const response = await implementationApi.post<ApiResponse<TestResults>>(`/implementations/${projectId}/tests`, {
+        args: '[]', 
+        kwargs: '{}'
+      });
       return response.data.data as TestResults;
     } catch (error) {
       console.error(`Error running tests for project ${projectId}:`, error);
@@ -222,7 +235,10 @@ const implementationService = {
    */
   continueImplementation: async (projectId: string): Promise<Project> => {
     try {
-      const response = await implementationApi.post<ApiResponse<Project>>(`/projects/${projectId}/continue`);
+      const response = await implementationApi.post<ApiResponse<Project>>(`/implementations/${projectId}/continue`, {
+        args: '[]', 
+        kwargs: '{}'
+      });
       return response.data.data as Project;
     } catch (error) {
       console.error(`Error continuing implementation for project ${projectId}:`, error);

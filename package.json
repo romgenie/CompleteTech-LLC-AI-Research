@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/material": "^6.4.7",
+    "@mui/x-date-pickers": "^7.27.1",
+    "@tanstack/react-query": "^5.67.1",
+    "@types/d3": "^7.0.0",
+    "@types/react-beautiful-dnd": "^13.1.8",
+    "d3": "^7.9.0",
+    "dayjs": "^1.11.13",
+    "react-beautiful-dnd": "^13.1.1"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}

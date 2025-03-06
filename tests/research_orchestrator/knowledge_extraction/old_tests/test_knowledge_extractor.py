@@ -101,59 +101,48 @@ class TestKnowledgeExtractor(unittest.TestCase):
         # Call the document processor
         content = self.knowledge_extractor.document_processor.process_document("test.pdf")
         
-        # Check that the document processor was called
+        # Verify the processor was called and returned expected content
         self.mock_document_processor.process_document.assert_called_once_with("test.pdf")
-        
-        # Check that the content dictionary was returned
         self.assertEqual(content["content"], "GPT-4 was trained on a large dataset and evaluated on MMLU benchmark. "
                        "The model achieves 86.4% accuracy, outperforming previous models like GPT-3.")
     
     def test_extract_entities(self):
         """Test extracting entities from text."""
         text = "Sample text"
-        # Use the underlying entity recognizer directly since KnowledgeExtractor doesn't have extract_entities method
         entities = self.knowledge_extractor.entity_recognizer.recognize(text)
         
-        # Check that the entity recognizer was called
         self.mock_entity_recognizer.recognize.assert_called_once_with(text)
-        
-        # Check that the entities were returned
         self.assertEqual(entities, self.mock_entities)
     
     def test_extract_relationships(self):
         """Test extracting relationships from text and entities."""
         text = "Sample text"
-        # Use the underlying relationship extractor directly
         relationships = self.knowledge_extractor.relationship_extractor.extract_relationships(text, self.mock_entities)
         
-        # Check that the relationship extractor was called
         self.mock_relationship_extractor.extract_relationships.assert_called_once_with(text, self.mock_entities)
-        
-        # Check that the relationships were returned
         self.assertEqual(relationships, self.mock_relationships)
     
     def test_create_knowledge_graph(self):
         """Test creating a knowledge graph from entities and relationships."""
-        # Use the private method that actually exists in the class
         doc_id = "test_doc"
         knowledge_graph = self.knowledge_extractor._create_knowledge_graph(
             self.mock_entities, self.mock_relationships, doc_id
         )
         
-        # Check that the graph was created with the right structure
+        # Verify graph structure
         self.assertIn("nodes", knowledge_graph)
         self.assertIn("edges", knowledge_graph)
-        
-        # Check nodes
         self.assertEqual(len(knowledge_graph["nodes"]), len(self.mock_entities))
+        self.assertEqual(len(knowledge_graph["edges"]), len(self.mock_relationships))
+        
+        # Verify node properties
         for entity_id, node in knowledge_graph["nodes"].items():
             self.assertIn("id", node)
             self.assertIn("label", node)
             self.assertIn("type", node)
             self.assertIn("confidence", node)
         
-        # Check edges
-        self.assertEqual(len(knowledge_graph["edges"]), len(self.mock_relationships))
+        # Verify edge properties
         for rel_id, edge in knowledge_graph["edges"].items():
             self.assertIn("id", edge)
             self.assertIn("source", edge)
@@ -163,38 +152,35 @@ class TestKnowledgeExtractor(unittest.TestCase):
     
     def test_save_results(self):
         """Test saving results to output directory."""
-        # Create a knowledge graph using the private method
         doc_id = "test"
         knowledge_graph = self.knowledge_extractor._create_knowledge_graph(
             self.mock_entities, self.mock_relationships, doc_id
         )
         
-        # Store entities and relationships in the extractor's internal storage
+        # Setup extraction results
         self.knowledge_extractor.entities[doc_id] = self.mock_entities
         self.knowledge_extractor.relationships[doc_id] = self.mock_relationships
         self.knowledge_extractor.knowledge_graph[doc_id] = knowledge_graph
         
-        # Add document to documents dictionary
         from unittest.mock import Mock
         mock_doc = Mock()
         mock_doc.document_type = "pdf"
         self.knowledge_extractor.documents[doc_id] = mock_doc
         
-        # Save results using the proper method
+        # Save results
         result_dir = self.knowledge_extractor.save_extraction_results(self.temp_dir, doc_id)
         
-        # Check that extraction_statistics.json was created
+        # Verify files were created
         stats_path = os.path.join(self.temp_dir, "extraction_statistics.json")
-        self.assertTrue(os.path.exists(stats_path))
-        
-        # Check that document directory was created
         test_dir = os.path.join(self.temp_dir, doc_id)
+        
+        self.assertTrue(os.path.exists(stats_path))
         self.assertTrue(os.path.exists(test_dir))
         self.assertTrue(os.path.exists(os.path.join(test_dir, "entities.json")))
         self.assertTrue(os.path.exists(os.path.join(test_dir, "relationships.json")))
         self.assertTrue(os.path.exists(os.path.join(test_dir, "knowledge_graph.json")))
         
-        # Check that files contain correct data
+        # Verify file contents
         with open(os.path.join(test_dir, "entities.json"), "r") as f:
             entities_data = json.load(f)
             self.assertEqual(len(entities_data), len(self.mock_entities))
@@ -210,12 +196,8 @@ class TestKnowledgeExtractor(unittest.TestCase):
     
     def test_extract_from_document(self):
         """Test extracting knowledge from a document."""
-        # The issue is that our KnowledgeExtractor expects a Document object with get_text method
-        # But our test set it up to return a dictionary. Let's patch the extract_from_document method
-        
-        # Patch the knowledge extractor's extract_from_text method to skip the document processing
+        # Patch extract_from_text to return known result
         with patch.object(self.knowledge_extractor, 'extract_from_text') as mock_extract_from_text:
-            # Setup what extract_from_text would return
             mock_extract_from_text.return_value = {
                 "document_id": "test_pdf",
                 "document_type": "text", 
@@ -228,24 +210,16 @@ class TestKnowledgeExtractor(unittest.TestCase):
                 "confidence": 0.85
             }
             
-            # Call extract_from_document which should now use our mocked extract_from_text
             result = self.knowledge_extractor.extract_from_document("test.pdf")
             
-            # Check that the document processor was called
+            # Verify document processing and result structure
             self.mock_document_processor.process_document.assert_called_once_with("test.pdf")
             
-            # Check that the result has the right structure
-            self.assertIn("document_id", result)
-            self.assertIn("document_metadata", result)
-            self.assertIn("document_type", result)
-            self.assertIn("extraction_time", result)
-            self.assertIn("entity_count", result)
-            self.assertIn("relationship_count", result)
-            self.assertIn("entity_types", result)
-            self.assertIn("relationship_types", result)
-            self.assertIn("confidence", result)
+            for key in ["document_id", "document_metadata", "document_type", "extraction_time",
+                      "entity_count", "relationship_count", "entity_types", 
+                      "relationship_types", "confidence"]:
+                self.assertIn(key, result)
             
-            # Check that the result contains the right data
             self.assertEqual(result["entity_count"], len(self.mock_entities))
             self.assertEqual(result["relationship_count"], len(self.mock_relationships))
     
@@ -259,35 +233,25 @@ class TestKnowledgeExtractor(unittest.TestCase):
             self.mock_entities, self.mock_relationships, doc_id
         )
         
-        # Create a mock document
         from unittest.mock import Mock
         mock_doc = Mock()
         mock_doc.document_type = "pdf"
         self.knowledge_extractor.documents[doc_id] = mock_doc
         
-        # Get statistics
+        # Generate statistics
         stats = self.knowledge_extractor.get_extraction_statistics()
         
-        # Check that the stats have the right structure
-        self.assertIn("documents", stats)
-        self.assertIn("entities", stats)
-        self.assertIn("relationships", stats)
-        self.assertIn("knowledge_graph", stats)
+        # Verify stats structure and counts
+        for key in ["documents", "entities", "relationships", "knowledge_graph"]:
+            self.assertIn(key, stats)
         
-        # Check document count
         self.assertEqual(stats["documents"]["count"], 1)
-        
-        # Check entity count
         self.assertEqual(stats["entities"]["count"], len(self.mock_entities))
-        
-        # Check relationship count
         self.assertEqual(stats["relationships"]["count"], len(self.mock_relationships))
         
-        # Check types
         self.assertIn("by_type", stats["entities"])
         self.assertIn("by_type", stats["relationships"])
         
-        # Check average confidences
         self.assertGreater(stats["entities"]["avg_confidence"], 0)
         self.assertGreater(stats["relationships"]["avg_confidence"], 0)
 

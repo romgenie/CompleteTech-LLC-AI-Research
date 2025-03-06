@@ -15,11 +15,12 @@ import {
 import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 
-// Custom type for location state with "from" property
+interface LocationState {
+  from?: string;
+}
+
 interface LocationWithState extends Location {
-  state?: {
-    from?: string;
-  };
+  state: LocationState;
 }
 
 /**

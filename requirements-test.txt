@@ -1,0 +1,9 @@
+# Test requirements for the AI Research Integration Project
+pytest>=7.0.0
+pytest-cov>=2.12.0
+pytest-asyncio>=0.20.0
+websockets>=10.0
+httpx>=0.18.0
+celery>=5.2.0
+redis>=4.3.0
+kombu>=5.2.0

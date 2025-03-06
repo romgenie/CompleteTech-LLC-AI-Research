@@ -1,10 +1,11 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { 
   ApiResponse, 
   PaginatedResponse, 
   ResearchQuery, 
   ResearchResult 
 } from '../types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 // Create axios instance for research orchestration API
 const researchApi: AxiosInstance = axios.create({
@@ -13,7 +14,7 @@ const researchApi: AxiosInstance = axios.create({
 
 // Add request interceptor to add authentication token
 researchApi.interceptors.request.use(
-  (config: AxiosRequestConfig): AxiosRequestConfig => {
+  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const token = localStorage.getItem('token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -306,5 +307,56 @@ const researchService = {
     }
   }
 };
+
+// React Query Hooks
+export function useResearch() {
+  return useMutation({
+    mutationFn: (query: string) => researchService.conductResearch(query)
+  });
+}
+
+export function useSaveQuery() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (query: string) => researchService.saveQuery(query),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savedQueries'] });
+    }
+  });
+}
+
+export function useSavedQueries() {
+  return useQuery({
+    queryKey: ['savedQueries'],
+    queryFn: () => researchService.getSavedQueries()
+  });
+}
+
+export function useQueryHistory() {
+  return useQuery({
+    queryKey: ['queryHistory'],
+    queryFn: () => researchService.getQueryHistory()
+  });
+}
+
+export function useUpdateSavedQuery() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<SavedQuery> }) =>
+      researchService.updateQuery(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savedQueries'] });
+    }
+  });
+}
+
+export function useAllTags() {
+  return useQuery({
+    queryKey: ['allTags'],
+    queryFn: () => researchService.getAllTags()
+  });
+}
+
+export { default as MockSearchResult } from './mockData/MockSearchResult';
 
 export default researchService;

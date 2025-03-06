@@ -226,8 +226,8 @@ const TagDiscovery: React.FC<TagDiscoveryProps> = ({ onTagSelect, selectedTagIds
               <CircularProgress size={32} />
             </Box>
           ) : (
-            filterTags(popularTags).length > 0 ? (
-              filterTags(popularTags).map(tag => renderTagCard(tag))
+            filterTags(popularTags as Tag[]).length > 0 ? (
+              filterTags(popularTags as Tag[]).map(tag => renderTagCard(tag))
             ) : (
               <Typography color="text.secondary" align="center" py={4}>
                 No popular tags found{searchQuery ? ` matching "${searchQuery}"` : ''}
@@ -245,8 +245,8 @@ const TagDiscovery: React.FC<TagDiscoveryProps> = ({ onTagSelect, selectedTagIds
               <CircularProgress size={32} />
             </Box>
           ) : (
-            suggestions && suggestions.length > 0 ? (
-              suggestions.map(suggestion => renderSuggestionCard(suggestion))
+            suggestions && (suggestions as TagSuggestion[]).length > 0 ? (
+              (suggestions as TagSuggestion[]).map(suggestion => renderSuggestionCard(suggestion))
             ) : (
               <Typography color="text.secondary" align="center" py={4}>
                 No tag suggestions available{searchQuery ? ` matching "${searchQuery}"` : ''}
@@ -264,8 +264,8 @@ const TagDiscovery: React.FC<TagDiscoveryProps> = ({ onTagSelect, selectedTagIds
               <CircularProgress size={32} />
             </Box>
           ) : (
-            filterTags(globalTags).length > 0 ? (
-              filterTags(globalTags).map(tag => renderTagCard(tag))
+            filterTags(globalTags as Tag[]).length > 0 ? (
+              filterTags(globalTags as Tag[]).map(tag => renderTagCard(tag))
             ) : (
               <Typography color="text.secondary" align="center" py={4}>
                 No global tags found{searchQuery ? ` matching "${searchQuery}"` : ''}
@@ -283,8 +283,8 @@ const TagDiscovery: React.FC<TagDiscoveryProps> = ({ onTagSelect, selectedTagIds
               <CircularProgress size={32} />
             </Box>
           ) : (
-            filterTags(sharedTags).length > 0 ? (
-              filterTags(sharedTags).map(tag => renderTagCard(tag))
+            filterTags(sharedTags as Tag[]).length > 0 ? (
+              filterTags(sharedTags as Tag[]).map(tag => renderTagCard(tag))
             ) : (
               <Typography color="text.secondary" align="center" py={4}>
                 No shared tags found{searchQuery ? ` matching "${searchQuery}"` : ''}
@@ -302,8 +302,8 @@ const TagDiscovery: React.FC<TagDiscoveryProps> = ({ onTagSelect, selectedTagIds
               <CircularProgress size={32} />
             </Box>
           ) : (
-            taxonomies && taxonomies.length > 0 ? (
-              taxonomies.map(taxonomy => (
+            taxonomies && (taxonomies as any[]).length > 0 ? (
+              (taxonomies as any[]).map(taxonomy => (
                 <Card key={taxonomy.id} variant="outlined" sx={{ mb: 2 }}>
                   <CardContent>
                     <Box display="flex" justifyContent="space-between" alignItems="center">

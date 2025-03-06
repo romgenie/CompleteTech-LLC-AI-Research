@@ -65,7 +65,7 @@ export interface Tag {
   
   // Collaboration properties
   owner?: string; // User ID of tag owner
-  visibility: TagVisibility; // Public, private, or shared
+  visibility: 'private' | 'public' | 'shared'; // Public, private, or shared
   sharedWith?: SharedWith[]; // Users or groups this tag is shared with
   isGlobal?: boolean; // Whether this tag is available to all users
   taxonomyId?: string; // ID of the taxonomy this tag belongs to
@@ -181,6 +181,7 @@ export interface ResearchFilterOptions {
   tags?: string[];
   favorites?: boolean;
   sources?: string[];
+  searchTerm?: string;
   sortBy?: 'date' | 'relevance' | 'alphabetical';
   sortOrder?: 'asc' | 'desc';
 }

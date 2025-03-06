@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { CitationManager, CitationPaper, CitationStyle } from '../utils/citationManager';
 import { ApiResponse } from '../types';
 
@@ -56,7 +56,7 @@ const citationApi: AxiosInstance = axios.create({
 
 // Add request interceptor to add authentication token
 citationApi.interceptors.request.use(
-  (config: AxiosRequestConfig): AxiosRequestConfig => {
+  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const token = localStorage.getItem('token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;

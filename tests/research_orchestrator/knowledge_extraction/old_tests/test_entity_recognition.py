@@ -30,6 +30,7 @@ class TestEntityRecognizer(unittest.TestCase):
             id="test_entity_1"
         )
         
+        # Verify entity properties
         self.assertEqual(entity.id, "test_entity_1")
         self.assertEqual(entity.text, "BERT")
         self.assertEqual(entity.type, EntityType.MODEL)
@@ -38,13 +39,12 @@ class TestEntityRecognizer(unittest.TestCase):
         self.assertEqual(entity.end_pos, 14)
         self.assertEqual(entity.metadata, {"source": "test"})
         
-        # Test conversion to dict
+        # Verify to_dict/from_dict conversions
         entity_dict = entity.to_dict()
         self.assertEqual(entity_dict["id"], "test_entity_1")
         self.assertEqual(entity_dict["text"], "BERT")
         self.assertEqual(entity_dict["type"], str(EntityType.MODEL).lower())
         
-        # Test conversion from dict
         entity2 = Entity.from_dict(entity_dict)
         self.assertEqual(entity2.id, "test_entity_1")
         self.assertEqual(entity2.text, "BERT")
@@ -52,14 +52,13 @@ class TestEntityRecognizer(unittest.TestCase):
     
     def test_merge_overlapping_entities(self):
         """Test merging overlapping entities."""
-        # Create a mock entity recognizer for testing
         class MockEntityRecognizer(EntityRecognizer):
             def recognize(self, text):
                 return []
         
         recognizer = MockEntityRecognizer()
         
-        # Create overlapping entities
+        # Test with overlapping entities
         entities = [
             Entity(text="BERT", type=EntityType.MODEL, confidence=0.9, start_pos=10, end_pos=14, metadata={}, id="e1"),
             Entity(text="BERT model", type=EntityType.MODEL, confidence=0.8, start_pos=10, end_pos=20, metadata={}, id="e2"),
@@ -67,12 +66,10 @@ class TestEntityRecognizer(unittest.TestCase):
             Entity(text="GPT-3", type=EntityType.MODEL, confidence=0.95, start_pos=30, end_pos=35, metadata={}, id="e4")
         ]
         
-        # Merge overlapping entities
         merged = recognizer.merge_overlapping_entities(entities)
         
-        # Check results
+        # Verify merge results
         self.assertEqual(len(merged), 2)
-        # The algorithm might keep either the longer or higher confidence entity
         self.assertTrue(merged[0].text in ["BERT", "BERT model"])
         self.assertTrue(merged[1].text in ["GPT", "GPT-3"])
 
@@ -97,15 +94,13 @@ class TestAIEntityRecognizer(unittest.TestCase):
         """Test recognizing AI entities in text."""
         entities = self.recognizer.recognize(self.test_text)
         
-        # Check that we found some entities
+        # Verify entities were found with correct types and texts
         self.assertTrue(len(entities) > 0)
         
-        # Check that we found the expected entity types
         entity_types = {entity.type for entity in entities}
         expected_types = {EntityType.MODEL, EntityType.DATASET, EntityType.FRAMEWORK}
         self.assertTrue(any(expected_type in entity_types for expected_type in expected_types))
         
-        # Check that we found specific entities
         entity_texts = {entity.text.lower() for entity in entities}
         expected_entities = {"gpt-4", "gpt-3.5", "mmlu", "pytorch"}
         self.assertTrue(any(expected_text in entity_texts for expected_text in expected_entities))
@@ -113,14 +108,11 @@ class TestAIEntityRecognizer(unittest.TestCase):
     def test_get_entities_by_type(self):
         """Test getting entities by type."""
         entities = self.recognizer.recognize(self.test_text)
-        
-        # Get entities by type
         model_entities = [e for e in entities if e.type == EntityType.MODEL]
         
-        # Check that we got some model entities
+        # Verify model entities were correctly extracted
         self.assertTrue(len(model_entities) > 0)
         
-        # Check that they have the expected attributes
         for entity in model_entities:
             self.assertIsInstance(entity.text, str)
             self.assertEqual(entity.type, EntityType.MODEL)
@@ -148,19 +140,17 @@ class TestScientificEntityRecognizer(unittest.TestCase):
         """Test recognizing scientific entities in text."""
         entities = self.recognizer.recognize(self.test_text)
         
-        # Check that we found some entities
+        # Verify scientific entities were recognized
         self.assertTrue(len(entities) > 0)
         
-        # Check that we found expected entity types
         entity_types = {entity.type for entity in entities}
         expected_types = {EntityType.HYPOTHESIS, EntityType.METHODOLOGY, EntityType.FINDING, EntityType.FIELD, EntityType.AUTHOR}
         self.assertTrue(any(t in entity_types for t in expected_types))
         
-        # Check specific entities
+        # Verify specific entity content when available
         hypothesis_entities = [e for e in entities if e.type == EntityType.HYPOTHESIS]
         if hypothesis_entities:
-            hypothesis_text = hypothesis_entities[0].text.lower()
-            self.assertIn("large language model", hypothesis_text)
+            self.assertIn("large language model", hypothesis_entities[0].text.lower())
         
         methodology_entities = [e for e in entities if e.type == EntityType.METHODOLOGY]
         if methodology_entities:
@@ -170,21 +160,15 @@ class TestScientificEntityRecognizer(unittest.TestCase):
     def test_get_finding_entities(self):
         """Test getting finding entities."""
         entities = self.recognizer.recognize(self.test_text)
-        
-        # Get finding entities
         finding_entities = [e for e in entities if e.type == EntityType.FINDING]
         
-        # We may or may not find entities, but the test should run without errors
+        # Verify finding entities when available
         if finding_entities:
-            # Check that they have the expected attributes
             for entity in finding_entities:
                 self.assertIsInstance(entity.text, str)
                 self.assertEqual(entity.type, EntityType.FINDING)
                 self.assertIsInstance(entity.confidence, float)
-                # Check for expected content if we have findings
-                self.assertTrue("approach" in entity.text.lower() or 
-                               "results" in entity.text.lower() or 
-                               "performance" in entity.text.lower())
+                self.assertTrue(any(keyword in entity.text.lower() for keyword in ["approach", "results", "performance"]))
 
 
 class TestEntityRecognizerFactory(unittest.TestCase):
@@ -193,20 +177,17 @@ class TestEntityRecognizerFactory(unittest.TestCase):
     def test_create_ai_recognizer(self):
         """Test creating an AI entity recognizer."""
         recognizer = EntityRecognizerFactory.create_recognizer("ai")
-        
         self.assertIsInstance(recognizer, AIEntityRecognizer)
         self.assertTrue(hasattr(recognizer, "recognize"))
     
     def test_create_scientific_recognizer(self):
         """Test creating a scientific entity recognizer."""
         recognizer = EntityRecognizerFactory.create_recognizer("scientific")
-        
         self.assertIsInstance(recognizer, ScientificEntityRecognizer)
         self.assertTrue(hasattr(recognizer, "recognize"))
     
     def test_create_combined_recognizer(self):
         """Test creating a combined entity recognizer."""
-        # Create a combined recognizer with explicit sub-recognizers
         config = {
             "recognizers": [
                 {"type": "ai"},
@@ -217,8 +198,6 @@ class TestEntityRecognizerFactory(unittest.TestCase):
         
         self.assertTrue(hasattr(recognizer, "recognize"))
         self.assertTrue(hasattr(recognizer, "recognizers"))
-        
-        # Check that the combined recognizer has at least one recognizer
         self.assertTrue(len(recognizer.recognizers) > 0)
     
     def test_create_with_config(self):
@@ -230,9 +209,7 @@ class TestEntityRecognizerFactory(unittest.TestCase):
         }
         
         recognizer = EntityRecognizerFactory.create_recognizer("ai", config)
-        
         self.assertIsInstance(recognizer, AIEntityRecognizer)
-        # Check that the recognizer was created successfully
         self.assertTrue(hasattr(recognizer, "patterns"))
 
 

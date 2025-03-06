@@ -42,8 +42,9 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Tag } from '../../types/research';
 import { useTags, useTagHierarchy, useCreateTag, useUpdateTag, useDeleteTag, useMoveTag } from '../../services/tagsService';
 
-interface TagNode extends Tag {
+interface TagNode extends Omit<Tag, 'children'> {
   children?: TagNode[];
+  stringChildren?: string[]; // Original Tag.children is string[]
   isOpen?: boolean;
 }
 
@@ -92,9 +93,9 @@ const TagHierarchy: React.FC<TagHierarchyProps> = ({
   // Build hierarchical structure from flat tags list
   useEffect(() => {
     // If we have the hierarchy data, use it
-    if (hierarchyQuery.data && hierarchyQuery.data.length > 0) {
+    if (hierarchyQuery.data && (hierarchyQuery.data as Tag[]).length > 0) {
       const buildHierarchy = (rootTags: Tag[]): TagNode[] => {
-        const allTags = tagsQuery.data || [];
+        const allTags = tagsQuery.data as Tag[] || [];
         const result: TagNode[] = [];
 
         // Process each root tag
@@ -122,17 +123,17 @@ const TagHierarchy: React.FC<TagHierarchyProps> = ({
       };
 
       // Start with root tags (those with no parent)
-      const rootTags = hierarchyQuery.data.filter(tag => !tag.parentId);
+      const rootTags = (hierarchyQuery.data as Tag[]).filter(tag => !tag.parentId);
       setHierarchicalTags(buildHierarchy(rootTags));
     } 
     // Otherwise, build from flat list
-    else if (tagsQuery.data) {
+    else if (tagsQuery.data as Tag[]) {
       const buildHierarchyFromFlatList = () => {
         const tagMap = new Map<string, TagNode>();
         const rootTags: TagNode[] = [];
 
         // First pass: create all tag nodes
-        tagsQuery.data?.forEach(tag => {
+        (tagsQuery.data as Tag[])?.forEach(tag => {
           tagMap.set(tag.id, {
             ...tag,
             isOpen: expandedTags.has(tag.id),
@@ -141,7 +142,7 @@ const TagHierarchy: React.FC<TagHierarchyProps> = ({
         });
 
         // Second pass: build the hierarchy
-        tagsQuery.data?.forEach(tag => {
+        (tagsQuery.data as Tag[])?.forEach(tag => {
           const node = tagMap.get(tag.id);
           if (node) {
             if (!tag.parentId) {
@@ -184,10 +185,15 @@ const TagHierarchy: React.FC<TagHierarchyProps> = ({
   };
 
   // Select a tag
-  const handleSelectTag = (tag: Tag) => {
+  const handleSelectTag = (tag: TagNode) => {
     setSelectedTagId(tag.id);
     if (onTagSelect) {
-      onTagSelect(tag);
+      // Convert TagNode to Tag by removing children to avoid type errors
+      const tagForSelection: Tag = {
+        ...tag,
+        children: tag.stringChildren || [] // Use stringChildren for Tag format
+      };
+      onTagSelect(tagForSelection);
     }
   };
 
@@ -300,9 +306,14 @@ const TagHierarchy: React.FC<TagHierarchyProps> = ({
   };
 
   // Open context menu
-  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, tag: Tag) => {
+  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, tag: TagNode) => {
     setMenuAnchorEl(event.currentTarget);
-    setContextMenuTag(tag);
+    // Convert TagNode to Tag for the context menu
+    const tagForMenu: Tag = {
+      ...tag,
+      children: tag.stringChildren || [] // Use stringChildren for Tag format
+    };
+    setContextMenuTag(tagForMenu);
   };
 
   // Close context menu
@@ -572,9 +583,9 @@ const TagHierarchy: React.FC<TagHierarchyProps> = ({
             onClick={handleSubmitNewTag}
             color="primary"
             variant="contained"
-            disabled={!newTagName.trim() || createTagMutation.isLoading}
+            disabled={!newTagName.trim() || createTagMutation.isPending}
           >
-            {createTagMutation.isLoading ? <CircularProgress size={24} /> : 'Create'}
+            {createTagMutation.isPending ? <CircularProgress size={24} /> : 'Create'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -638,9 +649,9 @@ const TagHierarchy: React.FC<TagHierarchyProps> = ({
             onClick={handleSubmitEditTag}
             color="primary"
             variant="contained"
-            disabled={!newTagName.trim() || updateTagMutation.isLoading}
+            disabled={!newTagName.trim() || updateTagMutation.isPending}
           >
-            {updateTagMutation.isLoading ? <CircularProgress size={24} /> : 'Update'}
+            {updateTagMutation.isPending ? <CircularProgress size={24} /> : 'Update'}
           </Button>
         </DialogActions>
       </Dialog>

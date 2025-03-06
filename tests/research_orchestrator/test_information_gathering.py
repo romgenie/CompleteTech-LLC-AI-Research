@@ -106,14 +106,13 @@ class TestSourceManager(unittest.TestCase):
         results = self.source_manager.search('test query')
         self.assertEqual(len(results), 3)  # 2 from mock1, 1 from mock2
         
-        # Check that all results have the correct query
         for result in results:
             self.assertEqual(result['query'], 'test query')
             
     def test_search_specific_source(self):
         """Test searching a specific source."""
         results = self.source_manager.search('test query', sources=['mock1'])
-        self.assertEqual(len(results), 2)  # Only results from mock1
+        self.assertEqual(len(results), 2)
         self.assertEqual(results[0]['id'], 'mock1:1')
         self.assertEqual(results[1]['id'], 'mock1:2')
     
@@ -164,25 +163,18 @@ class TestQualityAssessor(unittest.TestCase):
         """Test quality assessment of results."""
         assessed_results = self.quality_assessor.assess_results(self.test_results)
         
-        # Check that quality scores were added
-        self.assertIn('quality_score', assessed_results[0])
-        self.assertIn('relevance_score', assessed_results[0])
-        self.assertIn('recency_score', assessed_results[0])
-        self.assertIn('authority_score', assessed_results[0])
-        self.assertIn('completeness_score', assessed_results[0])
+        # Verify scores were added with correct values
+        for key in ['quality_score', 'relevance_score', 'recency_score', 
+                  'authority_score', 'completeness_score']:
+            self.assertIn(key, assessed_results[0])
         
-        # Check that scores are between 0 and 1
+        # Verify score ranges and relative ordering
         for result in assessed_results:
             self.assertGreaterEqual(result['quality_score'], 0.0)
             self.assertLessEqual(result['quality_score'], 1.0)
         
-        # First result should have higher quality than second
         self.assertGreater(assessed_results[0]['quality_score'], assessed_results[1]['quality_score'])
-        
-        # Specifically check recency scoring
         self.assertGreater(assessed_results[0]['recency_score'], assessed_results[1]['recency_score'])
-        
-        # Specifically check authority scoring
         self.assertGreater(assessed_results[0]['authority_score'], assessed_results[1]['authority_score'])
 
 
@@ -217,24 +209,19 @@ class TestSearchManager(unittest.TestCase):
         """Test search functionality."""
         results = self.search_manager.search('test query', limit=5)
         
-        # Check that source manager was called
+        # Verify correct method calls and results
         self.mock_source_manager.search.assert_called_once_with('test query', None, 5, 'general')
-        
-        # Check that quality assessor was called
         self.mock_quality_assessor.assess_results.assert_called_once()
         
-        # Check that results were sorted by quality score
-        self.assertEqual(results[0]['id'], 'test:1')  # Higher quality should be first
+        # Verify quality-based sorting
+        self.assertEqual(results[0]['id'], 'test:1')
         self.assertEqual(results[1]['id'], 'test:2')
     
     def test_get_document(self):
         """Test document retrieval."""
         document = self.search_manager.get_document('test:1', 'test_source')
         
-        # Check that source manager was called
         self.mock_source_manager.get_document.assert_called_once_with('test:1', 'test_source')
-        
-        # Check that we got the right document
         self.assertEqual(document['id'], 'test:1')
         self.assertEqual(document['content'], 'Full content of result 1')
 
@@ -252,6 +239,7 @@ class TestSourceImplementations(unittest.TestCase):
         }
         source = AcademicSource('academic_test', config)
         
+        # Verify source configuration
         self.assertEqual(source.source_id, 'academic_test')
         self.assertEqual(source.source_type, 'academic')
         self.assertEqual(source.provider, 'arxiv')
@@ -270,6 +258,7 @@ class TestSourceImplementations(unittest.TestCase):
         }
         source = WebSource('web_test', config)
         
+        # Verify source configuration
         self.assertEqual(source.source_id, 'web_test')
         self.assertEqual(source.source_type, 'web')
         self.assertEqual(source.provider, 'serper')
@@ -288,6 +277,7 @@ class TestSourceImplementations(unittest.TestCase):
         }
         source = CodeSource('code_test', config)
         
+        # Verify source configuration
         self.assertEqual(source.source_id, 'code_test')
         self.assertEqual(source.source_type, 'code')
         self.assertEqual(source.provider, 'github')
@@ -310,6 +300,7 @@ class TestSourceImplementations(unittest.TestCase):
         }
         source = AISource('ai_test', config)
         
+        # Verify source configuration
         self.assertEqual(source.source_id, 'ai_test')
         self.assertEqual(source.source_type, 'ai')
         self.assertEqual(source.provider, 'openai')

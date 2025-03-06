@@ -46,9 +46,9 @@ const KnowledgeGraphTableView: React.FC<KnowledgeGraphTableViewProps> = ({
   const [linkPage, setLinkPage] = useState<number>(0);
   const [linkRowsPerPage, setLinkRowsPerPage] = useState<number>(10);
   const [nodeOrder, setNodeOrder] = useState<Order>('asc');
-  const [nodeOrderBy, setNodeOrderBy] = useState<string>('name');
+  const [nodeOrderBy, setNodeOrderBy] = useState<keyof any>('name');
   const [linkOrder, setLinkOrder] = useState<Order>('asc');
-  const [linkOrderBy, setLinkOrderBy] = useState<string>('source');
+  const [linkOrderBy, setLinkOrderBy] = useState<keyof any>('source');
   const [nodeFilter, setNodeFilter] = useState<string>('');
   const [linkFilter, setLinkFilter] = useState<string>('');
   const [filteredNodes, setFilteredNodes] = useState<Entity[]>([]);
@@ -59,13 +59,13 @@ const KnowledgeGraphTableView: React.FC<KnowledgeGraphTableViewProps> = ({
   
   // Effect to filter and sort nodes
   useEffect(() => {
-    if (!graphData || !graphData.nodes) {
+    if (!graphData || !graphData.entities) {
       setFilteredNodes([]);
       return;
     }
     
     // Filter nodes
-    const filtered = graphData.nodes.filter(node => {
+    const filtered = graphData.entities.filter(node => {
       const searchTerms = nodeFilter.toLowerCase().split(' ');
       const nodeText = `${node.name} ${node.type} ${node.id}`.toLowerCase();
       return searchTerms.every(term => nodeText.includes(term));
@@ -73,7 +73,7 @@ const KnowledgeGraphTableView: React.FC<KnowledgeGraphTableViewProps> = ({
     
     // Sort nodes
     const sorted = stableSort(filtered, getComparator(nodeOrder, nodeOrderBy));
-    setFilteredNodes(sorted);
+    setFilteredNodes(sorted as Entity[]);
   }, [graphData, nodeFilter, nodeOrder, nodeOrderBy]);
   
   // Effect to filter and sort links
@@ -89,10 +89,10 @@ const KnowledgeGraphTableView: React.FC<KnowledgeGraphTableViewProps> = ({
       
       // Get source and target names
       const sourceName = typeof link.source === 'object' ? link.source.name : 
-        graphData.nodes.find(n => n.id === link.source)?.name || String(link.source);
+        graphData.entities.find(n => n.id === link.source)?.name || String(link.source);
       
       const targetName = typeof link.target === 'object' ? link.target.name : 
-        graphData.nodes.find(n => n.id === link.target)?.name || String(link.target);
+        graphData.entities.find(n => n.id === link.target)?.name || String(link.target);
         
       const linkText = `${sourceName} ${targetName} ${link.type}`.toLowerCase();
       return searchTerms.every(term => linkText.includes(term));
@@ -100,7 +100,7 @@ const KnowledgeGraphTableView: React.FC<KnowledgeGraphTableViewProps> = ({
     
     // Sort links
     const sorted = stableSort(filtered, getComparator(linkOrder, linkOrderBy));
-    setFilteredLinks(sorted);
+    setFilteredLinks(sorted as Relationship[]);
   }, [graphData, linkFilter, linkOrder, linkOrderBy]);
   
   // Handle tab change
@@ -131,21 +131,21 @@ const KnowledgeGraphTableView: React.FC<KnowledgeGraphTableViewProps> = ({
   };
   
   // Handle node table sort
-  const handleNodeSortRequest = (property: string): void => {
+  const handleNodeSortRequest = (property: keyof any): void => {
     const isAsc = nodeOrderBy === property && nodeOrder === 'asc';
     setNodeOrder(isAsc ? 'desc' : 'asc');
     setNodeOrderBy(property);
   };
   
   // Handle link table sort
-  const handleLinkSortRequest = (property: string): void => {
+  const handleLinkSortRequest = (property: keyof any): void => {
     const isAsc = linkOrderBy === property && linkOrder === 'asc';
     setLinkOrder(isAsc ? 'desc' : 'asc');
     setLinkOrderBy(property);
   };
   
   // Create sort handler for a given property
-  const createSortHandler = (handler: (property: string) => void, property: string) => 
+  const createSortHandler = (handler: (property: keyof any) => void, property: keyof any) => 
     (event: React.MouseEvent<unknown>): void => {
       handler(property);
     };
@@ -153,7 +153,7 @@ const KnowledgeGraphTableView: React.FC<KnowledgeGraphTableViewProps> = ({
   // Helper function for sorting
   function getComparator<Key extends keyof any>(
     order: Order,
-    orderBy: string
+    orderBy: Key
   ): (a: { [key in Key]: any }, b: { [key in Key]: any }) => number {
     return order === 'desc'
       ? (a, b) => descendingComparator(a, b, orderBy)
@@ -200,8 +200,8 @@ const KnowledgeGraphTableView: React.FC<KnowledgeGraphTableViewProps> = ({
     }
     
     // Try to find the node by ID
-    if (graphData && graphData.nodes) {
-      const node = graphData.nodes.find(n => n.id === endpoint);
+    if (graphData && graphData.entities) {
+      const node = graphData.entities.find(n => n.id === endpoint);
       if (node) return node.name;
     }
     
@@ -216,7 +216,7 @@ const KnowledgeGraphTableView: React.FC<KnowledgeGraphTableViewProps> = ({
   };
   
   // Empty state message
-  if (!graphData || !graphData.nodes || graphData.nodes.length === 0) {
+  if (!graphData || !graphData.entities || graphData.entities.length === 0) {
     return (
       <Paper elevation={3} sx={{ p: 4, mb: 2 }}>
         <Typography variant="h6" align="center">
@@ -244,7 +244,7 @@ const KnowledgeGraphTableView: React.FC<KnowledgeGraphTableViewProps> = ({
           onChange={handleTabChange} 
           aria-label="Knowledge Graph data tables"
         >
-          <Tab label={`Entities (${graphData.nodes.length})`} id="tab-entities" aria-controls="tabpanel-entities" />
+          <Tab label={`Entities (${graphData.entities.length})`} id="tab-entities" aria-controls="tabpanel-entities" />
           <Tab label={`Relationships (${graphData.relationships.length})`} id="tab-relationships" aria-controls="tabpanel-relationships" />
         </Tabs>
       </Box>

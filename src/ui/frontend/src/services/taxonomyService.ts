@@ -252,7 +252,7 @@ export function useTaxonomies() {
     url: TAXONOMY_BASE_URL,
     queryOptions: {
       staleTime: 1000 * 60 * 5, // 5 minutes
-      cacheTime: 1000 * 60 * 30, // 30 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes
     },
     mockData: () => {
       // Generate mock taxonomies if API fails
@@ -296,7 +296,7 @@ export function useTaxonomy(id: string) {
     url: `${TAXONOMY_BASE_URL}/${id}`,
     queryOptions: {
       staleTime: 1000 * 60 * 5, // 5 minutes
-      cacheTime: 1000 * 60 * 30, // 30 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes
       enabled: !!id // Only run query if ID is provided
     }
   });

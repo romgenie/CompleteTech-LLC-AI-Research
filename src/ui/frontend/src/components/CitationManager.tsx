@@ -39,6 +39,10 @@ import {
 } from '@mui/icons-material';
 import citationService from '../services/citationService';
 import { CitationPaper, CitationStyle } from '../utils/citationManager';
+import { SelectChangeEvent } from '@mui/material/Select';
+
+// Type definition for export formats
+type ExportFormat = 'txt' | 'html' | 'bibtex';
 
 // Interface for props
 interface CitationManagerProps {
@@ -159,13 +163,13 @@ const CitationManager: React.FC<CitationManagerProps> = ({ researchResults, onCi
   };
 
   // Handle citation style change
-  const handleStyleChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+  const handleStyleChange = (event: SelectChangeEvent<CitationStyle>) => {
     setCitationStyle(event.target.value as CitationStyle);
   };
 
   // Handle export format change
-  const handleExportFormatChange = (event: React.ChangeEvent<{ value: unknown }>) => {
-    setExportFormat(event.target.value as 'txt' | 'html' | 'bibtex');
+  const handleExportFormatChange = (event: SelectChangeEvent<ExportFormat>) => {  
+    setExportFormat(event.target.value as ExportFormat);
   };
 
   // Copy citation to clipboard

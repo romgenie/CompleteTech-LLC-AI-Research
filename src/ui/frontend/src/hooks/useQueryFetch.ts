@@ -57,9 +57,9 @@ export function useFetchQuery<TData = unknown>(
   const queryClient = useQueryClient();
   const queryKey = [url, config]; // Query key based on URL and config
 
-  const query = useQuery<TData, AxiosError>(
+  const query = useQuery<TData, AxiosError>({
     queryKey,
-    async () => {
+    queryFn: async () => {
       try {
         const data = await apiClient.get<TData>(url, config);
         return data;
@@ -75,12 +75,10 @@ export function useFetchQuery<TData = unknown>(
         throw error;
       }
     },
-    {
-      onSuccess,
-      onError,
-      ...queryOptions
-    }
-  );
+    ...queryOptions,
+    ...(onSuccess ? { onSuccess } : {}),
+    ...(onError ? { onError } : {})
+  });
 
   // Set up WebSocket subscription if enabled
   React.useEffect(() => {
@@ -98,7 +96,9 @@ export function useFetchQuery<TData = unknown>(
       });
       
       // Clean up subscription when component unmounts
-      return unsubscribe;
+      return () => {
+        unsubscribe();
+      };
     }
   }, [enableWebSocket, wsMessageType, queryClient, queryKey]);
 
@@ -106,8 +106,7 @@ export function useFetchQuery<TData = unknown>(
 }
 
 /**
- * Hook for making mutation requests (POST, PUT, PATCH, DELETE) with React Query
- * Uses the ApiClient and supports optimistic updates
+ * Hook for making mutating requests (POST, PUT, PATCH, DELETE) with React Query
  * 
  * @param options - Options for the mutation
  * @returns Mutation result
@@ -126,8 +125,8 @@ export function useFetchMutation<TData = unknown, TVariables = unknown>(
 
   const queryClient = useQueryClient();
 
-  return useMutation<TData, AxiosError, TVariables>(
-    async (variables) => {
+  return useMutation<TData, AxiosError, TVariables>({
+    mutationFn: async (variables) => {
       try {
         let response: TData;
         
@@ -162,40 +161,35 @@ export function useFetchMutation<TData = unknown, TVariables = unknown>(
         throw error;
       }
     },
-    {
-      // Support optimistic updates for better UX
-      onMutate: async (variables) => {
-        if (optimisticUpdate) {
-          // Cancel any outgoing refetches to avoid overwriting optimistic update
-          await queryClient.cancelQueries(optimisticUpdate.queryKey);
-          
-          // Snapshot the previous value
-          const previousData = queryClient.getQueryData(optimisticUpdate.queryKey);
-          
-          // Optimistically update to the new value
-          queryClient.setQueryData(optimisticUpdate.queryKey, (old) => 
-            optimisticUpdate.updateFn(old, variables)
-          );
-          
-          // Return a context object with the snapshotted value
-          return { previousData };
-        }
-      },
-      // If the mutation fails, use the context returned from onMutate to roll back
-      onError: (err, variables, context) => {
-        if (optimisticUpdate && context) {
-          queryClient.setQueryData(optimisticUpdate.queryKey, context.previousData);
-        }
-      },
-      // Always refetch after error or success to ensure cache data is correct
-      onSettled: () => {
-        if (optimisticUpdate) {
-          queryClient.invalidateQueries(optimisticUpdate.queryKey);
-        }
-      },
-      ...mutationOptions
-    }
-  );
+    onMutate: async (variables) => {
+      if (optimisticUpdate) {
+        // Cancel any outgoing refetches to avoid overwriting optimistic update
+        await queryClient.cancelQueries({ queryKey: optimisticUpdate.queryKey });
+        
+        // Snapshot the previous value
+        const previousData = queryClient.getQueryData(optimisticUpdate.queryKey);
+        
+        // Optimistically update to the new value
+        queryClient.setQueryData(optimisticUpdate.queryKey, (old) => 
+          optimisticUpdate.updateFn(old, variables)
+        );
+        
+        // Return a context object with the snapshotted value
+        return { previousData };
+      }
+    },
+    onError: (err, variables, context: any) => {
+      if (optimisticUpdate && context && context.previousData) {
+        queryClient.setQueryData(optimisticUpdate.queryKey, context.previousData);
+      }
+    },
+    onSettled: () => {
+      if (optimisticUpdate) {
+        queryClient.invalidateQueries({ queryKey: optimisticUpdate.queryKey });
+      }
+    },
+    ...(mutationOptions || {})
+  });
 }
 
 /**
@@ -233,7 +227,11 @@ export function usePrefetch<TData = unknown>(
     queryKey, 
     queryFn, 
     options: queryOptions,
-    prefetch: () => queryClient.prefetchQuery(queryKey, queryFn, queryOptions)
+    prefetch: () => queryClient.prefetchQuery({ 
+      queryKey,
+      queryFn,
+      ...queryOptions 
+    })
   };
 }
 
@@ -259,9 +257,11 @@ export function useInfiniteQuery<TData = unknown>(
   
   const queryClient = useQueryClient();
 
-  return useQuery<TData, AxiosError>(
-    [url, config],
-    async ({ pageParam = 1 }) => {
+  // Note: For TanStack Query v5, useInfiniteQuery should be used directly
+  // This is a simplified implementation for compatibility
+  return useQuery<TData, AxiosError>({
+    queryKey: [url, config],
+    queryFn: async ({ pageParam = 1 }) => {
       try {
         // Add page parameter to request config
         const paginatedConfig = {
@@ -286,13 +286,10 @@ export function useInfiniteQuery<TData = unknown>(
         throw error;
       }
     },
-    {
-      onSuccess,
-      onError,
-      getNextPageParam,
-      ...queryOptions
-    }
-  );
+    ...queryOptions,
+    ...(onSuccess ? { onSuccess } : {})
+    // Note: getNextPageParam should be used with useInfiniteQuery, not useQuery
+  });
 }
 
 /**
@@ -325,9 +322,9 @@ export function usePaginatedQuery<TData = unknown>(
   const queryKey = [url, { ...config, page, pageSize }];
 
   // The main query
-  const query = useQuery<TData, AxiosError>(
+  const query = useQuery<TData, AxiosError>({
     queryKey,
-    async () => {
+    queryFn: async () => {
       try {
         // Add pagination parameters to request config
         const paginatedConfig = {
@@ -354,22 +351,19 @@ export function usePaginatedQuery<TData = unknown>(
         throw error;
       }
     },
-    {
-      onSuccess,
-      onError,
-      keepPreviousData: true, // Important for smooth pagination UX
-      ...queryOptions
-    }
-  );
+    ...queryOptions,
+    ...(onSuccess ? { onSuccess } : {}),
+    ...(onError ? { onError } : {})
+  });
 
   // Prefetch next page when current page is successfully loaded
   React.useEffect(() => {
     if (query.data) {
       const nextPage = page + 1;
       
-      queryClient.prefetchQuery(
-        [url, { ...config, page: nextPage, pageSize }],
-        async () => {
+      queryClient.prefetchQuery({
+        queryKey: [url, { ...config, page: nextPage, pageSize }],
+        queryFn: async () => {
           try {
             const paginatedConfig = {
               ...config,
@@ -392,8 +386,8 @@ export function usePaginatedQuery<TData = unknown>(
             throw error;
           }
         },
-        queryOptions
-      );
+        ...queryOptions
+      });
     }
   }, [query.data, page, pageSize, url, config, queryClient, queryOptions, mockData]);
 
@@ -420,7 +414,7 @@ export function usePaginatedQuery<TData = unknown>(
     ...query,
     pagination: {
       page,
-      pageSize, 
+      pageSize,
       goToPage,
       nextPage,
       previousPage,

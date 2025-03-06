@@ -87,7 +87,7 @@ const TagManager: React.FC<TagManagerProps> = ({
             <Typography variant="body2">Loading tags...</Typography>
           ) : (
             <TagList 
-              tags={allTagsQuery.tags.filter(tag => !currentTags.includes(tag))}
+              tags={(allTagsQuery.data || []).filter(tag => !currentTags.includes(tag))}
               onClick={handleAddTag}
             />
           )}

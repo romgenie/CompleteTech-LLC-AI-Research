@@ -272,7 +272,7 @@ function generateMockInsights(): ResearchInsight[] {
       id: 'insight-top-tag',
       type: 'pattern',
       title: 'Transformers is Your Main Research Focus',
-      description: 'You've used the "Transformers" tag most frequently, indicating a strong research interest in this area.',
+      description: "You've used the \"Transformers\" tag most frequently, indicating a strong research interest in this area.",
       importance: 'medium',
       relatedTags: [mockTags[1]],
       iconType: 'analytics'

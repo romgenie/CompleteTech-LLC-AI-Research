@@ -1,8 +1,21 @@
-# Testing the Paper Processing Pipeline
+# Testing Guidelines
 
-This document provides instructions for testing the Paper Processing Pipeline implementation.
+This document provides comprehensive instructions for testing across the project, with specific details for the Paper Processing Pipeline and other components.
 
-## Getting Started
+## General Testing Approach
+
+Our testing strategy employs:
+
+1. **Unit Tests**: Testing individual components in isolation with mocks
+2. **Integration Tests**: Testing interactions between components
+3. **End-to-End Tests**: Testing complete workflows
+
+We use pytest for all testing with these key features:
+- Fixtures for test setup and data preparation
+- Parameterized tests for comprehensive test coverage
+- CI/CD integration via GitHub Actions
+
+## Paper Processing Pipeline Testing
 
 The Paper Processing Pipeline is designed to extract knowledge from academic papers and integrate it into our knowledge graph system. The implementation includes:
 
@@ -107,3 +120,93 @@ If you encounter issues:
 - Check Redis connection in `src/paper_processing/tasks/celery_app.py`
 - Ensure all services are running properly
 - Check logs for detailed error messages
+
+## Research Orchestrator Testing
+
+The research orchestrator components have comprehensive parameterized tests implemented for:
+
+1. **Knowledge Extraction Module**:
+   - Entity recognition tests with different entity types
+   - Relationship extraction tests with different confidence levels
+   - Knowledge extractor integration tests
+
+2. **API Testing**:
+   - All API endpoints include required query parameters:
+   ```python
+   # Example of adding required parameters:
+   url = self.add_query_params("/implementation/planning/plans")
+   response = self.client.get(url)
+   
+   # With additional parameters:
+   url = self.add_query_params("/research/tasks/", {"limit": "10", "offset": "0"})
+   response = self.client.get(url)
+   ```
+
+3. **Running Orchestrator Tests**:
+   ```bash
+   # Using the test runner script (recommended)
+   ./run_tests.sh -p tests/research_orchestrator
+   
+   # Or manually with pytest
+   cd tests/research_orchestrator
+   python -m pytest
+   ```
+
+4. **WebSocket Testing**:
+   - Tests for real-time updates via WebSocket connections
+   - WebSocket message queue for collecting and validating event messages
+   - Paper-specific and global event subscriptions
+   
+5. **CI/CD Integration**:
+   - Tests automatically run on GitHub via GitHub Actions
+   - Multi-Python version testing (3.9, 3.10, 3.11, 3.12)
+   - Code coverage reporting
+
+## Test Structure Best Practices
+
+1. **Use Fixtures**:
+   - Place common fixtures in `conftest.py`
+   - Create specialized fixtures in component-specific test files
+   - Use fixtures for reusing test data and setup code
+
+2. **Parameterize Tests**:
+   - Use `@pytest.mark.parametrize` for testing multiple scenarios
+   - Group related test cases into single parameterized tests
+   - Example:
+   ```python
+   @pytest.mark.parametrize("confidence,expected_ids", [
+       (0.9, ["r1"]),
+       (0.6, ["r1", "r2"]),
+       (0.3, ["r1", "r2", "r3"]),
+       (0.0, ["r1", "r2", "r3"])
+   ])
+   def test_filter_relationships_by_confidence(extractor, relationships, confidence, expected_ids):
+       filtered = extractor.filter_relationships_by_confidence(relationships, confidence)
+       filtered_ids = [rel.id for rel in filtered]
+       assert sorted(filtered_ids) == sorted(expected_ids)
+   ```
+
+3. **Mock External Dependencies**:
+   - Use pytest monkeypatch for temporary modifications
+   - Create mock objects for external services
+   - For API testing, include required query parameters:
+   ```python
+   def add_query_params(self, url, params=None):
+       """Helper function to add required query parameters."""
+       if params is None:
+           params = {}
+       if 'args' not in params:
+           params['args'] = '[]'
+       if 'kwargs' not in params:
+           params['kwargs'] = '{}'
+       # Build query string...
+   ```
+
+4. **Skip Tests Appropriately**:
+   - Use `@pytest.mark.skip(reason="...")` for tests that need fixing
+   - Use `@pytest.mark.skipif(condition, reason="...")` for conditional skips
+
+5. **Using Test Runner Script**:
+   - For consistent test execution, use the run_tests.sh script
+   - Provides standard options for verbosity, coverage, and filtering
+   - Example: `./run_tests.sh -v -c -k 'entity'`

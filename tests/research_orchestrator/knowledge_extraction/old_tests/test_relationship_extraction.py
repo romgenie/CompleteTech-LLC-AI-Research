@@ -133,8 +133,8 @@ class TestRelationshipExtractor(unittest.TestCase):
             elif pair[0].text == "ImageNet" and pair[1].text == "BERT":
                 imagenet_bert_found = True
                 
-        self.assertTrue(bert_imagenet_found, "BERT→ImageNet pair not found")
-        self.assertTrue(imagenet_bert_found, "ImageNet→BERT pair not found")
+        self.assertTrue(bert_imagenet_found)
+        self.assertTrue(imagenet_bert_found)
         
         # Find pairs with a larger max distance
         pairs = extractor.find_entity_pairs(entities, max_distance=100)

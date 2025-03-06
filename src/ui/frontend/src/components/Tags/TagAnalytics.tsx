@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import * as d3 from 'd3';
 import { 
   Box, 
   Typography, 
@@ -12,12 +13,12 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel
+  InputLabel,
+  SelectChangeEvent
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
-import * as d3 from 'd3';
 
 import { Tag, TagUsageStats } from '../../types/research';
 import { useTagStats, usePopularTags } from '../../services/tagsService';
@@ -37,12 +38,10 @@ const TagAnalytics: React.FC<TagAnalyticsProps> = ({ tagId }) => {
 
   // Chart references
   const usageChartRef = useD3(
-    (svg) => {
-      if (!tagStats || !tagStats.dailyUse || tagStats.dailyUse.length === 0) return;
+    (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>) => {
+      if (!tagStats?.dailyUse) return;
 
-      // Clear previous chart
-      svg.selectAll('*').remove();
-
+      const data = tagStats.dailyUse;
       const margin = { top: 20, right: 30, bottom: 30, left: 40 };
       const width = svg.node()?.parentElement?.clientWidth || 300;
       const height = 200;
@@ -51,63 +50,47 @@ const TagAnalytics: React.FC<TagAnalyticsProps> = ({ tagId }) => {
 
       // Parse dates and create scales
       const dateParser = d3.timeParse('%Y-%m-%d');
-      const dates = tagStats.dailyUse.map(d => dateParser(d.date) || new Date());
-      const counts = tagStats.dailyUse.map(d => d.count);
+      const dates = data.map(d => dateParser(d.date) || new Date());
+      const counts = data.map(d => d.count);
 
       const xScale = d3.scaleTime()
         .domain(d3.extent(dates) as [Date, Date])
         .range([0, innerWidth]);
 
       const yScale = d3.scaleLinear()
-        .domain([0, d3.max(counts) || 10])
+        .domain([0, d3.max(counts as number[]) || 10])
         .nice()
         .range([innerHeight, 0]);
 
-      // Create the line generator
-      const line = d3.line<any>()
-        .x(d => xScale(dateParser(d.date) || new Date()))
-        .y(d => yScale(d.count))
-        .curve(d3.curveMonotoneX);
-
       // Create chart group
-      const g = svg.append('g')
+      const g = svg
+        .append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
 
       // Add axes
       g.append('g')
         .attr('transform', `translate(0,${innerHeight})`)
-        .call(d3.axisBottom(xScale).ticks(5).tickSizeOuter(0));
+        .call((g) => d3.axisBottom(xScale).ticks(5).tickSizeOuter(0)(g as any));
 
       g.append('g')
-        .call(d3.axisLeft(yScale).ticks(5).tickSizeOuter(0));
+        .call((g) => d3.axisLeft(yScale).ticks(5).tickSizeOuter(0)(g as any));
 
       // Add the line path
       g.append('path')
-        .datum(tagStats.dailyUse)
         .attr('fill', 'none')
         .attr('stroke', '#2196f3')
         .attr('stroke-width', 2)
-        .attr('d', line);
-
-      // Add dots for each data point
-      g.selectAll('.dot')
-        .data(tagStats.dailyUse)
-        .enter().append('circle')
-        .attr('class', 'dot')
-        .attr('cx', d => xScale(dateParser(d.date) || new Date()))
-        .attr('cy', d => yScale(d.count))
-        .attr('r', 4)
-        .attr('fill', '#2196f3');
+        .attr('d', d3.line<any>()
+          .x(d => xScale(dateParser(d.date) || new Date()))
+          .y(d => yScale(d.count))
+          .curve(d3.curveMonotoneX)(data) || '');
     },
     [tagStats?.dailyUse]
   );
 
   const relationshipChartRef = useD3(
-    (svg) => {
-      if (!tagStats || !tagStats.relatedTags || tagStats.relatedTags.length === 0) return;
-
-      // Clear previous chart
-      svg.selectAll('*').remove();
+    (svg: d3.Selection<SVGSVGElement, unknown, null, undefined>) => {
+      if (!tagStats?.relatedTags) return;
 
       const margin = { top: 20, right: 30, bottom: 100, left: 40 };
       const width = svg.node()?.parentElement?.clientWidth || 300;
@@ -117,9 +100,8 @@ const TagAnalytics: React.FC<TagAnalyticsProps> = ({ tagId }) => {
 
       // Sort tags by co-occurrence
       const sortedTags = [...tagStats.relatedTags].sort((a, b) => b.cooccurrence - a.cooccurrence);
-      const tags = sortedTags.slice(0, 8); // Limit to top 8 for readability
+      const tags = sortedTags.slice(0, 8);
 
-      // Create scales
       const xScale = d3.scaleBand()
         .domain(tags.map(d => d.tagId))
         .range([0, innerWidth])
@@ -130,27 +112,23 @@ const TagAnalytics: React.FC<TagAnalyticsProps> = ({ tagId }) => {
         .nice()
         .range([innerHeight, 0]);
 
-      // Create chart group
-      const g = svg.append('g')
+      const g = svg
+        .append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
 
-      // Add axes
       g.append('g')
         .attr('transform', `translate(0,${innerHeight})`)
-        .call(d3.axisBottom(xScale))
-        .selectAll('text')
-        .attr('transform', 'rotate(-45)')
-        .style('text-anchor', 'end')
-        .attr('dx', '-.8em')
-        .attr('dy', '.15em');
+        .call((g) => d3.axisBottom(xScale)(g as any));
 
       g.append('g')
-        .call(d3.axisLeft(yScale).ticks(5).tickFormat(d => (d as number).toFixed(2)));
+        .call((g) => d3.axisLeft(yScale)
+          .ticks(5)
+          .tickFormat(d => (d as number).toFixed(2))(g as any));
 
-      // Add the bars
       g.selectAll('.bar')
         .data(tags)
-        .enter().append('rect')
+        .enter()
+        .append('rect')
         .attr('class', 'bar')
         .attr('x', d => xScale(d.tagId) || 0)
         .attr('y', d => yScale(d.cooccurrence))
@@ -161,7 +139,7 @@ const TagAnalytics: React.FC<TagAnalyticsProps> = ({ tagId }) => {
     [tagStats?.relatedTags]
   );
 
-  const handleTagChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+  const handleTagChange = (event: SelectChangeEvent) => {
     setSelectedTagId(event.target.value as string);
   };
 

@@ -179,11 +179,43 @@ class TestApiDatabaseInteraction(unittest.TestCase):
         self.neo4j_patcher.stop()
         self.mongodb_patcher.stop()
         self.auth_patcher.stop()
+        
+    def add_query_params(self, url, params=None):
+        """
+        Helper function to add query parameters to API requests.
+        
+        Args:
+            url (str): The base URL for the API endpoint
+            params (dict, optional): Dictionary of query parameters to add. Defaults to None.
+        
+        Returns:
+            str: URL with added query parameters
+        """
+        # Add default args and kwargs params if none provided
+        if params is None:
+            params = {}
+        
+        # Ensure required parameters are included
+        if 'args' not in params:
+            params['args'] = '[]'
+        if 'kwargs' not in params:
+            params['kwargs'] = '{}'
+        
+        # Construct query string
+        query_parts = [f"{k}={v}" for k, v in params.items()]
+        query_string = "&".join(query_parts)
+        
+        # Add query string to URL
+        if "?" in url:
+            return f"{url}&{query_string}"
+        else:
+            return f"{url}?{query_string}"
     
     def test_knowledge_graph_entity_endpoints(self):
         """Test knowledge graph entity API endpoints."""
-        # Test GET /knowledge/entities/
-        response = self.client.get("/knowledge/entities/")
+        # Test GET /knowledge/entities/ with required query parameters
+        url = self.add_query_params("/knowledge/entities/")
+        response = self.client.get(url)
         print(f"GET /knowledge/entities/ response: {response.status_code}, {response.text}")
         self.assertEqual(response.status_code, 200)
         
@@ -194,12 +226,13 @@ class TestApiDatabaseInteraction(unittest.TestCase):
         self.assertEqual(len(entities), 3)
         self.assertEqual(entities[0]["name"], "Vision Transformer")
         
-        # Test GET /knowledge/entities/{entity_id}
-        response = self.client.get("/knowledge/entities/1")
+        # Test GET /knowledge/entities/{entity_id} with required query parameters
+        url = self.add_query_params("/knowledge/entities/1")
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["name"], "Vision Transformer")
         
-        # Test POST /knowledge/entities/
+        # Test POST /knowledge/entities/ with required query parameters
         new_entity = {
             "name": "BERT",
             "label": "MODEL",
@@ -210,7 +243,8 @@ class TestApiDatabaseInteraction(unittest.TestCase):
             "confidence": 0.95,
             "source": "test"
         }
-        response = self.client.post("/knowledge/entities/", json=new_entity)
+        url = self.add_query_params("/knowledge/entities/")
+        response = self.client.post(url, json=new_entity)
         print(f"POST /knowledge/entities/ response: {response.status_code}, {response.text}")
         self.assertEqual(response.status_code, 201)
         
@@ -219,8 +253,9 @@ class TestApiDatabaseInteraction(unittest.TestCase):
     
     def test_knowledge_graph_relationship_endpoints(self):
         """Test knowledge graph relationship API endpoints."""
-        # Test GET /knowledge/relationships/
-        response = self.client.get("/knowledge/relationships/")
+        # Test GET /knowledge/relationships/ with required query parameters
+        url = self.add_query_params("/knowledge/relationships/")
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         
         # Verify response contains expected relationships
@@ -231,7 +266,7 @@ class TestApiDatabaseInteraction(unittest.TestCase):
         self.assertEqual(relationships[0]["source_entity"]["name"], "Vision Transformer")
         self.assertEqual(relationships[0]["target_entity"]["name"], "ImageNet")
         
-        # Test POST /knowledge/relationships/
+        # Test POST /knowledge/relationships/ with required query parameters
         new_relationship = {
             "source_id": "1",
             "target_id": "2",
@@ -243,7 +278,8 @@ class TestApiDatabaseInteraction(unittest.TestCase):
             "source": "test",
             "bidirectional": False
         }
-        response = self.client.post("/knowledge/relationships/", json=new_relationship)
+        url = self.add_query_params("/knowledge/relationships/")
+        response = self.client.post(url, json=new_relationship)
         self.assertEqual(response.status_code, 201)
         
         # Verify Neo4j method was called correctly
@@ -251,28 +287,31 @@ class TestApiDatabaseInteraction(unittest.TestCase):
     
     def test_research_document_endpoints(self):
         """Test research document API endpoints with MongoDB."""
-        # Test GET /research/tasks/{task_id}
-        response = self.client.get("/research/tasks/research_1")
+        # Test GET /research/tasks/{task_id} with required query parameters
+        url = self.add_query_params("/research/tasks/research_1")
+        response = self.client.get(url)
         print(f"GET /research/tasks/research_1 response: {response.status_code}, {response.text}")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["query"], "Vision Transformer Research")
         
-        # Test GET /research/tasks/ (list)
-        response = self.client.get("/research/tasks/?limit=10&offset=0")
+        # Test GET /research/tasks/ (list) with required query parameters
+        url = self.add_query_params("/research/tasks/", {"limit": "10", "offset": "0"})
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         
         # Verify response contains expected documents
         tasks = response.json()
         self.assertEqual(len(tasks), 2)
         
-        # Test POST /research/queries/ (create)
+        # Test POST /research/queries/ (create) with required query parameters
         new_research = {
             "query": "How do attention mechanisms work?",
             "sources": ["web", "academic"],
             "max_results": 10,
             "filters": {}
         }
-        response = self.client.post("/research/queries/", json=new_research)
+        url = self.add_query_params("/research/queries/")
+        response = self.client.post(url, json=new_research)
         print(f"POST /research/queries/ response: {response.status_code}, {response.text}")
         self.assertEqual(response.status_code, 201)
         
@@ -282,7 +321,8 @@ class TestApiDatabaseInteraction(unittest.TestCase):
     def test_implementation_endpoints(self):
         """Test implementation API endpoints with MongoDB."""
         # Test GET /implementation/{implementation_id}
-        response = self.client.get("/implementation/implementation_1")
+        url = self.add_query_params("/implementation/implementation_1")
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["title"], "ViT Implementation")
         
@@ -297,7 +337,8 @@ class TestApiDatabaseInteraction(unittest.TestCase):
                 "libraries": ["torch"]
             }
         }
-        response = self.client.post("/implementation/", json=new_implementation)
+        url = self.add_query_params("/implementation/")
+        response = self.client.post(url, json=new_implementation)
         self.assertEqual(response.status_code, 201)
         
         # Verify MongoDB method was called correctly
@@ -318,8 +359,9 @@ class TestApiDatabaseInteraction(unittest.TestCase):
         insert_result.inserted_id = "research_transformer"
         self.mock_collection.insert_one.return_value = insert_result
         
-        # Create research via API
-        response = self.client.post("/research/queries/", json=new_research)
+        # Create research via API with required query parameters
+        url = self.add_query_params("/research/queries/")
+        response = self.client.post(url, json=new_research)
         self.assertEqual(response.status_code, 201)
         research_id = response.json()["id"]
         
@@ -336,8 +378,9 @@ class TestApiDatabaseInteraction(unittest.TestCase):
             
         self.mock_collection.find_one.side_effect = updated_find_one
         
-        # 3. Retrieve the research via API
-        response = self.client.get(f"/research/tasks/{research_id}")
+        # 3. Retrieve the research via API with required query parameters
+        url = self.add_query_params(f"/research/tasks/{research_id}")
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["query"], "How does the transformer architecture work?")
         
@@ -356,8 +399,9 @@ class TestApiDatabaseInteraction(unittest.TestCase):
         # Configure Neo4j mock for entity creation
         self.mock_neo4j_instance.add_entity.return_value = {"success": True, "entity_id": "entity_transformer"}
         
-        # Create entity via API
-        response = self.client.post("/knowledge/entities/", json=new_entity)
+        # Create entity via API with required query parameters
+        url = self.add_query_params("/knowledge/entities/")
+        response = self.client.post(url, json=new_entity)
         self.assertEqual(response.status_code, 201)
         entity_id = response.json()["id"]
         
@@ -387,8 +431,9 @@ class TestApiDatabaseInteraction(unittest.TestCase):
         # Configure MongoDB for implementation creation
         insert_result.inserted_id = "implementation_transformer"
         
-        # Create implementation via API
-        response = self.client.post("/implementation/", json=new_implementation)
+        # Create implementation via API with required query parameters
+        url = self.add_query_params("/implementation/")
+        response = self.client.post(url, json=new_implementation)
         self.assertEqual(response.status_code, 201)
         
         # Verify that MongoDB insert was called with research and implementation
