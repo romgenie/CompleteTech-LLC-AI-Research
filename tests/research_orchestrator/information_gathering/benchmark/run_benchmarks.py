@@ -53,13 +53,18 @@ def run_benchmark(component, output_dir, verbose=False, quick=False):
         test_file = component_map[comp]
         print(f"Running benchmark tests for {comp}...")
         
-        # Build command
-        cmd = ["python", "-m", "pytest", f"benchmark/{test_file}"]
+        # Build command with absolute path
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        test_file_path = os.path.join(current_dir, test_file)
+        cmd = ["python", "-m", "pytest", test_file_path]
         if verbose:
             cmd.append("-v")
         if quick:
             cmd.append("-k")
             cmd.append("not test_scalability and not test_memory_usage")
+        
+        # Print command for debugging
+        print(f"Running command: {' '.join(cmd)}")
         
         # Capture output
         start_time = time.time()

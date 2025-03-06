@@ -210,6 +210,7 @@ def test_content_length_performance(result_length, timer):
     assert assessed_result is not None
 
 
+@pytest.mark.skipif(not pytest.importorskip("numpy", reason="numpy not installed"), reason="numpy not installed")
 def test_assessor_scalability():
     """Test how quality assessment performance scales with the number of results."""
     # Create a quality assessor with a mock implementation
@@ -267,14 +268,18 @@ def test_assessor_scalability():
         # Skip the assertion in case of errors
 
 
+@pytest.mark.skipif(not pytest.importorskip("psutil", reason="psutil not installed"), reason="psutil not installed")
 def test_memory_usage():
     """Test memory usage of the QualityAssessor with different result volumes."""
-    import psutil
-    import os
-    import gc
-    
-    # Get current process
-    process = psutil.Process(os.getpid())
+    try:
+        import psutil
+        import os
+        import gc
+        
+        # Get current process
+        process = psutil.Process(os.getpid())
+    except ImportError:
+        pytest.skip("psutil not installed")
     
     # Create a quality assessor with a mock implementation
     assessor = MagicMock(spec=QualityAssessor)
