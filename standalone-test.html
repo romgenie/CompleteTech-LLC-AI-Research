@@ -23,6 +23,25 @@
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+    
+    /* Responsive styles */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      .container {
+        padding: 15px;
+      }
+      .module-display {
+        padding: 10px;
+      }
+      .controls {
+        flex-direction: column;
+      }
+      .control-group {
+        width: 100%;
+      }
+    }
     .header {
       margin-bottom: 20px;
       border-bottom: 1px solid #eee;
@@ -41,6 +60,8 @@
       border-radius: 4px;
       min-height: 500px;
       background-color: #fff;
+      overflow-x: auto;
+      overflow-y: auto;
     }
     .controls {
       margin-bottom: 20px;
@@ -81,6 +102,8 @@
       padding: 15px;
       margin-bottom: 10px;
       position: relative;
+      word-break: break-word;
+      overflow-wrap: break-word;
     }
     .entity-type {
       display: inline-block;
@@ -88,12 +111,15 @@
       border-radius: 12px;
       font-size: 12px;
       color: white;
-      margin-left: 10px;
+      margin: 2px;
     }
     .entity-card h3 {
       margin-top: 0;
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 5px;
+      padding-right: 40px; /* Space for the action buttons */
     }
     .entity-actions {
       position: absolute;
@@ -185,6 +211,66 @@
     .code { background-color: #607D8B; }
     .concept { background-color: #E91E63; }
     .framework { background-color: #3F51B5; }
+    
+    /* Sort button styles */
+    .sort-button {
+      display: flex;
+      align-items: center;
+      background-color: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+      margin-left: auto;
+      font-size: 14px;
+    }
+    .sort-button.active {
+      background-color: #1976d2;
+      color: white;
+      border-color: #1976d2;
+    }
+    .sort-button .material-icons {
+      font-size: 18px;
+      margin-right: 4px;
+    }
+    .sort-menu {
+      position: absolute;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 10;
+      display: none;
+    }
+    .sort-menu.visible {
+      display: block;
+    }
+    .sort-menu-item {
+      padding: 8px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sort-menu-item:hover {
+      background-color: #f5f5f5;
+    }
+    .sort-menu-item.selected {
+      background-color: #e3f2fd;
+      color: #1976d2;
+    }
+    .sort-menu-divider {
+      height: 1px;
+      background-color: #ddd;
+      margin: 4px 0;
+    }
+    .filter-sort-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
   </style>
 </head>
 <body>
@@ -237,6 +323,32 @@
   </div>
 
   <div class="notification" id="notification"></div>
+  <div class="sort-menu" id="sort-menu">
+    <div class="sort-menu-item" data-sort="name">
+      <span>Name</span>
+      <span class="material-icons sort-indicator"></span>
+    </div>
+    <div class="sort-menu-item" data-sort="type">
+      <span>Type</span>
+      <span class="material-icons sort-indicator"></span>
+    </div>
+    <div class="sort-menu-item" data-sort="confidence">
+      <span>Confidence</span>
+      <span class="material-icons sort-indicator"></span>
+    </div>
+    <div class="sort-menu-item" data-sort="createdAt">
+      <span>Created Date</span>
+      <span class="material-icons sort-indicator"></span>
+    </div>
+    <div class="sort-menu-item" data-sort="updatedAt">
+      <span>Updated Date</span>
+      <span class="material-icons sort-indicator"></span>
+    </div>
+    <div class="sort-menu-divider"></div>
+    <div class="sort-menu-item" data-sort="clear">
+      <span>Clear Sort</span>
+    </div>
+  </div>
 
   <script>
     // Mock data
@@ -371,7 +483,11 @@
     let relationships = [...mockRelationships];
     let selectedEntity = null;
     let activeTab = 0;
-    let filter = {};
+    let filter = {
+      type: undefined,
+      sortBy: undefined,
+      sortDirection: undefined
+    };
     
     // DOM elements
     const moduleContainer = document.getElementById('module-container');
@@ -380,12 +496,39 @@
     const readOnlyCheckbox = document.getElementById('read-only');
     const showActionsCheckbox = document.getElementById('show-actions');
     const notificationEl = document.getElementById('notification');
+    const sortMenu = document.getElementById('sort-menu');
 
     // Event listeners
     displayModeSelect.addEventListener('change', render);
     heightSelect.addEventListener('change', updateModuleHeight);
     readOnlyCheckbox.addEventListener('change', render);
     showActionsCheckbox.addEventListener('change', render);
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#sort-button') && !e.target.closest('#sort-menu')) {
+        sortMenu.style.display = 'none';
+      }
+    });
+
+    // Sort menu handlers
+    document.querySelectorAll('.sort-menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const sortBy = item.getAttribute('data-sort');
+        if (sortBy === 'clear') {
+          filter.sortBy = undefined;
+          filter.sortDirection = undefined;
+        } else {
+          if (filter.sortBy === sortBy) {
+            filter.sortDirection = filter.sortDirection === 'asc' ? 'desc' : 'asc';
+          } else {
+            filter.sortBy = sortBy;
+            filter.sortDirection = 'asc';
+          }
+        }
+        sortMenu.style.display = 'none';
+        render();
+      });
+    });
 
     // Update module height
     function updateModuleHeight() {
@@ -460,6 +603,59 @@
       render();
     }
 
+    // Toggle sort menu
+    function toggleSortMenu(event) {
+      const button = event.currentTarget;
+      const rect = button.getBoundingClientRect();
+      
+      sortMenu.style.top = `${rect.bottom}px`;
+      sortMenu.style.left = `${rect.left}px`;
+      sortMenu.style.display = sortMenu.style.display === 'block' ? 'none' : 'block';
+      
+      // Update the selected item
+      document.querySelectorAll('.sort-menu-item').forEach(item => {
+        const sortBy = item.getAttribute('data-sort');
+        const indicator = item.querySelector('.sort-indicator');
+        
+        if (sortBy === filter.sortBy) {
+          item.classList.add('selected');
+          indicator.textContent = filter.sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward';
+        } else {
+          item.classList.remove('selected');
+          indicator.textContent = '';
+        }
+      });
+    }
+
+    // Sort entities
+    function sortEntities(entities) {
+      if (!filter.sortBy) return entities;
+      
+      return [...entities].sort((a, b) => {
+        let valueA, valueB;
+        
+        // Get the values to compare
+        if (filter.sortBy === 'confidence') {
+          valueA = a.confidence || 0;
+          valueB = b.confidence || 0;
+        } else if (filter.sortBy in a) {
+          valueA = a[filter.sortBy];
+          valueB = b[filter.sortBy];
+        } else {
+          return 0;
+        }
+        
+        // Compare based on direction
+        const direction = filter.sortDirection === 'asc' ? 1 : -1;
+        
+        if (typeof valueA === 'string' && typeof valueB === 'string') {
+          return valueA.localeCompare(valueB) * direction;
+        } else {
+          return (valueA > valueB ? 1 : -1) * direction;
+        }
+      });
+    }
+
     // Render entity list
     function renderEntityList() {
       // Get unique entity types for filtering
@@ -470,6 +666,9 @@
       if (filter.type) {
         filteredEntities = entities.filter(e => e.type === filter.type);
       }
+      
+      // Sort entities if needed
+      filteredEntities = sortEntities(filteredEntities);
       
       let html = `
         <div class="tab-container">
@@ -483,8 +682,11 @@
       `;
       
       if (activeTab === 0) {
+        // Filter and sort controls
+        html += `<div class="filter-sort-container">`;
+        
         // Filter chips
-        html += `<div style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 5px;">`;
+        html += `<div style="display: flex; flex-wrap: wrap; gap: 5px;">`;
         entityTypes.forEach(type => {
           const isActive = filter.type === type;
           html += `
@@ -498,11 +700,38 @@
         
         if (filter.type) {
           html += `
-            <span class="tag" onclick="filter = {}; render();" style="background-color: #757575;">
+            <span class="tag" onclick="filter.type = undefined; render();" style="background-color: #757575;">
               Clear filter
             </span>
           `;
         }
+        html += `</div>`;
+        
+        // Sort button
+        let sortButtonText = 'Sort';
+        let sortButtonIcon = 'sort';
+        let sortButtonClass = '';
+        
+        if (filter.sortBy) {
+          const sortLabels = {
+            name: 'Name',
+            type: 'Type',
+            confidence: 'Confidence',
+            createdAt: 'Created Date',
+            updatedAt: 'Updated Date'
+          };
+          sortButtonText = `Sort: ${sortLabels[filter.sortBy] || filter.sortBy}`;
+          sortButtonIcon = filter.sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward';
+          sortButtonClass = 'active';
+        }
+        
+        html += `
+          <button id="sort-button" class="sort-button ${sortButtonClass}" onclick="toggleSortMenu(event)">
+            <span class="material-icons">${sortButtonIcon}</span>
+            ${sortButtonText}
+          </button>
+        `;
+        
         html += `</div>`;
         
         // Entity list
@@ -514,10 +743,10 @@
             html += `
               <div class="entity-card">
                 <h3>
-                  ${entity.name}
-                  <span class="entity-type ${entity.type.toLowerCase()}">${entity.type}</span>
+                  <span style="white-space: normal;">${entity.name}</span>
+                  <span class="entity-type ${entity.type.toLowerCase()}" style="margin-left: 0;">${entity.type}</span>
                   ${entity.confidence ? 
-                    `<span class="entity-type" style="background-color: ${entity.confidence > 0.8 ? '#4caf50' : entity.confidence > 0.5 ? '#ff9800' : '#f44336'}">
+                    `<span class="entity-type" style="margin-left: 0; background-color: ${entity.confidence > 0.8 ? '#4caf50' : entity.confidence > 0.5 ? '#ff9800' : '#f44336'}">
                       ${Math.round(entity.confidence * 100)}%
                     </span>` : ''}
                 </h3>
@@ -667,18 +896,18 @@
       const entityTypes = ['MODEL', 'ALGORITHM', 'DATASET', 'PAPER', 'AUTHOR', 'METHOD', 'FINDING', 'METRIC', 'CODE', 'CONCEPT', 'FRAMEWORK'];
       
       let html = `
-        <div style="padding: 20px;">
+        <div style="padding: 20px; max-width: 100%;">
           <h2>${isEditing ? 'Edit Entity' : 'Create New Entity'}</h2>
           
-          <form id="entity-form" onsubmit="handleFormSubmit(event)">
+          <form id="entity-form" onsubmit="handleFormSubmit(event)" style="max-width: 100%;">
             <div style="margin-bottom: 15px;">
               <label for="entity-name" style="display: block; margin-bottom: 5px; font-weight: 500;">Name *</label>
-              <input type="text" id="entity-name" value="${entity.name}" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+              <input type="text" id="entity-name" value="${entity.name}" required style="width: 100%; max-width: 100%; box-sizing: border-box; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
             </div>
             
             <div style="margin-bottom: 15px;">
               <label for="entity-type" style="display: block; margin-bottom: 5px; font-weight: 500;">Type *</label>
-              <select id="entity-type" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+              <select id="entity-type" style="width: 100%; max-width: 100%; box-sizing: border-box; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
                 ${entityTypes.map(type => 
                   `<option value="${type}" ${entity.type === type ? 'selected' : ''}>${type}</option>`
                 ).join('')}
@@ -687,34 +916,34 @@
             
             <div style="margin-bottom: 15px;">
               <label for="entity-description" style="display: block; margin-bottom: 5px; font-weight: 500;">Description</label>
-              <textarea id="entity-description" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd; min-height: 100px;">${entity.description || ''}</textarea>
+              <textarea id="entity-description" style="width: 100%; max-width: 100%; box-sizing: border-box; padding: 8px; border-radius: 4px; border: 1px solid #ddd; min-height: 100px;">${entity.description || ''}</textarea>
             </div>
             
             <div style="margin-bottom: 15px;">
               <label style="display: block; margin-bottom: 5px; font-weight: 500;">Properties</label>
-              <div id="properties-container" style="border: 1px solid #eee; border-radius: 4px; padding: 10px; margin-bottom: 10px;">
+              <div id="properties-container" style="border: 1px solid #eee; border-radius: 4px; padding: 10px; margin-bottom: 10px; max-width: 100%;">
                 ${Object.entries(entity.properties || {}).map(([key, value], index) => `
-                  <div style="display: flex; margin-bottom: 10px;" class="property-row">
-                    <input type="text" value="${key}" class="property-key" style="width: 30%; margin-right: 10px; padding: 8px; border-radius: 4px; border: 1px solid #ddd;" readonly>
-                    <input type="text" value="${value}" class="property-value" style="flex-grow: 1; padding: 8px; border-radius: 4px; border: 1px solid #ddd;" readonly>
-                    <button type="button" onclick="removeProperty(${index})" style="margin-left: 10px; background: none; border: none; color: #f44336; cursor: pointer;">
+                  <div style="display: flex; flex-wrap: wrap; margin-bottom: 10px; width: 100%;" class="property-row">
+                    <input type="text" value="${key}" class="property-key" style="width: 30%; min-width: 100px; margin-right: 10px; margin-bottom: 5px; padding: 8px; border-radius: 4px; border: 1px solid #ddd; box-sizing: border-box;" readonly>
+                    <input type="text" value="${value}" class="property-value" style="flex: 1; min-width: 150px; margin-bottom: 5px; padding: 8px; border-radius: 4px; border: 1px solid #ddd; box-sizing: border-box;" readonly>
+                    <button type="button" onclick="removeProperty(${index})" style="margin-left: 5px; background: none; border: none; color: #f44336; cursor: pointer;">
                       <span class="material-icons">delete</span>
                     </button>
                   </div>
                 `).join('')}
               </div>
               
-              <div style="display: flex; margin-bottom: 10px;">
-                <input type="text" id="new-property-key" placeholder="New property" style="width: 30%; margin-right: 10px; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
-                <input type="text" id="new-property-value" placeholder="Value" style="flex-grow: 1; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
-                <button type="button" onclick="addProperty()" style="margin-left: 10px; background-color: #1976d2; color: white; border: none; border-radius: 4px; padding: 0 10px; cursor: pointer;">
+              <div style="display: flex; flex-wrap: wrap; margin-bottom: 10px; width: 100%;">
+                <input type="text" id="new-property-key" placeholder="New property" style="width: 30%; min-width: 100px; margin-right: 10px; margin-bottom: 5px; padding: 8px; border-radius: 4px; border: 1px solid #ddd; box-sizing: border-box;">
+                <input type="text" id="new-property-value" placeholder="Value" style="flex: 1; min-width: 150px; margin-bottom: 5px; padding: 8px; border-radius: 4px; border: 1px solid #ddd; box-sizing: border-box;">
+                <button type="button" onclick="addProperty()" style="margin-left: 5px; background-color: #1976d2; color: white; border: none; border-radius: 4px; padding: 0 10px; cursor: pointer;">
                   <span class="material-icons">add</span>
                 </button>
               </div>
             </div>
             
-            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
-              <button type="button" class="button button-secondary" onclick="cancelForm()" style="margin-right: 10px;">
+            <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; margin-top: 20px; gap: 10px;">
+              <button type="button" class="button button-secondary" onclick="cancelForm()">
                 Cancel
               </button>
               <button type="submit" class="button">
@@ -741,10 +970,10 @@
         const index = document.querySelectorAll('.property-row').length;
         
         const propertyRowHtml = `
-          <div style="display: flex; margin-bottom: 10px;" class="property-row">
-            <input type="text" value="${key}" class="property-key" style="width: 30%; margin-right: 10px; padding: 8px; border-radius: 4px; border: 1px solid #ddd;" readonly>
-            <input type="text" value="${value}" class="property-value" style="flex-grow: 1; padding: 8px; border-radius: 4px; border: 1px solid #ddd;" readonly>
-            <button type="button" onclick="removeProperty(${index})" style="margin-left: 10px; background: none; border: none; color: #f44336; cursor: pointer;">
+          <div style="display: flex; flex-wrap: wrap; margin-bottom: 10px; width: 100%;" class="property-row">
+            <input type="text" value="${key}" class="property-key" style="width: 30%; min-width: 100px; margin-right: 10px; margin-bottom: 5px; padding: 8px; border-radius: 4px; border: 1px solid #ddd; box-sizing: border-box;" readonly>
+            <input type="text" value="${value}" class="property-value" style="flex: 1; min-width: 150px; margin-bottom: 5px; padding: 8px; border-radius: 4px; border: 1px solid #ddd; box-sizing: border-box;" readonly>
+            <button type="button" onclick="removeProperty(${index})" style="margin-left: 5px; background: none; border: none; color: #f44336; cursor: pointer;">
               <span class="material-icons">delete</span>
             </button>
           </div>
