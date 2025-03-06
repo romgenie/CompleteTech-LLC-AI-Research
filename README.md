@@ -213,19 +213,19 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 
 ## Inspiration Sources
 
-This project draws inspiration from several cutting-edge AI research frameworks and tools:
+This project draws inspiration from four specialized AI agent frameworks housed in our external repository:
 
-### 1. [LangChain](https://github.com/langchain-ai/langchain)
-LangChain provides components and interfaces for developing applications powered by language models. Our research orchestration framework adopts similar principles for chaining complex AI operations into cohesive pipelines. We particularly drew inspiration from LangChain's document processing capabilities and agent architecture.
+### 1. [AutoCodeAgent2.0](https://github.com/romgenie/AutoCodeAgent2.0)
+A dual-mode AI agent framework with IntelliChain for code generation and Deep Search for autonomous web research. Our implementation planning system leverages AutoCodeAgent2.0's task decomposition, code validation, and execution workflow, while our research generation system adopts its multi-agent collaborative chain for research synthesis.
 
-### 2. [LlamaIndex](https://github.com/run-llama/llama_index)
-LlamaIndex (formerly GPT Index) offers tools for connecting custom data sources to large language models. Our knowledge extraction pipeline is influenced by LlamaIndex's document processing and structured output generation techniques. The knowledge graph integration components mirror LlamaIndex's approach to structured data retrieval.
+### 2. [TDAG (Task Decomposition Agent Generation)](https://github.com/romgenie/TDAG)
+A hierarchical multi-agent system for complex problem-solving with dynamic task decomposition. Our research orchestration framework is built on TDAG's coordination principles, using specialized agents that communicate through standardized interfaces and a shared state management system.
 
-### 3. [Neo4j Graph Data Science Library](https://github.com/neo4j/graph-data-science)
-Neo4j's Graph Data Science Library provides enterprise-grade graph algorithms for data scientists. Our temporal evolution system adopts similar approaches for graph pattern discovery, path finding, and centrality algorithms. The community detection and similarity computation techniques directly informed our research field analysis components.
+### 3. [GDesigner](https://github.com/romgenie/GDesigner)
+A graph-based multi-agent system supporting various topologies for agent communication. Our knowledge integration modules use GDesigner's principles for connecting specialized knowledge workers in configurable patterns, with agent coordination and dynamic edge pruning based on importance scores.
 
-### 4. [Hugging Face Transformers](https://github.com/huggingface/transformers)
-The Transformers library by Hugging Face offers thousands of pre-trained models for various NLP tasks. Our entity recognition system leverages similar architecture for extracting research concepts, while our research generation system adopts comparable approaches to controlled text generation.
+### 4. [KARMA](https://github.com/romgenie/KARMA)
+A framework for automated knowledge graph enrichment using specialized LLM agents to extract scientific knowledge. Our knowledge extraction pipeline adopts KARMA's multi-dimensional scoring system for evaluating extracted information, and its approach to handling document processing and conflict resolution.
 
 ## Acknowledgements
 
