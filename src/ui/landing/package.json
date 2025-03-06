@@ -1,0 +1,16 @@
+{
+  "name": "ai-research-integration-landing",
+  "version": "1.0.0",
+  "description": "Landing page for AI Research Integration Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  }
+}
