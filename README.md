@@ -110,6 +110,8 @@ Once the services are running, you can access the API documentation at:
 - http://localhost:3000/api/docs (Swagger UI)
 - http://localhost:3000/api/redoc (ReDoc)
 
+  ![image](https://github.com/user-attachments/assets/51e5b90b-34f0-4479-b16f-d88a80c11037)
+
 ## Theme and Design System
 
 The platform follows a consistent design system documented in [THEME.md](THEME.md). The design system includes:
