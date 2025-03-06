@@ -1,6 +1,28 @@
 # Docker Compose configuration for AI Research Integration API
 
 services:
+  # Landing Page
+  landing:
+    build:
+      context: .
+      dockerfile: Dockerfile.landing
+    container_name: ai_research_landing
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - API_URL=http://api:8000
+    networks:
+      - ai_research_network
+    depends_on:
+      - api
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   # Neo4j graph database for knowledge graph storage
   neo4j:
     image: neo4j:5.9.0
@@ -75,7 +97,7 @@ services:
       - API_WORKERS=4
       - JWT_SECRET=your_secret_key_here  # Change in production
       - JWT_ALGORITHM=HS256
-      - CORS_ORIGINS=["http://localhost:3000"]
+      - CORS_ORIGINS=["http://localhost:3000", "http://landing:3000"]
       - ENVIRONMENT=development
       - UPLOAD_DIR=/app/uploads
     volumes:

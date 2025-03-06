@@ -1,0 +1,21 @@
+FROM node:16-alpine
+
+# Install wget for healthchecks
+RUN apk add --no-cache wget
+
+WORKDIR /app
+
+# Copy package.json and package-lock.json files
+COPY src/ui/landing/package*.json ./
+
+# Install dependencies
+RUN npm install --production
+
+# Copy landing page files
+COPY src/ui/landing/ ./
+
+# Expose port for the landing page
+EXPOSE 3000
+
+# Command to run the server
+CMD ["node", "server.js"]
