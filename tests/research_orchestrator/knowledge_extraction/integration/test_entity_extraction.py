@@ -20,7 +20,7 @@ import json
 import tempfile
 from unittest.mock import patch
 
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import EntityType
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import EntityType
 
 
 def test_entity_extraction_from_text_document(integration_document_directory, document_processor, entity_recognizer):
@@ -53,9 +53,9 @@ def test_entity_extraction_from_text_document(integration_document_directory, do
     assert has_expected_model, f"None of the expected models {expected_models} were found. Found: {found_models}"
     
     # Check for other expected entity types
-    organization_entities = [e for e in entities if e.type == EntityType.ORGANIZATION]
-    has_openai = any("OpenAI" in e.text for e in organization_entities)
-    assert has_openai, "OpenAI not found in organization entities"
+    institution_entities = [e for e in entities if e.type == EntityType.INSTITUTION]
+    has_openai = any("OpenAI" in e.text for e in institution_entities)
+    assert has_openai, "OpenAI not found in institution entities"
     
     # Check for benchmark entities
     benchmark_entities = [e for e in entities if e.type == EntityType.BENCHMARK]
@@ -89,9 +89,9 @@ def test_entity_extraction_from_html_document(integration_document_directory, do
     assert has_bert, "BERT not found in model entities"
     
     # Check for other expected entity types
-    organization_entities = [e for e in entities if e.type == EntityType.ORGANIZATION]
-    has_google = any("Google" in e.text for e in organization_entities)
-    assert has_google, "Google not found in organization entities"
+    institution_entities = [e for e in entities if e.type == EntityType.INSTITUTION]
+    has_google = any("Google" in e.text for e in institution_entities)
+    assert has_google, "Google not found in institution entities"
     
     # Check for framework entities
     framework_entities = [e for e in entities if e.type == EntityType.FRAMEWORK]

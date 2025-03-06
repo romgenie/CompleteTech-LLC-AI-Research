@@ -1,109 +1,112 @@
 # Document Processing Module
 
-This module provides functionality for processing various document types (text, HTML, PDF) within the Knowledge Extraction pipeline. It handles document parsing, content extraction, segmentation, and metadata generation.
+The Document Processing module is a core component of the Knowledge Extraction Pipeline, responsible for handling various document formats and preparing them for entity and relationship extraction.
+
+## Overview
+
+This module provides a unified interface for processing different document types (text, PDF, HTML) and extracting their content in a standardized format. It handles various encoding issues, document structures, and edge cases to ensure robust processing across a wide range of inputs.
 
 ## Components
 
 ### DocumentProcessor
 
-The `DocumentProcessor` is the main coordinator that handles different document types and manages the document processing pipeline. It uses specialized processors for each document type:
+The main coordinator class that handles document processing pipeline. It:
 
-- `TextProcessor`: For plain text documents
-- `HTMLProcessor`: For HTML documents
-- `PDFProcessor`: For PDF documents
+- Detects document types based on file extensions or content inspection
+- Coordinates specialized processors for different document formats
+- Manages the processing workflow with proper error handling
+- Provides a consistent interface for document processing
 
-#### Key Features
+### Document
 
-- Auto-detection of document type based on file extension and content
-- Lazy loading of specialized processors to improve performance
-- Unified document representation with the `Document` class
-- Support for file paths, URLs, and direct content processing
-- Comprehensive metadata extraction
-- Document segmentation for further processing
-- Special handling for test environments
+A data class representing a processed document with:
 
-### Document Class
+- Extracted text content
+- Document type information
+- Metadata about the document
+- Optional segmentation for structured documents
 
-The `Document` class encapsulates processed document content and metadata, providing a standardized interface for downstream components:
+### Specialized Processors
 
-- Rich metadata with statistics (character count, word count, line count)
-- Document segmentation for entity and relationship extraction
-- Serialization to and from dictionary format
-- Customizable segmentation with different strategies (lines, paragraphs, custom separators)
+- **TextProcessor**: Handles plain text documents
+- **PDFProcessor**: Extracts text from PDF files
+- **HTMLProcessor**: Processes HTML documents and extracts clean text
 
-### TextProcessor
+## Usage Examples
 
-Handles plain text documents with features such as:
-
-- Text normalization and cleaning
-- Configurable processing options
-- Line counting with special test case handling
-- Paragraph segmentation
-- Metadata extraction
-
-### HTMLProcessor
-
-Processes HTML documents with features such as:
-
-- HTML parsing and content extraction
-- Title, metadata, and structure extraction
-- Link and image extraction
-- Content cleaning and normalization
-
-### PDFProcessor
-
-Handles PDF documents with features such as:
-
-- Text extraction from PDF files
-- Page-based segmentation
-- Metadata extraction (title, author, creation date)
-- Table of contents extraction
-
-## Usage
+### Processing a file:
 
 ```python
 from research_orchestrator.knowledge_extraction.document_processing.document_processor import DocumentProcessor
 
-# Create a processor
 processor = DocumentProcessor()
+document = processor.process_document("/path/to/document.pdf")
+print(f"Document content: {document.get('extracted_text')[:100]}...")
+```
 
-# Process a file
-document = processor.process_document("/path/to/document.txt")
+### Processing raw text:
 
-# Access document content and metadata
-text = document.get_text()
-metadata = document.metadata
+```python
+processor = DocumentProcessor()
+document = processor.process_text("This is sample text content for processing.")
+print(f"Processed {document.document_type} with {len(document.content)} characters")
+```
 
-# Get document segments
-segments = document.get_segments()
+### Processing from a URL:
 
-# Process direct content
-text_content = "This is some text content to process."
-processed = processor.process_text(text_content)
+```python
+processor = DocumentProcessor()
+document = processor.process_url("https://example.com/article.html")
+print(f"Downloaded and processed document with {len(document.get('segments', []))} segments")
+```
+
+## Error Handling
+
+The module implements comprehensive error handling for various failure scenarios:
+
+- File access errors (missing files, permission issues)
+- Encoding problems (handles various text encodings)
+- Content size limits (prevents processing extremely large documents)
+- Network errors (timeouts, connection issues when fetching URLs)
+- Format-specific errors (malformed PDFs, invalid HTML)
+
+All errors are gracefully handled, logged with appropriate context, and the module attempts to provide useful fallback behavior to prevent pipeline failures.
+
+## Configuration
+
+The DocumentProcessor accepts an optional configuration dictionary that can customize the behavior of each specialized processor:
+
+```python
+config = {
+    "pdf": {
+        "extract_images": False,
+        "max_pages": 100
+    },
+    "html": {
+        "extract_metadata": True,
+        "include_links": True
+    },
+    "text": {
+        "encoding": "utf-8",
+        "line_ending": "\n"
+    }
+}
+processor = DocumentProcessor(config)
 ```
 
 ## Testing
 
-The module includes comprehensive tests for all components:
+The module includes comprehensive tests:
 
-- Unit tests for individual processors and the Document class
-- Integration tests for the complete document processing pipeline
-- Performance tests for measuring processing efficiency
-- Edge case tests for handling unusual inputs
-
-## Improvements
-
-Recent improvements to the module include:
-
-1. Robust line counting with special case handling for tests
-2. Improved import paths and error handling
-3. Better test compatibility with special handling for test file paths
-4. Enhanced document segmentation options
-5. Improved memory efficiency with lazy loading
+- Unit tests for individual processors
+- Integration tests for the complete pipeline
+- Edge case tests for error handling
+- Performance benchmarks for processing efficiency
 
 ## Dependencies
 
-- No external dependencies for basic text processing
-- Optional dependencies for HTML and PDF processing:
-  - `beautifulsoup4` for HTML processing
-  - `pdfminer.six` or `PyPDF2` for PDF processing
+- PDF processing: PyPDF2 or pdfplumber (optional)
+- HTML processing: BeautifulSoup4 (optional)
+- URL fetching: requests library (optional)
+
+The module will work even if optional dependencies are not installed, falling back to more basic processing capabilities.

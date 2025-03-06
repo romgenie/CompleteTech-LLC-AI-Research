@@ -16,8 +16,8 @@ pytestmark = [
     pytest.mark.medium
 ]
 
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
-from src.research_orchestrator.knowledge_extraction.entity_recognition.factory import EntityRecognizerFactory
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
+from research_orchestrator.knowledge_extraction.entity_recognition.factory import EntityRecognizerFactory
 
 
 @pytest.mark.empty

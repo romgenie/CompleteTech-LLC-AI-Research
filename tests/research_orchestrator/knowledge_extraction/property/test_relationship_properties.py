@@ -17,10 +17,10 @@ pytestmark = [
     pytest.mark.medium
 ]
 
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
-from src.research_orchestration.knowledge_extraction.relationship_extraction.base_extractor import RelationshipExtractor
-from src.research_orchestration.knowledge_extraction.relationship_extraction.pattern_extractor import PatternRelationshipExtractor
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
+from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
+from research_orchestrator.knowledge_extraction.relationship_extraction.base_extractor import RelationshipExtractor
+from research_orchestrator.knowledge_extraction.relationship_extraction.pattern_extractor import PatternRelationshipExtractor
 
 
 # Helper strategy for generating entities

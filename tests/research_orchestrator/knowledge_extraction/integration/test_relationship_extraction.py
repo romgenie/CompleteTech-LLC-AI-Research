@@ -20,8 +20,8 @@ import json
 import tempfile
 from unittest.mock import patch
 
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import EntityType
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import RelationType
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import EntityType
+from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import RelationType
 
 
 def test_relationship_extraction_from_recognized_entities(integration_test_data, entity_recognizer, relationship_extractor):
@@ -52,10 +52,10 @@ def test_relationship_extraction_from_recognized_entities(integration_test_data,
         assert relationship.source.id in {e.id for e in entities}
         assert relationship.target.id in {e.id for e in entities}
         
-    # Check for specific model-organization relationships
+    # Check for specific model-institution relationships
     model_to_org_relationships = [r for r in relationships 
                                 if r.source.type == EntityType.MODEL 
-                                and r.target.type == EntityType.ORGANIZATION
+                                and r.target.type == EntityType.INSTITUTION
                                 and r.relation_type == RelationType.DEVELOPED_BY]
     
     # Should find relationships like "GPT-4 developed_by OpenAI" or "BERT developed_by Google"
@@ -162,24 +162,24 @@ def test_entity_pair_relationship_extraction(integration_test_data, entity_recog
     # Recognize entities
     entities = entity_recognizer.recognize(test_text)
     
-    # Find model and organization entities
+    # Find model and institution entities
     models = [e for e in entities if e.type == EntityType.MODEL]
-    organizations = [e for e in entities if e.type == EntityType.ORGANIZATION]
+    institutions = [e for e in entities if e.type == EntityType.INSTITUTION]
     
     # Skip test if we don't have both types
-    if not models or not organizations:
+    if not models or not institutions:
         pytest.skip("Not enough entity types found for this test")
     
-    # Get a model and an organization
+    # Get a model and an institution
     model = models[0]
-    organization = organizations[0]
+    institution = institutions[0]
     
     # Get context between the entities
-    context = relationship_extractor.get_entity_pair_context(test_text, model, organization)
+    context = relationship_extractor.get_entity_pair_context(test_text, model, institution)
     
     # Check that context contains both entities
     assert model.text in context
-    assert organization.text in context
+    assert institution.text in context
     
     # Find entity pairs by proximity
     pairs = relationship_extractor.find_entity_pairs(entities, max_distance=100)
@@ -233,7 +233,7 @@ def test_relationship_serialization_integration(integration_test_data, entity_re
             relationship_dicts = json.load(f)
         
         # Deserialize relationships
-        from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship
+        from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship
         loaded_relationships = [Relationship.from_dict(r_dict) for r_dict in relationship_dicts]
         
         # Verify relationships were properly serialized and deserialized
