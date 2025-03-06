@@ -49,120 +49,129 @@ def benchmark_knowledge_extractor(benchmark_document_processor, benchmark_entity
 
 
 @pytest.fixture
-def generate_text_document(size_kb):
+def generate_text_document():
     """Generate a text document of the given size."""
-    # Generate random paragraphs
-    paragraphs = []
-    remaining_size = size_kb * 1024  # Convert to bytes
+    def _generate(size_kb):
+        # Generate random paragraphs
+        paragraphs = []
+        remaining_size = size_kb * 1024  # Convert to bytes
+        
+        # Add some AI-related content to ensure entity detection
+        ai_terms = [
+            "GPT-4 is a large language model developed by OpenAI.",
+            "BERT was created by Google and revolutionized NLP.",
+            "PyTorch is a popular framework for deep learning.",
+            "The MMLU benchmark is used to evaluate language models.",
+            "Transformer architecture is the foundation of modern NLP models.",
+            "ResNet is a convolutional neural network architecture.",
+            "ImageNet is a large dataset used for training computer vision models.",
+            "TensorFlow was developed by Google for machine learning tasks."
+        ]
+        
+        # Add AI terms as initial paragraphs
+        for term in ai_terms:
+            paragraphs.append(term)
+            remaining_size -= len(term) + 2  # +2 for newlines
+        
+        # Generate random paragraphs to fill the remaining size
+        while remaining_size > 0:
+            # Generate a random paragraph
+            paragraph_length = min(random.randint(50, 200), remaining_size)
+            paragraph = ''.join(random.choices(string.ascii_letters + string.digits + ' ' + ',.!?', k=paragraph_length))
+            paragraphs.append(paragraph)
+            remaining_size -= len(paragraph) + 2  # +2 for newlines
+        
+        # Join paragraphs with double newlines
+        content = '\n\n'.join(paragraphs)
+        
+        # Create a Document
+        return Document(
+            content=content,
+            document_type="text",
+            path=None,
+            metadata={"size_kb": size_kb}
+        )
     
-    # Add some AI-related content to ensure entity detection
-    ai_terms = [
-        "GPT-4 is a large language model developed by OpenAI.",
-        "BERT was created by Google and revolutionized NLP.",
-        "PyTorch is a popular framework for deep learning.",
-        "The MMLU benchmark is used to evaluate language models.",
-        "Transformer architecture is the foundation of modern NLP models.",
-        "ResNet is a convolutional neural network architecture.",
-        "ImageNet is a large dataset used for training computer vision models.",
-        "TensorFlow was developed by Google for machine learning tasks."
-    ]
-    
-    # Add AI terms as initial paragraphs
-    for term in ai_terms:
-        paragraphs.append(term)
-        remaining_size -= len(term) + 2  # +2 for newlines
-    
-    # Generate random paragraphs to fill the remaining size
-    while remaining_size > 0:
-        # Generate a random paragraph
-        paragraph_length = min(random.randint(50, 200), remaining_size)
-        paragraph = ''.join(random.choices(string.ascii_letters + string.digits + ' ' + ',.!?', k=paragraph_length))
-        paragraphs.append(paragraph)
-        remaining_size -= len(paragraph) + 2  # +2 for newlines
-    
-    # Join paragraphs with double newlines
-    content = '\n\n'.join(paragraphs)
-    
-    # Create a Document
-    return Document(
-        content=content,
-        document_type="text",
-        path=None,
-        metadata={"size_kb": size_kb}
-    )
+    return _generate
 
 
 @pytest.fixture
-def generate_entities(count):
+def generate_entities():
     """Generate a list of random entities."""
-    entities = []
-    
-    # Define some common entity texts for each type
-    entity_texts = {
-        EntityType.MODEL: ["GPT-4", "BERT", "ResNet", "VGG", "Transformer", "LSTM", "RNN", "CNN"],
-        EntityType.DATASET: ["ImageNet", "COCO", "CIFAR-10", "MNIST", "WMT", "BookCorpus"],
-        EntityType.BENCHMARK: ["MMLU", "GLUE", "SQuAD", "BLEU", "ROUGE", "WER"],
-        EntityType.FRAMEWORK: ["PyTorch", "TensorFlow", "JAX", "Keras", "scikit-learn"],
-        EntityType.INSTITUTION: ["OpenAI", "Google", "Microsoft", "Meta", "DeepMind"]
-    }
-    
-    # Generate entities
-    for i in range(count):
-        # Choose a random entity type
-        entity_type = random.choice(list(EntityType))
+    def _generate(count):
+        entities = []
         
-        # Choose a text from the appropriate list, or a random one if not in our predefined lists
-        if entity_type in entity_texts:
-            entity_text = random.choice(entity_texts[entity_type])
-        else:
-            entity_text = "Entity_" + ''.join(random.choices(string.ascii_letters, k=5))
+        # Define some common entity texts for each type
+        entity_texts = {
+            EntityType.MODEL: ["GPT-4", "BERT", "ResNet", "VGG", "Transformer", "LSTM", "RNN", "CNN"],
+            EntityType.DATASET: ["ImageNet", "COCO", "CIFAR-10", "MNIST", "WMT", "BookCorpus"],
+            EntityType.BENCHMARK: ["MMLU", "GLUE", "SQuAD", "BLEU", "ROUGE", "WER"],
+            EntityType.FRAMEWORK: ["PyTorch", "TensorFlow", "JAX", "Keras", "scikit-learn"],
+            EntityType.INSTITUTION: ["OpenAI", "Google", "Microsoft", "Meta", "DeepMind"]
+        }
         
-        # Create entity
-        entity = Entity(
-            id=f"e{i}",
-            text=entity_text,
-            type=entity_type,
-            confidence=random.uniform(0.5, 1.0),
-            start_pos=random.randint(0, 1000),
-            end_pos=random.randint(1001, 2000),
-            metadata={}
-        )
+        # Generate entities
+        for i in range(count):
+            # Choose a random entity type
+            entity_type = random.choice(list(EntityType))
+            
+            # Choose a text from the appropriate list, or a random one if not in our predefined lists
+            if entity_type in entity_texts:
+                entity_text = random.choice(entity_texts[entity_type])
+            else:
+                entity_text = "Entity_" + ''.join(random.choices(string.ascii_letters, k=5))
+            
+            # Create entity
+            entity = Entity(
+                id=f"e{i}",
+                text=entity_text,
+                type=entity_type,
+                confidence=random.uniform(0.5, 1.0),
+                start_pos=random.randint(0, 1000),
+                end_pos=random.randint(1001, 2000),
+                metadata={}
+            )
+            
+            entities.append(entity)
         
-        entities.append(entity)
+        return entities
     
-    return entities
+    return _generate
 
 
 @pytest.fixture
-def generate_relationships(entities, count):
+def generate_relationships():
     """Generate a list of random relationships between the given entities."""
-    if len(entities) < 2:
-        return []
-    
-    relationships = []
-    
-    for i in range(count):
-        # Choose random source and target entities
-        source = random.choice(entities)
-        target = random.choice([e for e in entities if e.id != source.id])
+    def _generate(entities, count):
+        if len(entities) < 2:
+            return []
         
-        # Choose a random relationship type
-        relation_type = random.choice(list(RelationType))
+        relationships = []
         
-        # Create relationship
-        relationship = Relationship(
-            id=f"r{i}",
-            source=source,
-            target=target,
-            relation_type=relation_type,
-            confidence=random.uniform(0.5, 1.0),
-            context=f"Context between {source.text} and {target.text}",
-            metadata={}
-        )
+        for i in range(count):
+            # Choose random source and target entities
+            source = random.choice(entities)
+            target = random.choice([e for e in entities if e.id != source.id])
+            
+            # Choose a random relationship type
+            relation_type = random.choice(list(RelationType))
+            
+            # Create relationship
+            relationship = Relationship(
+                id=f"r{i}",
+                source=source,
+                target=target,
+                relation_type=relation_type,
+                confidence=random.uniform(0.5, 1.0),
+                context=f"Context between {source.text} and {target.text}",
+                metadata={}
+            )
+            
+            relationships.append(relationship)
         
-        relationships.append(relationship)
+        return relationships
     
-    return relationships
+    return _generate
 
 
 @pytest.fixture
