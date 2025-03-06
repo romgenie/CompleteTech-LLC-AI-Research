@@ -16,10 +16,10 @@ pytestmark = [
     pytest.mark.slow
 ]
 
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import EntityType
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import RelationType
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.factory import RelationshipExtractorFactory
-from src.research_orchestrator.knowledge_extraction.entity_recognition.factory import EntityRecognizerFactory
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import EntityType
+from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import RelationType
+from research_orchestrator.knowledge_extraction.relationship_extraction.factory import RelationshipExtractorFactory
+from research_orchestrator.knowledge_extraction.entity_recognition.factory import EntityRecognizerFactory
 
 
 @pytest.mark.parametrize('size_kb', [10, 100, 1000])

@@ -55,7 +55,7 @@ def run_benchmark(component, output_dir, verbose=False, quick=False):
         print(f"Running benchmark tests for {comp}...")
         
         # Build command
-        cmd = ["python", "-m", "pytest", f"benchmark/{test_file}"]
+        cmd = ["python", "-m", "pytest", f"tests/research_orchestrator/knowledge_extraction/benchmark/{test_file}"]
         if verbose:
             cmd.append("-v")
         if quick:

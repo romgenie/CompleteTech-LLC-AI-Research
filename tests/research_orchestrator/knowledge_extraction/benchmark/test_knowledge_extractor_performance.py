@@ -18,7 +18,7 @@ pytestmark = [
     pytest.mark.slow
 ]
 
-from src.research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
+from research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
 
 
 @pytest.mark.parametrize('size_kb', [10, 100, 1000])

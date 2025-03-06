@@ -12,12 +12,12 @@ import random
 import string
 import time
 
-from src.research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
-from src.research_orchestrator.knowledge_extraction.document_processing.document_processor import Document, DocumentProcessor
-from src.research_orchestrator.knowledge_extraction.entity_recognition.factory import EntityRecognizerFactory
-from src.research_orchestrator.knowledge_extraction.relationship_extraction.factory import RelationshipExtractorFactory
-from src.research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
+from research_orchestrator.knowledge_extraction.entity_recognition.entity import Entity, EntityType
+from research_orchestrator.knowledge_extraction.relationship_extraction.relationship import Relationship, RelationType
+from research_orchestrator.knowledge_extraction.document_processing.document_processor import Document, DocumentProcessor
+from research_orchestrator.knowledge_extraction.entity_recognition.factory import EntityRecognizerFactory
+from research_orchestrator.knowledge_extraction.relationship_extraction.factory import RelationshipExtractorFactory
+from research_orchestrator.knowledge_extraction.knowledge_extractor import KnowledgeExtractor
 
 
 @pytest.fixture
@@ -103,7 +103,7 @@ def generate_entities(count):
         EntityType.DATASET: ["ImageNet", "COCO", "CIFAR-10", "MNIST", "WMT", "BookCorpus"],
         EntityType.BENCHMARK: ["MMLU", "GLUE", "SQuAD", "BLEU", "ROUGE", "WER"],
         EntityType.FRAMEWORK: ["PyTorch", "TensorFlow", "JAX", "Keras", "scikit-learn"],
-        EntityType.ORGANIZATION: ["OpenAI", "Google", "Microsoft", "Meta", "DeepMind"]
+        EntityType.INSTITUTION: ["OpenAI", "Google", "Microsoft", "Meta", "DeepMind"]
     }
     
     # Generate entities

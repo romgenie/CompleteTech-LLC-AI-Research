@@ -20,7 +20,8 @@ pytestmark = [
     pytest.mark.slow
 ]
 
-from src.research_orchestrator.knowledge_extraction.document_processing.document_processor import DocumentProcessor, TextProcessor
+from research_orchestrator.knowledge_extraction.document_processing.document_processor import DocumentProcessor
+from research_orchestrator.knowledge_extraction.document_processing.text_processor import TextProcessor
 
 
 def write_text_file(file_path, size_kb):
