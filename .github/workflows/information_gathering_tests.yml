@@ -3,18 +3,20 @@ name: Information Gathering Tests
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - 'src/research_orchestrator/information_gathering/**'
       - 'tests/research_orchestrator/information_gathering/**'
       - '.github/workflows/information_gathering_tests.yml'
   pull_request:
-    branches: [main]
+    branches:
+      - main
     paths:
       - 'src/research_orchestrator/information_gathering/**'
       - 'tests/research_orchestrator/information_gathering/**'
       - '.github/workflows/information_gathering_tests.yml'
-  workflow_dispatch: true  # Allow manual triggering
+  workflow_dispatch: {}  # Allow manual triggering
 
 jobs:
   unit-tests:
