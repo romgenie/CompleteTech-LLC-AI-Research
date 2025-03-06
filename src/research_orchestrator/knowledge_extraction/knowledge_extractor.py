@@ -164,13 +164,20 @@ class KnowledgeExtractor:
             # Store the document
             self.documents[doc_path] = document
             
-            # Extract entities
-            entities = self.entity_recognizer.recognize(document.content)
+            # Extract entities - handle both Document objects and dictionary returns
+            if hasattr(document, 'content'):
+                document_content = document.content
+            elif isinstance(document, dict) and 'content' in document:
+                document_content = document['content']
+            else:
+                raise ValueError(f"Document does not have content attribute or key: {type(document)}")
+                
+            entities = self.entity_recognizer.recognize(document_content)
             self.entities[doc_path] = entities
             
             # Extract relationships
             relationships = self.relationship_extractor.extract_relationships(
-                document.content, entities
+                document_content, entities
             )
             self.relationships[doc_path] = relationships
             
@@ -214,13 +221,20 @@ class KnowledgeExtractor:
             # Store the document
             self.documents[doc_id] = document
             
-            # Extract entities
-            entities = self.entity_recognizer.recognize(document.content)
+            # Extract entities - handle both Document objects and dictionary returns
+            if hasattr(document, 'content'):
+                document_content = document.content
+            elif isinstance(document, dict) and 'content' in document:
+                document_content = document['content']
+            else:
+                document_content = text  # Fallback to original text
+                
+            entities = self.entity_recognizer.recognize(document_content)
             self.entities[doc_id] = entities
             
             # Extract relationships
             relationships = self.relationship_extractor.extract_relationships(
-                document.content, entities
+                document_content, entities
             )
             self.relationships[doc_id] = relationships
             
