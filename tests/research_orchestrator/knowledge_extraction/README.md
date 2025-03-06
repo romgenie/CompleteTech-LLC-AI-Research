@@ -230,12 +230,25 @@ The following improvements have been made to the test suite:
 - Enhanced test robustness with mock support for text, HTML, and PDF processors
 - Added comprehensive documentation including module README and improved docstrings
 
-### Knowledge Extraction Tests
+### Knowledge Extraction Tests (Version 2.2)
 
 - Updated tests to work with the new document processing structure
 - Fixed test patching to properly mock processor instances
 - Added monkey patching for line count calculation in specific tests
 - Adapted test expectations to match the updated implementation
+
+### GitHub Actions Integration (Version 2.3)
+
+- Added GitHub Actions workflow for automated testing on push and PR
+- Configured matrix testing across Python 3.9 and 3.10
+- Added support for all test types (unit, integration, e2e, property, edge, benchmark)
+- Set appropriate timeout limits for different test categories
+- Added test reporting with HTML artifacts for result analysis
+- Implemented coverage reporting with Codecov integration
+- Added manual workflow trigger capability for targeted testing
+- Fixed module naming conflicts to prevent test collection errors
+- Added all necessary pytest markers for test categorization
+- Added document content access compatibility for dict and object formats
 
 ## Test Plan
 
