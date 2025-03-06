@@ -340,7 +340,7 @@ This project represents a unique experiment, as it is the only section manually 
   ```Complete [TASK OF CHOICE] adhere to [FILENAME.md]```
 
 - **Token Efficiency:**  
-  Implementing token caching from Anthropic proved to be one of the most effective strategies, significantly reducing the project's overall cost.
+  Utilizing token caching from Anthropic proved to be one of the most effective strategies, significantly reducing the project's overall cost.
 
 ### Project Reflection
 
