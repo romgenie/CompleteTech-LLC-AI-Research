@@ -1,0 +1,63 @@
+/opt/anaconda3/lib/python3.12/site-packages/pydantic/_internal/_config.py:341: UserWarning: Valid config keys have changed in V2:
+* 'schema_extra' has been renamed to 'json_schema_extra'
+  warnings.warn(message, UserWarning)
+Traceback (most recent call last):
+  File "/opt/anaconda3/bin/celery", line 8, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/celery/__main__.py", line 15, in main
+    sys.exit(_main())
+             ^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/celery/bin/celery.py", line 236, in main
+    return celery(auto_envvar_prefix="CELERY")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/click/core.py", line 1157, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/click/core.py", line 1078, in main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/click/core.py", line 1688, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/click/core.py", line 1434, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/click/core.py", line 783, in invoke
+    return __callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/click/decorators.py", line 33, in new_func
+    return f(get_current_context(), *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/celery/bin/base.py", line 135, in caller
+    return f(ctx, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/celery/bin/worker.py", line 348, in worker
+    worker = app.Worker(
+             ^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/celery/worker/worker.py", line 93, in __init__
+    self.app.loader.init_worker()
+  File "/opt/anaconda3/lib/python3.12/site-packages/celery/loaders/base.py", line 110, in init_worker
+    self.import_default_modules()
+  File "/opt/anaconda3/lib/python3.12/site-packages/celery/loaders/base.py", line 105, in import_default_modules
+    return [self.import_task_module(m) for m in self.default_modules]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/celery/loaders/base.py", line 85, in import_task_module
+    return self.import_from_cwd(module)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/celery/loaders/base.py", line 91, in import_from_cwd
+    return import_from_cwd(
+           ^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+    return imp(module, package=package)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/celery/loaders/base.py", line 88, in import_module
+    return importlib.import_module(module, package=package)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'paper_processing.tasks.extraction_tasks'
