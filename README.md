@@ -70,6 +70,8 @@ The AI Research Integration Platform enables researchers, data scientists, and M
 
 6. **Paper Processing Pipeline**: Automatically process, analyze, and extract structured information from research papers with our specialized pipeline supporting PDF, HTML, LaTeX, and text formats with real-time WebSocket updates.
 
+![image](https://github.com/user-attachments/assets/592933ca-9590-4d06-a37e-5c075b5fc50b)
+
 ## Architecture
 
 The platform is built with a modern, modular architecture:
@@ -211,7 +213,7 @@ cd tests/research_orchestrator/information_gathering
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## Inspiration Sources
+## Acknowledgements & Inspiration Sources
 
 This project draws inspiration from five specialized AI agent frameworks:
 
@@ -230,7 +232,7 @@ A framework for automated knowledge graph enrichment using specialized LLM agent
 ### 5. [AgentLaboratory](https://github.com/SamuelSchmidgall/AgentLaboratory)
 An experimental platform for designing, testing, and benchmarking multi-agent systems in controlled environments. Our testing framework and agent evaluation metrics were influenced by AgentLaboratory's approach to systematic performance assessment and behavior analysis. Its agent interaction protocols informed our collaboration features for research teams.
 
-## Acknowledgements
+## Claude Code - Quote
 
 > **"Final huge thanks to you. The best agent ever Claude Code."** - Project Creator
 
